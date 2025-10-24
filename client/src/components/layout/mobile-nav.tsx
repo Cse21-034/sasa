@@ -16,20 +16,29 @@ export function MobileNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex items-center justify-around h-16">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t glass-effect supports-[backdrop-filter]:bg-background/80 backdrop-blur-md safe-area-inset-bottom">
+      <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
           const isActive = location === item.href;
           return (
             <Link key={item.href} href={item.href}>
               <a
-                className={`flex flex-col items-center justify-center flex-1 h-full gap-1 hover-elevate transition-colors ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
+                className={`flex flex-col items-center justify-center flex-1 h-full gap-1 px-3 rounded-lg transition-all hover-elevate ${
+                  isActive 
+                    ? 'text-primary bg-primary/10' 
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
                 data-testid={item.testId}
               >
-                <item.icon className="h-5 w-5" />
-                <span className="text-xs font-medium">{item.label}</span>
+                <div className={`relative ${isActive ? 'scale-110' : ''} transition-transform`}>
+                  <item.icon className="h-5 w-5" />
+                  {isActive && (
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full"></div>
+                  )}
+                </div>
+                <span className={`text-xs font-medium ${isActive ? 'font-semibold' : ''}`}>
+                  {item.label}
+                </span>
               </a>
             </Link>
           );
