@@ -1,4 +1,3 @@
-// In client/src/pages/jobs/browse.tsx
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Filter, SlidersHorizontal, Star, Clock, CheckCircle2 } from 'lucide-react';
@@ -18,19 +17,26 @@ export default function BrowseJobs() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('recent');
+  const [statusFilter, setStatusFilter] = useState<string>('all'); // NEW: Status filter
 
   const { data: jobs, isLoading: jobsLoading } = useQuery<(Job & { requester: any; category: Category })[]>({
-    queryKey: ['jobs', { category: selectedCategory, sort: sortBy }],
+    queryKey: ['jobs', { category: selectedCategory, sort: sortBy, status: statusFilter }], // ADDED status to queryKey
     queryFn: async () => {
       let url = '/api/jobs';
       const params = new URLSearchParams();
+      
       if (selectedCategory !== 'all') {
         params.append('category', selectedCategory);
       }
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter); // NEW: Add status filter
+      }
       params.append('sort', sortBy);
+      
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
+      
       const response = await apiRequest('GET', url);
       return response.json();
     },
@@ -69,7 +75,7 @@ export default function BrowseJobs() {
       {/* Filters */}
       <Card className="mb-6">
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="md:col-span-2">
               <Input
                 placeholder="Search jobs..."
@@ -83,6 +89,7 @@ export default function BrowseJobs() {
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
+                <SelectValue placeholder="All Categories" />
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories?.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id.toString()}>
@@ -91,6 +98,23 @@ export default function BrowseJobs() {
                 ))}
               </SelectContent>
             </Select>
+            
+            {/* NEW: Status Filter */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger data-testid="select-status">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="accepted">Accepted</SelectItem>
+                <SelectItem value="enroute">En Route</SelectItem>
+                <SelectItem value="onsite">On Site</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+            
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger data-testid="select-sort">
                 <SelectValue placeholder="Sort by" />
@@ -159,6 +183,8 @@ export default function BrowseJobs() {
                               ? 'bg-success/10 text-success border-success/20'
                               : job.status === 'completed'
                               ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                              : job.status === 'accepted'
+                              ? 'bg-orange-500/10 text-orange-500 border-orange-500/20'
                               : ''
                           }`}
                         >
