@@ -1,5 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { config } from "./config";
+import { config } from "./config"; // <--- ADDED
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -21,16 +21,9 @@ export async function apiRequest(
   }
 
   // Prepend API URL if not already present
-  let fullUrl = url;
-  
-  // Only prepend the base URL if it's a relative path
-  if (!url.startsWith('http')) {
-    fullUrl = `${config.apiUrl}${url.startsWith('/') ? url : `/${url}`}`;
-  }
+  const fullUrl = url.startsWith('http') ? url : `${config.apiUrl}${url}`; // <--- MODIFIED
 
-  console.log('Making API request:', { method, url: fullUrl, data }); // Debug log
-
-  const res = await fetch(fullUrl, {
+  const res = await fetch(fullUrl, { // <--- MODIFIED
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
@@ -55,16 +48,9 @@ export const getQueryFn: <T>(options: {
     }
 
     const url = queryKey[0] as string;
-    
-    // Only prepend the base URL if it's a relative path
-    let fullUrl = url;
-    if (!url.startsWith('http')) {
-      fullUrl = `${config.apiUrl}${url.startsWith('/') ? url : `/${url}`}`;
-    }
+    const fullUrl = url.startsWith('http') ? url : `${config.apiUrl}${url}`; // <--- ADDED
 
-    console.log('Making query request:', { url: fullUrl }); // Debug log
-
-    const res = await fetch(fullUrl, {
+    const res = await fetch(fullUrl, { // <--- MODIFIED
       headers,
       credentials: "include",
     });
