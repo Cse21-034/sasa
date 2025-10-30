@@ -47,7 +47,7 @@ export const getQueryFn: <T>(options: {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const url = queryKey[0] as string;
+    const url = queryKey.join("/") as string;
     const fullUrl = url.startsWith('http') ? url : `${config.apiUrl}${url}`; // <--- ADDED
 
     const res = await fetch(fullUrl, { // <--- MODIFIED
