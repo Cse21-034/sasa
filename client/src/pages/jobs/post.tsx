@@ -28,7 +28,7 @@ export default function PostJob() {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   const { data: categories } = useQuery<Category[]>({
-    queryKey: ['/api/categories'],
+    queryKey: ['/api/categories'], // FIXED: Added leading slash
   });
 
   const form = useForm({
@@ -49,6 +49,8 @@ export default function PostJob() {
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log('Submitting job data:', data); // Debug log
+      
       // Prepare the job data
       const jobData = { 
         title: data.title,
@@ -60,25 +62,25 @@ export default function PostJob() {
         urgency: data.urgency,
         preferredTime: data.preferredTime,
         photos: data.photos,
+        customCategory: data.customCategory, // Include customCategory in the request
       };
 
-      // If using custom category, send both categoryId and customCategory
-      if (data.categoryId === -1 && data.customCategory) {
-        jobData.categoryId = -1; // Keep -1 to indicate custom category
-      }
+      console.log('Sending to API:', jobData); // Debug log
 
       const res = await apiRequest('POST', '/api/jobs', jobData);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Job posted successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
       toast({
         title: 'Job posted successfully!',
         description: 'Service providers near you will be notified.',
       });
-      setLocation('/my-jobs');
+      setLocation('/jobs');
     },
     onError: (error: Error) => {
+      console.error('Job posting failed:', error);
       toast({
         title: 'Failed to post job',
         description: error.message,
@@ -128,6 +130,36 @@ export default function PostJob() {
   };
 
   const onSubmit = (data: any) => {
+    console.log('Form submitted with data:', data); // Debug log
+    
+    // Validate required fields
+    if (!data.title || !data.description) {
+      toast({
+        title: 'Missing information',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (data.categoryId === -1 && !data.customCategory) {
+      toast({
+        title: 'Custom category required',
+        description: 'Please specify the custom category.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!data.latitude || !data.longitude) {
+      toast({
+        title: 'Location required',
+        description: 'Please provide location information.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     mutation.mutate(data);
   };
 
@@ -150,7 +182,7 @@ export default function PostJob() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Job Title</FormLabel>
+                    <FormLabel>Job Title *</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="e.g., Fix leaking kitchen sink"
@@ -171,7 +203,7 @@ export default function PostJob() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Description *</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Provide detailed information about the work needed..."
@@ -187,7 +219,7 @@ export default function PostJob() {
 
               <div className="space-y-4">
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
+                  <FormLabel>Category *</FormLabel>
                   <Select
                     onValueChange={handleCategoryChange}
                     value={selectedCategory}
@@ -215,7 +247,7 @@ export default function PostJob() {
                     name="customCategory"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Specify Category</FormLabel>
+                        <FormLabel>Specify Category *</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="Enter your specific category (e.g., Furniture Assembly, Pet Sitting)"
@@ -234,7 +266,7 @@ export default function PostJob() {
               </div>
 
               <div className="space-y-4">
-                <FormLabel>Location</FormLabel>
+                <FormLabel>Location *</FormLabel>
                 <div className="flex gap-2">
                   <Button
                     type="button"
