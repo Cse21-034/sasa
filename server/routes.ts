@@ -1,9 +1,8 @@
-import { z } from 'zod';
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import bcrypt from "bcrypt";
-import cors from "cors";
+import cors from "cors"; // Added for CORS support
 import { storage } from "./storage";
 import { authMiddleware, generateToken, type AuthRequest } from "./middleware/auth";
 import { 
@@ -19,7 +18,7 @@ import { ZodError } from 'zod';
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add CORS middleware
   app.use(cors({
-    origin: process.env.VERCEL_URL || 'https://sasa-indol.vercel.app',
+    origin: process.env.VERCEL_URL || 'https://sasa-indol.vercel.app', // Adjust to your frontend URL
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   }));
@@ -122,7 +121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post('/api/auth/login', async (req, res) => {
-    console.log('Received login request:', req.body);
+    console.log('Received login request:', req.body); // Log request for debugging
     try {
       const { email, password } = req.body;
 
@@ -160,8 +159,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== JOB ROUTES ====================
 
-  // GET /api/jobs 
-  app.get('/api/jobs', authMiddleware, async (req: AuthRequest, res) => {
+  // In server/routes.ts - Update the GET /api/jobs endpoint
+
+app.get('/api/jobs', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { category, status, sort } = req.query;
     const params: any = {};
@@ -173,53 +173,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       params.status = status as string;
     }
 
-    // PROPER FILTERING BASED ON USER ROLE
+    // IMPORTANT: Filter jobs based on user role
     if (req.user!.role === 'requester') {
       // Requesters only see their own jobs
       params.requesterId = req.user!.id;
     } else if (req.user!.role === 'provider') {
-      // Providers see:
-      // 1. Open jobs they can accept (no providerId)
-      // 2. Jobs assigned to them (providerId = their id)
-      // We'll handle this by getting both and combining
-      const assignedJobs = await storage.getJobs({ 
-        ...params, 
-        providerId: req.user!.id 
-      });
-      
-      const openJobs = await storage.getJobs({ 
-        ...params, 
-        status: 'open' 
-      });
-
-      // Combine and remove duplicates
-      const allJobs = [...assignedJobs, ...openJobs];
-      const uniqueJobs = allJobs.filter((job, index, self) => 
-        index === self.findIndex(j => j.id === job.id)
-      );
-
-      // Sort based on query parameter
-      let sortedJobs = uniqueJobs;
-      if (sort === 'urgent') {
-        sortedJobs = uniqueJobs.sort((a, b) => {
-          if (a.urgency === 'emergency' && b.urgency !== 'emergency') return -1;
-          if (a.urgency !== 'emergency' && b.urgency === 'emergency') return 1;
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
-      } else if (sort === 'recent') {
-        sortedJobs = uniqueJobs.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-      } else if (sort === 'distance') {
-        sortedJobs = uniqueJobs.sort(() => Math.random() - 0.5);
-      }
-
-      return res.json(sortedJobs);
+      // Providers see all open jobs and jobs assigned to them
+      // This is handled in the storage layer below
+      params.providerId = req.user!.id;
     }
-    // Admins see all jobs (no additional filtering)
+    // Admins see all jobs (no filter added)
 
-    // For requesters and admins, get jobs with the params
     let jobs = await storage.getJobs(params);
+
+    // If provider, also include open jobs they can accept
+    if (req.user!.role === 'provider') {
+      const openJobs = await storage.getJobs({ status: 'open' });
+      // Merge and deduplicate
+      const jobMap = new Map();
+      [...jobs, ...openJobs].forEach(job => {
+        if (!jobMap.has(job.id)) {
+          jobMap.set(job.id, job);
+        }
+      });
+      jobs = Array.from(jobMap.values());
+    }
 
     // Sort based on query parameter
     if (sort === 'urgent') {
@@ -243,7 +221,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 });
 
-  // POST /api/jobs - ONLY THIS ENDPOINT IS MODIFIED FOR CUSTOM CATEGORY
+// Also update GET /api/jobs/:id to ensure user can only access their own jobs
+app.get('/api/jobs/:id', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const job = await storage.getJob(req.params.id);
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+
+    // Check permissions based on role
+    if (req.user!.role === 'requester' && job.requesterId !== req.user!.id) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    if (req.user!.role === 'provider' && 
+        job.providerId !== req.user!.id && 
+        job.status !== 'open') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    res.json(job);
+  } catch (error: any) {
+    console.error('Get job error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+  
   app.post('/api/jobs', authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'requester') {
@@ -251,32 +256,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const validatedData = insertJobSchema.parse(req.body);
-      
-      // Check if we need to create a custom category
-      let categoryId = validatedData.categoryId;
-      let jobDescription = validatedData.description;
-      
-      // If categoryId is -1 (our indicator for custom category), create a new category
-      if (categoryId === -1) {
-        // Extract custom category from the request body
-        const customCategoryName = req.body.customCategory || 'Custom Service';
-        
-        // Create new category
-        const newCategory = await storage.createCategory({
-          name: customCategoryName,
-          description: `Custom service category: ${customCategoryName}`,
-        });
-        
-        categoryId = newCategory.id;
-        
-        // Add category info to description for context
-        jobDescription = `[Service Type: ${customCategoryName}] ${validatedData.description}`;
-      }
-
       const job = await storage.createJob({
         ...validatedData,
-        categoryId: categoryId,
-        description: jobDescription,
         requesterId: req.user!.id,
       });
 
@@ -290,21 +271,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error('Create job error:', error);
       res.status(400).json({ message: error.message });
-    }
-  });
-
-  // GET /api/jobs/:id - ORIGINAL VERSION
-  app.get('/api/jobs/:id', authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const job = await storage.getJob(req.params.id);
-      if (!job) {
-        return res.status(404).json({ message: 'Job not found' });
-      }
-
-      res.json(job);
-    } catch (error: any) {
-      console.error('Get job error:', error);
-      res.status(500).json({ message: error.message });
     }
   });
 
