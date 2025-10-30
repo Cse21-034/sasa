@@ -160,43 +160,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== JOB ROUTES ====================
 
-  // GET /api/jobs - RESTORED TO ORIGINAL WORKING VERSION
+  // GET /api/jobs 
   app.get('/api/jobs', authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const { category, status, sort } = req.query;
-      const params: any = {};
-      
-      if (category && category !== 'all') {
-        params.categoryId = category as string;
-      }
-      if (status) {
-        params.status = status as string;
-      }
+  try {
+    const { category, status, sort } = req.query;
+    const params: any = {};
+    
+    if (category && category !== 'all') {
+      params.categoryId = category as string;
+    }
+    if (status) {
+      params.status = status as string;
+    }
 
-      // ORIGINAL FILTERING LOGIC - DON'T CHANGE THIS
-      let jobs = await storage.getJobs(params);
+    // PROPER FILTERING BASED ON USER ROLE
+    if (req.user!.role === 'requester') {
+      // Requesters only see their own jobs
+      params.requesterId = req.user!.id;
+    } else if (req.user!.role === 'provider') {
+      // Providers see:
+      // 1. Open jobs they can accept (no providerId)
+      // 2. Jobs assigned to them (providerId = their id)
+      // We'll handle this by getting both and combining
+      const assignedJobs = await storage.getJobs({ 
+        ...params, 
+        providerId: req.user!.id 
+      });
+      
+      const openJobs = await storage.getJobs({ 
+        ...params, 
+        status: 'open' 
+      });
+
+      // Combine and remove duplicates
+      const allJobs = [...assignedJobs, ...openJobs];
+      const uniqueJobs = allJobs.filter((job, index, self) => 
+        index === self.findIndex(j => j.id === job.id)
+      );
 
       // Sort based on query parameter
+      let sortedJobs = uniqueJobs;
       if (sort === 'urgent') {
-        jobs = jobs.sort((a, b) => {
+        sortedJobs = uniqueJobs.sort((a, b) => {
           if (a.urgency === 'emergency' && b.urgency !== 'emergency') return -1;
           if (a.urgency !== 'emergency' && b.urgency === 'emergency') return 1;
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
       } else if (sort === 'recent') {
-        jobs = jobs.sort((a, b) => 
+        sortedJobs = uniqueJobs.sort((a, b) => 
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
       } else if (sort === 'distance') {
-        jobs = jobs.sort(() => Math.random() - 0.5);
+        sortedJobs = uniqueJobs.sort(() => Math.random() - 0.5);
       }
 
-      res.json(jobs);
-    } catch (error: any) {
-      console.error('Get jobs error:', error);
-      res.status(500).json({ message: error.message });
+      return res.json(sortedJobs);
     }
-  });
+    // Admins see all jobs (no additional filtering)
+
+    // For requesters and admins, get jobs with the params
+    let jobs = await storage.getJobs(params);
+
+    // Sort based on query parameter
+    if (sort === 'urgent') {
+      jobs = jobs.sort((a, b) => {
+        if (a.urgency === 'emergency' && b.urgency !== 'emergency') return -1;
+        if (a.urgency !== 'emergency' && b.urgency === 'emergency') return 1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    } else if (sort === 'recent') {
+      jobs = jobs.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } else if (sort === 'distance') {
+      jobs = jobs.sort(() => Math.random() - 0.5);
+    }
+
+    res.json(jobs);
+  } catch (error: any) {
+    console.error('Get jobs error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
 
   // POST /api/jobs - ONLY THIS ENDPOINT IS MODIFIED FOR CUSTOM CATEGORY
   app.post('/api/jobs', authMiddleware, async (req: AuthRequest, res) => {
