@@ -14,30 +14,22 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { insertJobSchema, type Category } from '@shared/schema';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { z } from 'zod';
-
-// Extend the schema to include custom category
-const extendedJobSchema = insertJobSchema.extend({
-  customCategory: z.string().optional(),
-});
 
 export default function PostJob() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   const { data: categories } = useQuery<Category[]>({
-    queryKey: ['/api/categories'], // FIXED: Added leading slash
+    queryKey: ['/api/categories'],
   });
 
   const form = useForm({
-    resolver: zodResolver(extendedJobSchema),
+    resolver: zodResolver(insertJobSchema),
     defaultValues: {
       title: '',
       description: '',
       categoryId: undefined as unknown as number,
-      customCategory: '',
       latitude: '',
       longitude: '',
       address: '',
@@ -49,38 +41,18 @@ export default function PostJob() {
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
-      console.log('Submitting job data:', data); // Debug log
-      
-      // Prepare the job data
-      const jobData = { 
-        title: data.title,
-        description: data.description,
-        categoryId: data.categoryId,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        address: data.address,
-        urgency: data.urgency,
-        preferredTime: data.preferredTime,
-        photos: data.photos,
-        customCategory: data.customCategory, // Include customCategory in the request
-      };
-
-      console.log('Sending to API:', jobData); // Debug log
-
-      const res = await apiRequest('POST', '/api/jobs', jobData);
+      const res = await apiRequest('POST', '/api/jobs', data);
       return res.json();
     },
-    onSuccess: (data) => {
-      console.log('Job posted successfully:', data);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
       toast({
         title: 'Job posted successfully!',
         description: 'Service providers near you will be notified.',
       });
-      setLocation('/jobs');
+      setLocation('/my-jobs');
     },
     onError: (error: Error) => {
-      console.error('Job posting failed:', error);
       toast({
         title: 'Failed to post job',
         description: error.message,
@@ -118,52 +90,9 @@ export default function PostJob() {
     }
   };
 
-  const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value);
-    
-    if (value === 'other') {
-      form.setValue('categoryId', -1); // Use -1 to indicate custom category
-    } else {
-      form.setValue('categoryId', parseInt(value));
-      form.setValue('customCategory', '');
-    }
-  };
-
   const onSubmit = (data: any) => {
-    console.log('Form submitted with data:', data); // Debug log
-    
-    // Validate required fields
-    if (!data.title || !data.description) {
-      toast({
-        title: 'Missing information',
-        description: 'Please fill in all required fields.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (data.categoryId === -1 && !data.customCategory) {
-      toast({
-        title: 'Custom category required',
-        description: 'Please specify the custom category.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!data.latitude || !data.longitude) {
-      toast({
-        title: 'Location required',
-        description: 'Please provide location information.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     mutation.mutate(data);
   };
-
-  const showCustomCategory = selectedCategory === 'other';
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
@@ -182,7 +111,7 @@ export default function PostJob() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Job Title *</FormLabel>
+                    <FormLabel>Job Title</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="e.g., Fix leaking kitchen sink"
@@ -203,7 +132,7 @@ export default function PostJob() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description *</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Provide detailed information about the work needed..."
@@ -217,56 +146,36 @@ export default function PostJob() {
                 )}
               />
 
-              <div className="space-y-4">
-                <FormItem>
-                  <FormLabel>Category *</FormLabel>
-                  <Select
-                    onValueChange={handleCategoryChange}
-                    value={selectedCategory}
-                  >
-                    <FormControl>
-                      <SelectTrigger data-testid="select-job-category">
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories?.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id.toString()}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-
-                {showCustomCategory && (
-                  <FormField
-                    control={form.control}
-                    name="customCategory"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Specify Category *</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Enter your specific category (e.g., Furniture Assembly, Pet Sitting)"
-                            data-testid="input-custom-category"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Please specify the type of service you need
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <FormField
+                control={form.control}
+                name="categoryId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                      value={field.value?.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger data-testid="select-job-category">
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories?.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id.toString()}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
+              />
 
               <div className="space-y-4">
-                <FormLabel>Location *</FormLabel>
+                <FormLabel>Location</FormLabel>
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -292,29 +201,6 @@ export default function PostJob() {
                         />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                {/* Hidden fields for coordinates */}
-                <FormField
-                  control={form.control}
-                  name="latitude"
-                  render={({ field }) => (
-                    <FormItem className="hidden">
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="longitude"
-                  render={({ field }) => (
-                    <FormItem className="hidden">
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
                     </FormItem>
                   )}
                 />
