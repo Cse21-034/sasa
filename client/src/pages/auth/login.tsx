@@ -10,6 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
+// 👈 IMPORTANT: Import apiRequest from the same place Signup uses it
+import { apiRequest } from '@/lib/queryClient'; 
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -35,18 +37,19 @@ export default function Login() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      console.log('Sending login request:', data);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Login failed');
-      }
+      // 👇 THE FIX: Use apiRequest, which correctly prefixes with config.apiUrl
+      const response = await apiRequest('POST', '/api/auth/login', data); 
+
+      // 🛑 The manual error check is now unnecessary as apiRequest handles it
+      // if (!response.ok) {
+      //   // ... logic is now inside apiRequest
+      // }
 
       const result = await response.json();
+      console.log('Login success response:', result);
+
       localStorage.setItem('token', result.token);
       localStorage.setItem('user', JSON.stringify(result.user));
       setUser(result.user);
@@ -56,11 +59,21 @@ export default function Login() {
         description: 'You have successfully logged in.',
       });
 
+      // Navigate based on role
       setLocation(result.user.role === 'provider' ? '/dashboard' : '/jobs');
     } catch (error: any) {
+      console.error('Login failed:', error);
+      
+      // Improved error message extraction, as apiRequest formats the error
+      let message = error.message || 'An unexpected error occurred';
+      if (message.startsWith('400:') || message.startsWith('401:')) {
+        // Strip the status code prefix added by throwIfResNotOk in queryClient.ts
+        message = message.substring(message.indexOf(':') + 1).trim();
+      }
+
       toast({
         title: 'Login failed',
-        description: error.message,
+        description: message,
         variant: 'destructive',
       });
     } finally {
