@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { Menu, Bell, User, Briefcase, MessageSquare, LayoutDashboard } from 'lucide-react';
+import { Menu, Bell, User, Briefcase, MessageSquare, LayoutDashboard, FileText, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -33,9 +33,11 @@ export function Header() {
             <nav className="hidden md:flex items-center gap-1">
               <Link href="/jobs">
                 <Button variant="ghost" data-testid="link-jobs">
-                  Browse Jobs
+                  <Briefcase className="h-4 w-4 mr-2" />
+                  {user?.role === 'requester' ? 'My Jobs' : 'Browse Jobs'}
                 </Button>
               </Link>
+              
               {user?.role === 'provider' && (
                 <Link href="/dashboard">
                   <Button variant="ghost" data-testid="link-dashboard">
@@ -44,6 +46,23 @@ export function Header() {
                   </Button>
                 </Link>
               )}
+
+              <Link href="/messages">
+                <Button variant="ghost" data-testid="link-messages-nav">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Messages
+                </Button>
+              </Link>
+
+              {user?.role === 'requester' && (
+                <Link href="/reports">
+                  <Button variant="ghost" data-testid="link-reports">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Reports
+                  </Button>
+                </Link>
+              )}
+
               {user?.role === 'admin' && (
                 <Link href="/admin">
                   <Button variant="ghost" data-testid="link-admin">
@@ -64,6 +83,7 @@ export function Header() {
               {user?.role === 'requester' && (
                 <Link href="/post-job">
                   <Button className="hidden sm:flex" data-testid="button-post-job">
+                    <Plus className="h-4 w-4 mr-2" />
                     Post a Job
                   </Button>
                 </Link>
