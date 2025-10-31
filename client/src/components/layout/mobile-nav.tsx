@@ -1,19 +1,28 @@
 import { Link, useLocation } from 'wouter';
-import { Home, Briefcase, MessageSquare, User } from 'lucide-react';
+import { Home, Briefcase, MessageSquare, User, LayoutDashboard, FileText } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 export function MobileNav() {
   const [location] = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   if (!isAuthenticated) return null;
 
-  const navItems = [
-    { href: '/jobs', icon: Home, label: 'Home', testId: 'nav-home' },
-    { href: '/my-jobs', icon: Briefcase, label: 'Jobs', testId: 'nav-jobs' },
+  const requesterItems = [
+    { href: '/jobs', icon: Briefcase, label: 'My Jobs', testId: 'nav-jobs' },
+    { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
+    { href: '/reports', icon: FileText, label: 'Reports', testId: 'nav-reports' },
+    { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
+  ];
+
+  const providerItems = [
+    { href: '/jobs', icon: Home, label: 'Browse', testId: 'nav-home' },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', testId: 'nav-dashboard' },
     { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
+
+  const navItems = user?.role === 'provider' ? providerItems : requesterItems;
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
