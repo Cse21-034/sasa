@@ -19,6 +19,7 @@ import ProviderDashboard from "@/pages/provider/dashboard";
 import Messages from "@/pages/messages/index";
 import Chat from "@/pages/messages/chat";
 import Profile from "@/pages/profile";
+import Reports from "@/pages/reports";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component, ...rest }: any) {
@@ -64,6 +65,9 @@ function Router() {
           </Route>
           <Route path="/profile">
             {() => <ProtectedRoute component={Profile} />}
+          </Route>
+          <Route path="/reports">
+            {() => <ProtectedRoute component={Reports} />}
           </Route>
           <Route path="/my-jobs">
             {() => <ProtectedRoute component={BrowseJobs} />}
