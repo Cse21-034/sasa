@@ -15,19 +15,27 @@ import { apiRequest } from '@/lib/queryClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const signupSchema = z.object({
+// BASE SCHEMA WITHOUT .refine() - so we can extend it
+const baseSignupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   phone: z.string().optional(),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
   role: z.enum(['requester', 'provider', 'supplier']),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
 });
 
-const supplierSignupSchema = signupSchema.extend({
+// INDIVIDUAL SIGNUP SCHEMA with password matching validation
+const signupSchema = baseSignupSchema.refine(
+  (data) => data.password === data.confirmPassword,
+  {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  }
+);
+
+// SUPPLIER SIGNUP SCHEMA - extend the base, then add refine
+const supplierSignupSchema = baseSignupSchema.extend({
   companyName: z.string().min(2, 'Company name is required'),
   physicalAddress: z.string().min(5, 'Physical address is required'),
   contactPerson: z.string().min(2, 'Contact person name is required'),
@@ -35,7 +43,13 @@ const supplierSignupSchema = signupSchema.extend({
   companyEmail: z.string().email('Invalid company email'),
   companyPhone: z.string().min(5, 'Company phone is required'),
   industryType: z.string().min(2, 'Industry/Service type is required'),
-});
+}).refine(
+  (data) => data.password === data.confirmPassword,
+  {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  }
+);
 
 type SignupForm = z.infer<typeof signupSchema>;
 type SupplierSignupForm = z.infer<typeof supplierSignupSchema>;
@@ -47,7 +61,7 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const [accountType, setAccountType] = useState<'individual' | 'organization'>('individual');
 
-  const form = useForm<SignupForm>({
+  const form = useForm<SignupForm | SupplierSignupForm>({
     resolver: zodResolver(accountType === 'individual' ? signupSchema : supplierSignupSchema),
     defaultValues: {
       name: '',
