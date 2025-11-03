@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useRoute, useLocation } from 'wouter';
-import { MapPin, Calendar, AlertCircle, MessageSquare, Star, CheckCircle2, XCircle, AlertTriangle, ArrowLeft, Flag } from 'lucide-react';
+import { 
+  MapPin, Calendar, AlertCircle, MessageSquare, Star, CheckCircle2, 
+  ArrowLeft, Flag, DollarSign, Navigation, XCircle, ImageIcon 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -23,6 +26,17 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function JobDetail() {
   const [, params] = useRoute('/jobs/:id');
@@ -33,6 +47,8 @@ export default function JobDetail() {
   const [hoverRating, setHoverRating] = useState(0);
   const [reportReason, setReportReason] = useState('');
   const [feedbackText, setFeedbackText] = useState('');
+  const [providerCharge, setProviderCharge] = useState('');
+  const [amountPaid, setAmountPaid] = useState('');
 
   const jobId = params?.id;
 
@@ -75,6 +91,13 @@ export default function JobDetail() {
       });
     },
   });
+
+  const openInMaps = () => {
+    if (job?.latitude && job?.longitude) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${job.latitude},${job.longitude}`;
+      window.open(url, '_blank');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -123,7 +146,6 @@ export default function JobDetail() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      {/* Back Button */}
       <Button
         variant="ghost"
         onClick={() => setLocation('/jobs')}
@@ -154,6 +176,17 @@ export default function JobDetail() {
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
                     <span>{job.address || 'Location not specified'}</span>
+                    {isAssignedProvider && job.latitude && job.longitude && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={openInMaps}
+                        className="h-auto p-0 text-primary"
+                      >
+                        <Navigation className="h-3 w-3 mr-1" />
+                        Get Directions
+                      </Button>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
@@ -168,7 +201,6 @@ export default function JobDetail() {
                     onClick={() => acceptJobMutation.mutate()}
                     disabled={acceptJobMutation.isPending}
                     className="w-full md:w-auto"
-                    data-testid="button-accept-job"
                   >
                     Accept Job
                   </Button>
@@ -178,11 +210,37 @@ export default function JobDetail() {
                     onClick={() => setLocation(`/messages/${job.id}`)}
                     variant="outline"
                     className="w-full md:w-auto"
-                    data-testid="button-message"
                   >
                     <MessageSquare className="mr-2 h-4 w-4" />
                     Message {isRequester ? 'Provider' : 'Requester'}
                   </Button>
+                )}
+                {isAssignedProvider && job.status !== 'completed' && job.status !== 'cancelled' && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" className="w-full md:w-auto">
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Cancel Job
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel this job?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to cancel this job? This action cannot be undone and the requester will be notified.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>No, Keep Job</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => updateStatusMutation.mutate('cancelled')}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Yes, Cancel Job
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
               </div>
             </div>
@@ -200,6 +258,40 @@ export default function JobDetail() {
                   <p className="text-muted-foreground">
                     {new Date(job.preferredTime).toLocaleString()}
                   </p>
+                </div>
+              )}
+
+              {/* Budget Range Display */}
+              {(job as any).budgetMin && (job as any).budgetMax && (
+                <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-lg border">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Budget Range</p>
+                    <p className="text-lg font-bold">
+                      ${(job as any).budgetMin} - ${(job as any).budgetMax}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Job Photos */}
+              {(job as any).photos && (job as any).photos.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-3 text-lg flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5" />
+                    Job Photos
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {(job as any).photos.map((photo: string, index: number) => (
+                      <div key={index} className="relative group cursor-pointer overflow-hidden rounded-lg border-2">
+                        <img
+                          src={photo}
+                          alt={`Job photo ${index + 1}`}
+                          className="w-full h-40 object-cover transition-transform group-hover:scale-110"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -262,8 +354,70 @@ export default function JobDetail() {
           )}
         </div>
 
+        {/* Provider Charge Input */}
+        {isAssignedProvider && job.status !== 'cancelled' && (
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Set Your Charge
+              </CardTitle>
+              <CardDescription>Enter the amount you will charge for this service</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="provider-charge">Your Charge ($)</Label>
+                  <Input
+                    id="provider-charge"
+                    type="number"
+                    placeholder="150"
+                    className="h-12 mt-2"
+                    value={providerCharge}
+                    onChange={(e) => setProviderCharge(e.target.value)}
+                  />
+                </div>
+                <Button className="w-full md:w-auto">
+                  Save Charge
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Amount Paid Input (Requester) */}
+        {isRequester && job.status === 'completed' && (
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Confirm Payment
+              </CardTitle>
+              <CardDescription>Enter the amount you paid for this service</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="amount-paid">Amount Paid ($)</Label>
+                  <Input
+                    id="amount-paid"
+                    type="number"
+                    placeholder="150"
+                    className="h-12 mt-2"
+                    value={amountPaid}
+                    onChange={(e) => setAmountPaid(e.target.value)}
+                  />
+                </div>
+                <Button className="w-full md:w-auto">
+                  Confirm Payment
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Status Actions for Provider */}
-        {isAssignedProvider && (
+        {isAssignedProvider && job.status !== 'cancelled' && (
           <Card className="border-2">
             <CardHeader>
               <CardTitle className="text-lg">Update Job Status</CardTitle>
@@ -275,7 +429,6 @@ export default function JobDetail() {
                   <Button
                     onClick={() => updateStatusMutation.mutate('enroute')}
                     disabled={updateStatusMutation.isPending}
-                    data-testid="button-status-enroute"
                   >
                     En Route
                   </Button>
@@ -284,7 +437,6 @@ export default function JobDetail() {
                   <Button
                     onClick={() => updateStatusMutation.mutate('onsite')}
                     disabled={updateStatusMutation.isPending}
-                    data-testid="button-status-onsite"
                   >
                     On Site
                   </Button>
@@ -293,7 +445,6 @@ export default function JobDetail() {
                   <Button
                     onClick={() => updateStatusMutation.mutate('completed')}
                     disabled={updateStatusMutation.isPending}
-                    data-testid="button-status-complete"
                   >
                     <CheckCircle2 className="mr-2 h-4 w-4" />
                     Mark as Complete
@@ -304,7 +455,7 @@ export default function JobDetail() {
           </Card>
         )}
 
-        {/* Rating Section (for requester after completion) */}
+        {/* Rating Section */}
         {isRequester && job.status === 'completed' && job.provider && (
           <Card className="border-2">
             <CardHeader>
@@ -338,7 +489,7 @@ export default function JobDetail() {
                   )}
                 </div>
                 <Textarea
-                  placeholder="Share your experience with this service provider... (Optional)"
+                  placeholder="Share your experience... (Optional)"
                   className="min-h-24"
                 />
                 <Button className="w-full md:w-auto">
@@ -349,23 +500,22 @@ export default function JobDetail() {
           </Card>
         )}
 
-        {/* Feedback/Problems Section (for provider) */}
+        {/* Feedback Section (Provider) */}
         {isAssignedProvider && (
           <Card className="border-2">
             <CardHeader>
               <CardTitle className="text-lg">Problems Encountered</CardTitle>
-              <CardDescription>Report any issues or provide feedback about this job</CardDescription>
+              <CardDescription>Report any issues during this job</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <Textarea
-                  placeholder="Describe any problems or issues encountered during this job..."
+                  placeholder="Describe any problems..."
                   className="min-h-32"
                   value={feedbackText}
                   onChange={(e) => setFeedbackText(e.target.value)}
                 />
                 <Button variant="outline" className="w-full md:w-auto">
-                  <AlertTriangle className="mr-2 h-4 w-4" />
                   Submit Feedback
                 </Button>
               </div>
@@ -380,7 +530,7 @@ export default function JobDetail() {
               <Flag className="h-5 w-5" />
               Report an Issue
             </CardTitle>
-            <CardDescription>Report problems with this job listing or service</CardDescription>
+            <CardDescription>Report problems with this job</CardDescription>
           </CardHeader>
           <CardContent>
             <Dialog>
@@ -394,19 +544,16 @@ export default function JobDetail() {
                 <DialogHeader>
                   <DialogTitle>Report Job</DialogTitle>
                   <DialogDescription>
-                    Please describe the issue you're experiencing with this job
+                    Describe the issue you're experiencing
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div>
-                    <Label>Reason for report</Label>
-                    <Textarea
-                      placeholder="Describe the issue..."
-                      className="mt-2 min-h-32"
-                      value={reportReason}
-                      onChange={(e) => setReportReason(e.target.value)}
-                    />
-                  </div>
+                  <Textarea
+                    placeholder="Describe the issue..."
+                    className="min-h-32"
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                  />
                 </div>
                 <DialogFooter>
                   <Button variant="outline">Cancel</Button>
