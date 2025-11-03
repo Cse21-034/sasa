@@ -47,6 +47,13 @@ export function Header() {
                 </Link>
               )}
 
+              <Link href="/suppliers">
+                <Button variant="ghost" data-testid="link-suppliers">
+                  <Briefcase className="h-4 w-4 mr-2" />
+                  Suppliers
+                </Button>
+              </Link>
+
               <Link href="/messages">
                 <Button variant="ghost" data-testid="link-messages-nav">
                   <MessageSquare className="h-4 w-4 mr-2" />
