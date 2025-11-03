@@ -117,36 +117,27 @@ export default function BrowseJobs() {
               </TabsList>
             </Tabs>
 
-            {/* Category and Sort Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="h-12" data-testid="select-category">
-                  <ListFilter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories?.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="h-12" data-testid="select-sort">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recent">Most Recent</SelectItem>
-                  <SelectItem value="urgent">Urgent First</SelectItem>
-                  {user?.role === 'provider' && (
-                    <SelectItem value="distance">Nearest to Me</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Additional Filters */}
+            {user?.role === 'provider' && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={sortBy === 'urgent' ? 'default' : 'outline'}
+                  onClick={() => setSortBy('urgent')}
+                  className="h-12"
+                >
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Urgent Jobs
+                </Button>
+                <Button
+                  variant={sortBy === 'distance' ? 'default' : 'outline'}
+                  onClick={() => setSortBy('distance')}
+                  className="h-12"
+                >
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Near Me
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
