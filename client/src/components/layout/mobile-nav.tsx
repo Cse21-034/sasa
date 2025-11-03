@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { Home, Briefcase, MessageSquare, User, LayoutDashboard, FileText } from 'lucide-react';
+import { Home, Briefcase, MessageSquare, User, LayoutDashboard, FileText, Building2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 export function MobileNav() {
@@ -10,15 +10,15 @@ export function MobileNav() {
 
   const requesterItems = [
     { href: '/jobs', icon: Briefcase, label: 'My Jobs', testId: 'nav-jobs' },
+    { href: '/suppliers', icon: Building2, label: 'Suppliers', testId: 'nav-suppliers' },
     { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
-    { href: '/reports', icon: FileText, label: 'Reports', testId: 'nav-reports' },
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
 
   const providerItems = [
     { href: '/jobs', icon: Home, label: 'Browse', testId: 'nav-home' },
+    { href: '/suppliers', icon: Building2, label: 'Suppliers', testId: 'nav-suppliers' },
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', testId: 'nav-dashboard' },
-    { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
 
