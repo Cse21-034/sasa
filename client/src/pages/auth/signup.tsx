@@ -1,4 +1,4 @@
- import { useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -58,9 +58,9 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const [accountType, setAccountType] = useState<'individual' | 'organization'>('individual');
 
-  // Use the appropriate schema based on account type
-  const form = useForm<IndividualSignupForm | SupplierSignupForm>({
-    resolver: zodResolver(accountType === 'individual' ? individualSignupSchema : supplierSignupSchema),
+  // Individual form
+  const individualForm = useForm<IndividualSignupForm>({
+    resolver: zodResolver(individualSignupSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -68,28 +68,19 @@ export default function Signup() {
       password: '',
       confirmPassword: '',
       role: 'requester',
-      // Initialize all supplier fields
-      companyName: '',
-      physicalAddress: '',
-      contactPerson: '',
-      contactPosition: '',
-      companyEmail: '',
-      companyPhone: '',
-      industryType: '',
-    } as any,
+    },
   });
 
-  // Reset form when switching account types
-  const handleAccountTypeChange = (newType: 'individual' | 'organization') => {
-    setAccountType(newType);
-    // Reset to default values
-    form.reset({
+  // Supplier form
+  const supplierForm = useForm<SupplierSignupForm>({
+    resolver: zodResolver(supplierSignupSchema),
+    defaultValues: {
       name: '',
       email: '',
       phone: '',
       password: '',
       confirmPassword: '',
-      role: newType === 'organization' ? 'supplier' : 'requester',
+      role: 'supplier',
       companyName: '',
       physicalAddress: '',
       contactPerson: '',
@@ -97,7 +88,14 @@ export default function Signup() {
       companyEmail: '',
       companyPhone: '',
       industryType: '',
-    } as any);
+    },
+  });
+
+  // Use the appropriate form based on account type
+  const form = accountType === 'individual' ? individualForm : supplierForm;
+
+  const handleAccountTypeChange = (newType: 'individual' | 'organization') => {
+    setAccountType(newType);
   };
 
   const onSubmit = async (data: IndividualSignupForm | SupplierSignupForm) => {
@@ -105,7 +103,7 @@ export default function Signup() {
     try {
       const payload = {
         ...data,
-        role: accountType === 'organization' ? 'supplier' : data.role,
+        role: accountType === 'organization' ? 'supplier' : (data as IndividualSignupForm).role,
       };
 
       const response = await apiRequest('POST', '/api/auth/signup', payload);
@@ -261,7 +259,7 @@ export default function Signup() {
                         <FormItem>
                           <FormLabel>Company Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="ABC Suppliers Ltd" {...field} value={field.value || ''} />
+                            <Input placeholder="ABC Suppliers Ltd" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -274,7 +272,7 @@ export default function Signup() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Industry/Service Type</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value || ''}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select type" />
@@ -305,8 +303,6 @@ export default function Signup() {
                           <Input 
                             placeholder="123 Main St, City, State" 
                             {...field} 
-                            value={field.value || ''} 
-                            onChange={(e) => field.onChange(e.target.value)}
                           />
                         </FormControl>
                         <FormMessage />
@@ -322,7 +318,7 @@ export default function Signup() {
                         <FormItem>
                           <FormLabel>Contact Person</FormLabel>
                           <FormControl>
-                            <Input placeholder="John Doe" {...field} value={field.value || ''} />
+                            <Input placeholder="John Doe" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -336,7 +332,7 @@ export default function Signup() {
                         <FormItem>
                           <FormLabel>Position/Role</FormLabel>
                           <FormControl>
-                            <Input placeholder="Manager" {...field} value={field.value || ''} />
+                            <Input placeholder="Manager" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -352,7 +348,7 @@ export default function Signup() {
                         <FormItem>
                           <FormLabel>Company Email</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="info@company.com" {...field} value={field.value || ''} />
+                            <Input type="email" placeholder="info@company.com" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -366,7 +362,7 @@ export default function Signup() {
                         <FormItem>
                           <FormLabel>Company Phone</FormLabel>
                           <FormControl>
-                            <Input type="tel" placeholder="+1234567890" {...field} value={field.value || ''} />
+                            <Input type="tel" placeholder="+1234567890" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -381,7 +377,7 @@ export default function Signup() {
                       <FormItem>
                         <FormLabel>Your Full Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="John Doe" {...field} value={field.value || ''} />
+                          <Input placeholder="John Doe" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -395,7 +391,7 @@ export default function Signup() {
                       <FormItem>
                         <FormLabel>Your Email</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="you@example.com" {...field} value={field.value || ''} />
+                          <Input type="email" placeholder="you@example.com" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
