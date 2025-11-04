@@ -70,6 +70,7 @@ function Router() {
           <Route path="/reports">
             {() => <ProtectedRoute component={Reports} />}
           </Route>
+          <Route path="/suppliers" component={Suppliers} /> {/* 👈 ADDED ROUTE HERE */}
           <Route path="/my-jobs">
             {() => <ProtectedRoute component={BrowseJobs} />}
           </Route>
