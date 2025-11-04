@@ -72,53 +72,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== AUTH ROUTES ====================
   
-  app.post('/api/auth/signup', async (req, res) => {
-    try {
-      const rawValidatedData = createUserRequestSchema.parse(req.body);
-      const { password, confirmPassword, ...userData } = rawValidatedData;
-      
-      if (password !== confirmPassword) {
-        return res.status(400).json({ message: "Passwords do not match." });
-      }
+  // REPLACE your existing /api/auth/signup route with this:
 
-      const existingUser = await storage.getUserByEmail(userData.email);
-      if (existingUser) {
-        return res.status(400).json({ message: 'User already exists' });
-      }
-
-      const passwordHash = await bcrypt.hash(password, 10);
-      const user = await storage.createUser({
-        ...userData,
-        passwordHash,
-      });
-
-      if (user.role === 'provider') {
-        await storage.createProvider({
-          userId: user.id,
-          serviceCategories: [],
-          serviceAreaRadiusMeters: 10000,
-        });
-      }
-
-      const token = generateToken({
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      });
-
-      const { passwordHash: _, ...userWithoutPassword } = user;
-      res.json({ user: userWithoutPassword, token });
-    } catch (error: any) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ 
-          message: 'Validation failed', 
-          errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
-        });
-      }
-      console.error('Signup error:', error);
-      res.status(400).json({ message: error.message || 'Signup failed' });
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const rawValidatedData = createUserRequestSchema.parse(req.body);
+    const { password, confirmPassword, ...userData } = rawValidatedData;
+    
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: "Passwords do not match." });
     }
-  });
+
+    const existingUser = await storage.getUserByEmail(userData.email);
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    // Extract supplier-specific fields if role is supplier
+    const isSupplier = userData.role === 'supplier';
+    let supplierData: any = null;
+    
+    if (isSupplier) {
+      const {
+        companyName,
+        physicalAddress,
+        contactPerson,
+        contactPosition,
+        companyEmail,
+        companyPhone,
+        industryType,
+        ...baseUserData
+      } = userData as any;
+      
+      supplierData = {
+        companyName,
+        physicalAddress,
+        contactPerson,
+        contactPosition,
+        companyEmail,
+        companyPhone,
+        industryType,
+      };
+      
+      // Use baseUserData for user creation
+      Object.keys(userData).forEach(key => {
+        if (!(key in baseUserData)) {
+          delete (userData as any)[key];
+        }
+      });
+    }
+
+    // Create user account
+    const user = await storage.createUser({
+      ...userData,
+      passwordHash,
+    });
+
+    // Create role-specific profile
+    if (user.role === 'provider') {
+      await storage.createProvider({
+        userId: user.id,
+        serviceCategories: [],
+        serviceAreaRadiusMeters: 10000,
+      });
+    } else if (user.role === 'supplier' && supplierData) {
+      await storage.createSupplier({
+        userId: user.id,
+        ...supplierData,
+      });
+    }
+
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    const { passwordHash: _, ...userWithoutPassword } = user;
+    res.json({ user: userWithoutPassword, token });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+      });
+    }
+    console.error('Signup error:', error);
+    res.status(400).json({ message: error.message || 'Signup failed' });
+  }
+});
 
   app.post('/api/auth/login', async (req, res) => {
     console.log('Received login request:', req.body); // Log request for debugging
