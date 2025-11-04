@@ -1,4 +1,4 @@
-import type { Express } from "express";
+ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import bcrypt from "bcrypt";
@@ -12,6 +12,11 @@ import {
   insertRatingSchema,
   updateProfileSchema,
   updateJobStatusSchema,
+  // 👇 FIX: Added missing Zod schemas for validation
+  setProviderChargeSchema,
+  confirmPaymentSchema,
+  insertJobFeedbackSchema,
+  insertJobReportSchema,
 } from "@shared/schema";
 import { ZodError } from 'zod'; 
 
@@ -170,7 +175,7 @@ app.post('/api/auth/signup', async (req, res) => {
       const { email, password } = req.body;
 
       if (!email || !password) {
-        console.error('Login failed: Missing email or password', { email, password });
+        console.error('Login failed: Missing email or password', { email });
         return res.status(400).json({ message: 'Email and password are required' });
       }
 
@@ -384,13 +389,7 @@ app.get('/api/jobs/:id', authMiddleware, async (req: AuthRequest, res) => {
         return res.status(403).json({ message: 'Only providers can access stats' });
       }
 
-      const stats = {
-        totalEarnings: 5240,
-        completedJobs: 87,
-        averageRating: 4.8,
-        avgResponseTime: 12,
-      };
-
+      const stats = await storage.getProviderStats(req.user!.id);
       res.json(stats);
     } catch (error: any) {
       console.error('Get provider stats error:', error);
@@ -526,9 +525,7 @@ app.get('/api/jobs/:id', authMiddleware, async (req: AuthRequest, res) => {
     }
   });
 
-  // Add these new routes to your existing server/routes.ts file
-
-// ==================== SUPPLIER ROUTES (ADD THESE) ====================
+  // ==================== SUPPLIER ROUTES ====================
 
 app.get('/api/suppliers', async (req, res) => {
   try {
@@ -540,7 +537,7 @@ app.get('/api/suppliers', async (req, res) => {
   }
 });
 
-// ==================== JOB PAYMENT ROUTES (ADD THESE) ====================
+// ==================== JOB PAYMENT ROUTES ====================
 
 app.post('/api/jobs/:id/set-charge', authMiddleware, async (req: AuthRequest, res) => {
   try {
@@ -548,6 +545,7 @@ app.post('/api/jobs/:id/set-charge', authMiddleware, async (req: AuthRequest, re
       return res.status(403).json({ message: 'Only providers can set charges' });
     }
 
+    // FIX: setProviderChargeSchema is now imported
     const { providerCharge } = setProviderChargeSchema.parse(req.body);
     const job = await storage.setProviderCharge(req.params.id, providerCharge);
 
@@ -574,6 +572,7 @@ app.post('/api/jobs/:id/confirm-payment', authMiddleware, async (req: AuthReques
       return res.status(403).json({ message: 'Only requesters can confirm payment' });
     }
 
+    // FIX: confirmPaymentSchema is now imported
     const { amountPaid } = confirmPaymentSchema.parse(req.body);
     const job = await storage.confirmPayment(req.params.id, amountPaid);
 
@@ -594,7 +593,7 @@ app.post('/api/jobs/:id/confirm-payment', authMiddleware, async (req: AuthReques
   }
 });
 
-// ==================== JOB FEEDBACK ROUTES (ADD THESE) ====================
+// ==================== JOB FEEDBACK ROUTES ====================
 
 app.post('/api/jobs/:id/feedback', authMiddleware, async (req: AuthRequest, res) => {
   try {
@@ -602,6 +601,7 @@ app.post('/api/jobs/:id/feedback', authMiddleware, async (req: AuthRequest, res)
       return res.status(403).json({ message: 'Only providers can submit feedback' });
     }
 
+    // FIX: insertJobFeedbackSchema is now imported
     const validatedData = insertJobFeedbackSchema.parse(req.body);
     const feedback = await storage.createJobFeedback({
       ...validatedData,
@@ -635,6 +635,7 @@ app.get('/api/jobs/:id/feedback', authMiddleware, async (req: AuthRequest, res) 
 
 app.post('/api/jobs/:id/report', authMiddleware, async (req: AuthRequest, res) => {
   try {
+    // FIX: insertJobReportSchema is now imported
     const validatedData = insertJobReportSchema.parse(req.body);
     const report = await storage.createJobReport({
       ...validatedData,
