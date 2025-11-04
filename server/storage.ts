@@ -223,50 +223,53 @@ export class DatabaseStorage implements IStorage {
     })) as SupplierWithUser[];
   }
 
-  // ✅ Updated getJob method with provider rating info
-  async getJob(id: string): Promise<JobWithRelations | undefined> {
-    const [jobSelect] = await db
-      .select({
-        job: jobs,
-        requester: users,
-        category: categories,
-      })
-      .from(jobs)
-      .leftJoin(users, eq(jobs.requesterId, users.id))
-      .leftJoin(categories, eq(jobs.categoryId, categories.id))
-      .where(eq(jobs.id, id));
+// Update the getJob method in server/storage.ts to include provider rating info
+async getJob(id: string): Promise<JobWithRelations | undefined> {
+  const [jobSelect] = await db
+    .select({
+      job: jobs,
+      requester: users,
+      category: categories,
+    })
+    .from(jobs)
+    .leftJoin(users, eq(jobs.requesterId, users.id))
+    .leftJoin(categories, eq(jobs.categoryId, categories.id))
+    .where(eq(jobs.id, id));
 
-    if (!jobSelect) return undefined;
+  if (!jobSelect) return undefined;
 
-    let provider = null;
-    if (jobSelect.job.providerId) {
-      // Get provider user data
-      const [providerData] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, jobSelect.job.providerId));
-      
-      // Get provider profile with rating and completed jobs
-      const [providerProfile] = await db
-        .select()
-        .from(providers)
-        .where(eq(providers.userId, jobSelect.job.providerId));
-      
+  let provider = null;
+  if (jobSelect.job.providerId) {
+    // Get provider user data
+    const [providerData] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, jobSelect.job.providerId));
+    
+    // Get provider profile data with rating
+    const [providerProfile] = await db
+      .select()
+      .from(providers)
+      .where(eq(providers.userId, jobSelect.job.providerId));
+    
+    if (providerData) {
+      // Merge provider data with rating information
       provider = {
         ...providerData,
         ratingAverage: providerProfile?.ratingAverage || '0',
         completedJobsCount: providerProfile?.completedJobsCount || 0,
+        isVerified: providerProfile?.isVerified || false,
       };
     }
-
-    return {
-      ...jobSelect.job,
-      requester: jobSelect.requester,
-      provider,
-      category: jobSelect.category,
-    };
   }
 
+  return {
+    ...jobSelect.job,
+    requester: jobSelect.requester,
+    provider,
+    category: jobSelect.category,
+  };
+}
   async getJobs(params: {
     categoryId?: string;
     status?: string;
