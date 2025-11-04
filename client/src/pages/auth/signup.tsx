@@ -1,4 +1,4 @@
-import { useState } from 'react';
+ import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -64,15 +64,15 @@ export default function Signup() {
   const form = useForm<SignupForm | SupplierSignupForm>({
     resolver: zodResolver(accountType === 'individual' ? signupSchema : supplierSignupSchema),
     defaultValues: {
- name: '',
+      name: '',
       email: '',
       phone: '',
       password: '',
       confirmPassword: '',
       role: 'requester',
-      // 👇 ADDED: Initialize all supplier-specific fields to prevent input issues
-      companyName: '', 
-      physicalAddress: '', // This ensures the address field is controlled correctly
+      // 👇 FIX: Initialize all supplier-specific fields for proper form control
+      companyName: '',
+      physicalAddress: '', 
       contactPerson: '',
       contactPosition: '',
       companyEmail: '',
@@ -84,7 +84,13 @@ export default function Signup() {
   const onSubmit = async (data: SignupForm | SupplierSignupForm) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest('POST', '/api/auth/signup', data);
+      // NOTE: Ensure the role is correctly set for the submission payload
+      const payload = {
+        ...data,
+        role: accountType === 'organization' ? 'supplier' : (data as SignupForm).role,
+      }
+      
+      const response = await apiRequest('POST', '/api/auth/signup', payload);
       const result = await response.json();
       
       localStorage.setItem('token', result.token);
@@ -93,14 +99,14 @@ export default function Signup() {
 
       toast({
         title: 'Account created!',
-        description: `Welcome to JobTradeSasa${accountType === 'organization' ? ', ' + (data as SupplierSignupForm).companyName : ''}.`,
+        description: `Welcome to JobTradeSasa${result.user.role === 'supplier' ? ', ' + (data as SupplierSignupForm).companyName : ''}.`,
       });
 
       setLocation(result.user.role === 'provider' ? '/dashboard' : '/jobs');
     } catch (error: any) {
       let message = error.message || 'An unknown error occurred.';
-      if (error.message && error.message.startsWith('400:')) {
-        message = error.message.substring(4).trim();
+      if (message.startsWith('400:')) {
+        message = message.substring(message.indexOf(':') + 1).trim();
       }
 
       toast({
@@ -129,7 +135,15 @@ export default function Signup() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={accountType} onValueChange={(v) => setAccountType(v as any)} className="mb-6">
+          <Tabs value={accountType} onValueChange={(v) => {
+            setAccountType(v as any);
+            // Manually set the role field for the organization tab
+            if (v === 'organization') {
+              form.setValue('role', 'supplier' as any);
+            } else {
+               form.setValue('role', 'requester' as any);
+            }
+          }} className="mb-6">
             <TabsList className="grid w-full grid-cols-2 h-12">
               <TabsTrigger value="individual" className="text-sm">
                 <UserCircle className="h-4 w-4 mr-2" />
@@ -270,19 +284,20 @@ export default function Signup() {
                       )}
                     />
                   </div>
-                     <FormField
-                      control={form.control}
-                      name="physicalAddress"
-                      render={({ field }) => (
-                        <FormItem>
-                         <FormLabel>Physical Address</FormLabel>
-                          <FormControl>
-                            <Input placeholder="123 Main St, City, State" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+
+                  <FormField
+                    control={form.control}
+                    name="physicalAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Physical Address</FormLabel>
+                        <FormControl>
+                          <Input placeholder="123 Main St, City, State" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
