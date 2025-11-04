@@ -1,4 +1,4 @@
- import { useState } from 'react';
+  import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useRoute, useLocation } from 'wouter';
 import { 
@@ -39,7 +39,8 @@ import {
 
 interface JobWithRelations extends Job {
   requester: any;
-  provider: any;
+  // NOTE: Added ratingAverage and completedJobsCount to provider for display
+  provider: any & { ratingAverage?: string; completedJobsCount?: number };
   category: any;
 }
 
@@ -56,6 +57,10 @@ export default function JobDetail() {
   const [amountPaid, setAmountPaid] = useState('');
   const [ratingComment, setRatingComment] = useState('');
   const [showReportDialog, setShowReportDialog] = useState(false);
+  // 👇 ADDED: State for image preview dialog
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState('');
+
 
   const jobId = params?.id;
 
@@ -102,6 +107,7 @@ export default function JobDetail() {
   const setChargeMutation = useMutation({
     mutationFn: async (charge: string) => {
       if (!jobId) throw new Error('Job ID is missing');
+      // This route now works due to server/routes.ts fix
       const res = await apiRequest('POST', `/api/jobs/${jobId}/set-charge`, { providerCharge: charge });
       return res.json();
     },
@@ -125,6 +131,7 @@ export default function JobDetail() {
   const confirmPaymentMutation = useMutation({
     mutationFn: async (amount: string) => {
       if (!jobId) throw new Error('Job ID is missing');
+      // This route now works due to server/routes.ts fix
       const res = await apiRequest('POST', `/api/jobs/${jobId}/confirm-payment`, { amountPaid: amount });
       return res.json();
     },
@@ -177,6 +184,7 @@ export default function JobDetail() {
   const submitFeedbackMutation = useMutation({
     mutationFn: async () => {
       if (!jobId) throw new Error('Job ID is missing');
+      // This route now works due to server/routes.ts fix
       const res = await apiRequest('POST', `/api/jobs/${jobId}/feedback`, {
         jobId,
         feedbackText,
@@ -202,6 +210,7 @@ export default function JobDetail() {
   const submitReportMutation = useMutation({
     mutationFn: async () => {
       if (!jobId) throw new Error('Job ID is missing');
+      // This route now works due to server/routes.ts fix
       const res = await apiRequest('POST', `/api/jobs/${jobId}/report`, {
         jobId,
         reason: reportReason,
@@ -232,6 +241,31 @@ export default function JobDetail() {
     }
   };
 
+  // 👇 ADDED: Handler for image click
+  const handleImageClick = (photoUrl: string) => {
+    setSelectedPhotoUrl(photoUrl);
+    setShowImageDialog(true);
+  };
+
+  // Function to render star rating (copied from the bottom of the original file)
+  const renderStarRating = (rating: number) => {
+    return (
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`h-4 w-4 ${
+              star <= rating
+                ? 'fill-yellow-400 text-yellow-400'
+                : 'text-gray-300'
+            }`}
+          />
+        ))}
+        <span className="ml-1 text-sm font-medium">{rating.toFixed(1)}</span>
+      </div>
+    );
+  };
+  
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -275,25 +309,6 @@ export default function JobDetail() {
       cancelled: 'bg-destructive/10 text-destructive border-destructive/20',
     };
     return colors[status] || '';
-  };
-
-  // Function to render star rating
-  const renderStarRating = (rating: number) => {
-    return (
-      <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`h-4 w-4 ${
-              star <= rating
-                ? 'fill-yellow-400 text-yellow-400'
-                : 'text-gray-300'
-            }`}
-          />
-        ))}
-        <span className="ml-1 text-sm font-medium">{rating.toFixed(1)}</span>
-      </div>
-    );
   };
 
   return (
@@ -461,7 +476,11 @@ export default function JobDetail() {
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {(job as any).photos.map((photo: string, index: number) => (
-                      <div key={index} className="relative group cursor-pointer overflow-hidden rounded-lg border-2">
+                      <div 
+                        key={index} 
+                        className="relative group cursor-pointer overflow-hidden rounded-lg border-2"
+                        onClick={() => handleImageClick(photo)} // 👇 FIX: Added click handler
+                      >
                         <img
                           src={photo}
                           alt={`Job photo ${index + 1}`}
@@ -522,11 +541,11 @@ export default function JobDetail() {
                       )}
                     </div>
                     
-                    {/* Display provider rating */}
-                    {job.provider?.ratingAverage && (
+                    {/* Display provider rating (fixed to use provider object) */}
+                    {job.provider.ratingAverage && (
                       <div className="mb-2">
                         {renderStarRating(parseFloat(job.provider.ratingAverage))}
-                        {job.provider?.completedJobsCount && (
+                        {job.provider.completedJobsCount !== undefined && (
                           <span className="text-xs text-muted-foreground ml-2">
                             ({job.provider.completedJobsCount} jobs)
                           </span>
@@ -572,7 +591,7 @@ export default function JobDetail() {
                 <Button 
                   className="w-full md:w-auto"
                   disabled={!providerCharge || setChargeMutation.isPending}
-                  onClick={() => setChargeMutation.mutate(providerCharge)}
+                  onClick={() => setChargeMutation.mutate(providerCharge)} // Calls fixed API route
                 >
                   {setChargeMutation.isPending ? 'Saving...' : 'Save Charge'}
                 </Button>
@@ -608,7 +627,7 @@ export default function JobDetail() {
                 <Button 
                   className="w-full md:w-auto"
                   disabled={!amountPaid || confirmPaymentMutation.isPending}
-                  onClick={() => confirmPaymentMutation.mutate(amountPaid)}
+                  onClick={() => confirmPaymentMutation.mutate(amountPaid)} // Calls fixed API route
                 >
                   {confirmPaymentMutation.isPending ? 'Confirming...' : 'Confirm Payment'}
                 </Button>
@@ -726,7 +745,7 @@ export default function JobDetail() {
                   variant="outline" 
                   className="w-full md:w-auto"
                   disabled={!feedbackText || submitFeedbackMutation.isPending}
-                  onClick={() => submitFeedbackMutation.mutate()}
+                  onClick={() => submitFeedbackMutation.mutate()} // Calls fixed API route
                 >
                   {submitFeedbackMutation.isPending ? 'Submitting...' : 'Submit Feedback'}
                 </Button>
@@ -784,6 +803,18 @@ export default function JobDetail() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 👇 ADDED: Image Preview Dialog */}
+      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+        <DialogContent className="max-w-3xl sm:max-w-4xl p-0">
+          <img 
+            src={selectedPhotoUrl} 
+            alt="Job Photo Preview" 
+            // Use w-full and object-contain to scale the image appropriately within the dialog
+            className="w-full h-auto object-contain max-h-[80vh] rounded-lg" 
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
