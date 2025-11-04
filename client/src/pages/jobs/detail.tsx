@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useRoute, useLocation } from 'wouter';
-import { 
-  MapPin, Calendar, AlertCircle, MessageSquare, Star, CheckCircle2, 
-  ArrowLeft, Flag, DollarSign, Navigation, XCircle, ImageIcon 
+import {
+  MapPin, Calendar, AlertCircle, MessageSquare, Star, CheckCircle2,
+  ArrowLeft, Flag, DollarSign, Navigation, XCircle, ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -42,6 +42,7 @@ export default function JobDetail() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [reportReason, setReportReason] = useState('');
@@ -71,10 +72,7 @@ export default function JobDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job', jobId] });
-      toast({
-        title: 'Job accepted!',
-        description: 'You can now start working on this job.',
-      });
+      toast({ title: 'Job accepted!', description: 'You can now start working on this job.' });
     },
   });
 
@@ -86,10 +84,7 @@ export default function JobDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job', jobId] });
-      toast({
-        title: 'Status updated',
-        description: 'Job status has been updated successfully.',
-      });
+      toast({ title: 'Status updated', description: 'Job status has been updated successfully.' });
     },
   });
 
@@ -101,18 +96,11 @@ export default function JobDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job', jobId] });
-      toast({
-        title: 'Charge set successfully',
-        description: 'Your charge has been saved.',
-      });
+      toast({ title: 'Charge set successfully', description: 'Your charge has been saved.' });
       setProviderCharge('');
     },
     onError: (error: any) => {
-      toast({
-        title: 'Failed to set charge',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Failed to set charge', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -124,18 +112,11 @@ export default function JobDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job', jobId] });
-      toast({
-        title: 'Payment confirmed',
-        description: 'Payment has been recorded successfully.',
-      });
+      toast({ title: 'Payment confirmed', description: 'Payment has been recorded successfully.' });
       setAmountPaid('');
     },
     onError: (error: any) => {
-      toast({
-        title: 'Failed to confirm payment',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Failed to confirm payment', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -152,19 +133,12 @@ export default function JobDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job', jobId] });
-      toast({
-        title: 'Rating submitted',
-        description: 'Thank you for your feedback!',
-      });
+      toast({ title: 'Rating submitted', description: 'Thank you for your feedback!' });
       setRating(0);
       setRatingComment('');
     },
     onError: (error: any) => {
-      toast({
-        title: 'Failed to submit rating',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Failed to submit rating', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -178,18 +152,11 @@ export default function JobDetail() {
       return res.json();
     },
     onSuccess: () => {
-      toast({
-        title: 'Feedback submitted',
-        description: 'Your feedback has been recorded.',
-      });
+      toast({ title: 'Feedback submitted', description: 'Your feedback has been recorded.' });
       setFeedbackText('');
     },
     onError: (error: any) => {
-      toast({
-        title: 'Failed to submit feedback',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Failed to submit feedback', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -203,19 +170,12 @@ export default function JobDetail() {
       return res.json();
     },
     onSuccess: () => {
-      toast({
-        title: 'Report submitted',
-        description: 'Thank you for your report. We will review it shortly.',
-      });
+      toast({ title: 'Report submitted', description: 'Thank you for your report.' });
       setReportReason('');
       setShowReportDialog(false);
     },
     onError: (error: any) => {
-      toast({
-        title: 'Failed to submit report',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Failed to submit report', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -273,440 +233,50 @@ export default function JobDetail() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <Button
-        variant="ghost"
-        onClick={() => setLocation('/jobs')}
-        className="mb-4"
-      >
+      <Button variant="ghost" onClick={() => setLocation('/jobs')} className="mb-4">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Jobs
       </Button>
 
       <div className="space-y-6">
-        {/* Job Header Card */}
-        <Card className="border-2">
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <Badge variant={job.urgency === 'emergency' ? 'destructive' : 'secondary'} className="text-sm">
-                    {job.urgency === 'emergency' ? '🚨 Emergency' : 'Normal Priority'}
-                  </Badge>
-                  <Badge variant="outline" className={`text-sm ${getStatusColor(job.status)}`}>
-                    {job.status === 'completed' && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                    {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                  </Badge>
-                  <Badge variant="outline" className="text-sm">{job.category?.name}</Badge>
-                </div>
-                <CardTitle className="text-3xl mb-3">{job.title}</CardTitle>
-                <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>{job.address || 'Location not specified'}</span>
-                    {isAssignedProvider && job.latitude && job.longitude && (
-                      <Button
-                        variant="link"
-                        size="sm"
-                        onClick={openInMaps}
-                        className="h-auto p-0 text-primary"
-                      >
-                        <Navigation className="h-3 w-3 mr-1" />
-                        Get Directions
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>Posted {new Date(job.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex flex-col gap-2">
-                {isProvider && job.status === 'open' && !isAssignedProvider && (
-                  <Button
-                    onClick={() => acceptJobMutation.mutate()}
-                    disabled={acceptJobMutation.isPending}
-                    className="w-full md:w-auto"
-                  >
-                    Accept Job
-                  </Button>
-                )}
-                {(isAssignedProvider || isRequester) && job.provider && (
-                  <Button
-                    onClick={() => setLocation(`/messages/${job.id}`)}
-                    variant="outline"
-                    className="w-full md:w-auto"
-                  >
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    Message {isRequester ? 'Provider' : 'Requester'}
-                  </Button>
-                )}
-                {isAssignedProvider && job.status !== 'completed' && job.status !== 'cancelled' && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" className="w-full md:w-auto">
-                        <XCircle className="mr-2 h-4 w-4" />
-                        Cancel Job
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Cancel this job?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to cancel this job? This action cannot be undone and the requester will be notified.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>No, Keep Job</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => updateStatusMutation.mutate('cancelled')}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Yes, Cancel Job
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold mb-2 text-lg">Description</h3>
-                <p className="text-muted-foreground leading-relaxed">{job.description}</p>
-              </div>
 
-              {job.preferredTime && (
-                <div>
-                  <h3 className="font-semibold mb-2 text-lg">Preferred Time</h3>
-                  <p className="text-muted-foreground">
-                    {new Date(job.preferredTime).toLocaleString()}
-                  </p>
-                </div>
-              )}
-
-              {/* Budget Range Display */}
-              {(job as any).budgetMin && (job as any).budgetMax && (
-                <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-lg border">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">Budget Range</p>
-                    <p className="text-lg font-bold">
-                      ${(job as any).budgetMin} - ${(job as any).budgetMax}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Display provider charge if set */}
-              {(job as any).providerCharge && (
-                <div className="flex items-center gap-2 p-4 bg-primary/10 rounded-lg border border-primary/20">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">Provider Charge</p>
-                    <p className="text-lg font-bold text-primary">
-                      ${(job as any).providerCharge}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Display amount paid if confirmed */}
-              {(job as any).amountPaid && (
-                <div className="flex items-center gap-2 p-4 bg-success/10 rounded-lg border border-success/20">
-                  <CheckCircle2 className="h-5 w-5 text-success" />
-                  <div>
-                    <p className="text-sm font-medium">Amount Paid</p>
-                    <p className="text-lg font-bold text-success">
-                      ${(job as any).amountPaid}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Job Photos */}
-              {(job as any).photos && (job as any).photos.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-3 text-lg flex items-center gap-2">
-                    <ImageIcon className="h-5 w-5" />
-                    Job Photos
-                  </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {(job as any).photos.map((photo: string, index: number) => (
-                      <div key={index} className="relative group cursor-pointer overflow-hidden rounded-lg border-2">
-                        <img
-                          src={photo}
-                          alt={`Job photo ${index + 1}`}
-                          className="w-full h-40 object-cover transition-transform group-hover:scale-110"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Requester Info */}
+        {/* --- Provider Info Card --- */}
+        {job.provider && (
           <Card className="border-2">
             <CardHeader>
-              <CardTitle className="text-lg">Posted By</CardTitle>
+              <CardTitle className="text-lg">Assigned Provider</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage src={job.requester?.profilePhotoUrl} />
-                  <AvatarFallback className="text-lg">{job.requester?.name?.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={job.provider?.profilePhotoUrl} />
+                  <AvatarFallback className="text-lg">{job.provider?.name?.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="font-semibold text-lg">{job.requester?.name}</p>
-                  <p className="text-sm text-muted-foreground">{job.requester?.email}</p>
-                  {job.requester?.phone && (
-                    <p className="text-sm text-muted-foreground">{job.requester?.phone}</p>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-lg">{job.provider?.name}</p>
+                    {job.provider?.isVerified && (
+                      <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Verified
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">{job.provider?.email}</p>
+                  {job.provider?.phone && (
+                    <p className="text-sm text-muted-foreground">{job.provider?.phone}</p>
+                  )}
+                  {(job.provider as any)?.ratingAverage && (
+                    <div className="flex items-center gap-1 mt-2">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="font-semibold text-sm">
+                        {parseFloat((job.provider as any).ratingAverage).toFixed(1)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        ({(job.provider as any).completedJobsCount || 0} jobs)
+                      </span>
+                    </div>
                   )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Provider Info */}
-         // Add this section in the job-detail.tsx file where the Provider Info card is displayed
-// Replace the existing Provider Info card section with this:
-
-{/* Provider Info */}
-{job.provider && (
-  <Card className="border-2">
-    <CardHeader>
-      <CardTitle className="text-lg">Assigned Provider</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="flex items-center gap-4">
-        <Avatar className="h-16 w-16">
-          <AvatarImage src={job.provider?.profilePhotoUrl} />
-          <AvatarFallback className="text-lg">{job.provider?.name?.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-lg">{job.provider?.name}</p>
-            {job.provider?.isVerified && (
-              <Badge variant="secondary" className="text-xs">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Verified
-              </Badge>
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground">{job.provider?.email}</p>
-          {job.provider?.phone && (
-            <p className="text-sm text-muted-foreground">{job.provider?.phone}</p>
-          )}
-          {/* RATING DISPLAY - NEW */}
-          {(job.provider as any)?.ratingAverage && (
-            <div className="flex items-center gap-1 mt-2">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-semibold text-sm">
-                {parseFloat((job.provider as any).ratingAverage).toFixed(1)}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                ({(job.provider as any).completedJobsCount || 0} jobs)
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-)}
-
-        {/* Provider Charge Input */}
-        {isAssignedProvider && job.status !== 'cancelled' && !(job as any).providerCharge && (
-          <Card className="border-2">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Set Your Charge
-              </CardTitle>
-              <CardDescription>Enter the amount you will charge for this service</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="provider-charge">Your Charge ($)</Label>
-                  <Input
-                    id="provider-charge"
-                    type="number"
-                    step="0.01"
-                    placeholder="150.00"
-                    className="h-12 mt-2"
-                    value={providerCharge}
-                    onChange={(e) => setProviderCharge(e.target.value)}
-                  />
-                </div>
-                <Button 
-                  className="w-full md:w-auto"
-                  disabled={!providerCharge || setChargeMutation.isPending}
-                  onClick={() => setChargeMutation.mutate(providerCharge)}
-                >
-                  {setChargeMutation.isPending ? 'Saving...' : 'Save Charge'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Amount Paid Input (Requester) */}
-        {isRequester && job.status === 'completed' && (job as any).providerCharge && !(job as any).amountPaid && (
-          <Card className="border-2">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Confirm Payment
-              </CardTitle>
-              <CardDescription>Enter the amount you paid for this service</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="amount-paid">Amount Paid ($)</Label>
-                  <Input
-                    id="amount-paid"
-                    type="number"
-                    step="0.01"
-                    placeholder={(job as any).providerCharge || "150.00"}
-                    className="h-12 mt-2"
-                    value={amountPaid}
-                    onChange={(e) => setAmountPaid(e.target.value)}
-                  />
-                </div>
-                <Button 
-                  className="w-full md:w-auto"
-                  disabled={!amountPaid || confirmPaymentMutation.isPending}
-                  onClick={() => confirmPaymentMutation.mutate(amountPaid)}
-                >
-                  {confirmPaymentMutation.isPending ? 'Confirming...' : 'Confirm Payment'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Status Actions for Provider */}
-        {isAssignedProvider && job.status !== 'cancelled' && (
-          <Card className="border-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Update Job Status</CardTitle>
-              <CardDescription>Update the current status of this job</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {job.status === 'accepted' && (
-                  <Button
-                    onClick={() => updateStatusMutation.mutate('enroute')}
-                    disabled={updateStatusMutation.isPending}
-                  >
-                    En Route
-                  </Button>
-                )}
-                {job.status === 'enroute' && (
-                  <Button
-                    onClick={() => updateStatusMutation.mutate('onsite')}
-                    disabled={updateStatusMutation.isPending}
-                  >
-                    On Site
-                  </Button>
-                )}
-                {job.status === 'onsite' && (
-                  <Button
-                    onClick={() => updateStatusMutation.mutate('completed')}
-                    disabled={updateStatusMutation.isPending}
-                  >
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Mark as Complete
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Rating Section */}
-        {isRequester && job.status === 'completed' && job.provider && (
-          <Card className="border-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Rate Service Provider</CardTitle>
-              <CardDescription>Share your experience with {job.provider.name}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      onClick={() => setRating(star)}
-                      onMouseEnter={() => setHoverRating(star)}
-                      onMouseLeave={() => setHoverRating(0)}
-                      className="transition-transform hover:scale-110"
-                    >
-                      <Star
-                        className={`h-8 w-8 ${
-                          star <= (hoverRating || rating)
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-muted-foreground'
-                        }`}
-                      />
-                    </button>
-                  ))}
-                  {rating > 0 && (
-                    <span className="ml-2 text-sm font-medium">
-                      {rating} {rating === 1 ? 'star' : 'stars'}
-                    </span>
-                  )}
-                </div>
-                <Textarea
-                  placeholder="Share your experience... (Optional)"
-                  className="min-h-24"
-                  value={ratingComment}
-                  onChange={(e) => setRatingComment(e.target.value)}
-                />
-                <Button 
-                  className="w-full md:w-auto"
-                  disabled={rating === 0 || submitRatingMutation.isPending}
-                  onClick={() => submitRatingMutation.mutate()}
-                >
-                  {submitRatingMutation.isPending ? 'Submitting...' : 'Submit Rating'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Feedback Section (Provider) */}
-        {isAssignedProvider && (
-          <Card className="border-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Problems Encountered</CardTitle>
-              <CardDescription>Report any issues during this job</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Textarea
-                  placeholder="Describe any problems..."
-                  className="min-h-32"
-                  value={feedbackText}
-                  onChange={(e) => setFeedbackText(e.target.value)}
-                />
-                <Button 
-                  variant="outline" 
-                  className="w-full md:w-auto"
-                  disabled={!feedbackText || submitFeedbackMutation.isPending}
-                  onClick={() => submitFeedbackMutation.mutate()}
-                >
-                  {submitFeedbackMutation.isPending ? 'Submitting...' : 'Submit Feedback'}
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -723,8 +293,8 @@ export default function JobDetail() {
           </CardHeader>
           <CardContent>
             <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 className="w-full md:w-auto"
                 onClick={() => setShowReportDialog(true)}
               >
@@ -748,7 +318,7 @@ export default function JobDetail() {
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setShowReportDialog(false)}>Cancel</Button>
-                  <Button 
+                  <Button
                     variant="destructive"
                     disabled={reportReason.length < 10 || submitReportMutation.isPending}
                     onClick={() => submitReportMutation.mutate()}
