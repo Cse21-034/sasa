@@ -1,60 +1,174 @@
+import { useQuery } from '@tanstack/react-query';
 import { FileText, Download, Calendar, TrendingUp, DollarSign, Briefcase } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-// Save this file as: client/src/pages/reports.tsx
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/lib/auth-context';
+import { apiRequest } from '@/lib/queryClient';
+import { Link } from 'wouter';
 
 export default function Reports() {
+  const { user } = useAuth();
+
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['reports', user?.role],
+    queryFn: async () => {
+      const endpoint = user?.role === 'provider' ? '/api/reports/provider' : '/api/reports/requester';
+      const response = await apiRequest('GET', endpoint);
+      return response.json();
+    },
+    enabled: !!user,
+  });
+
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/categories');
+      return response.json();
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="mb-8">
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {[1, 2, 3].map(i => (
+            <Card key={i} className="border-2">
+              <CardHeader>
+                <Skeleton className="h-4 w-32 mb-2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-20 mb-2" />
+                <Skeleton className="h-3 w-24" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <Card>
+          <CardContent className="p-12 text-center">
+            <p className="text-muted-foreground">No data available</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const getCategoryName = (categoryId: string) => {
+    const category = categories?.find((c: any) => c.id === parseInt(categoryId));
+    return category?.name || 'Unknown';
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Reports & Analytics</h1>
-        <p className="text-muted-foreground">View detailed reports about your service requests</p>
+        <p className="text-muted-foreground">
+          {user?.role === 'provider' 
+            ? 'View your performance and earnings'
+            : 'View detailed reports about your service requests'
+          }
+        </p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid md:grid-cols-3 gap-6 mb-8">
-        <Card className="border-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Jobs Posted</CardTitle>
-            <Briefcase className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">24</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-success">+3</span> from last month
-            </p>
-          </CardContent>
-        </Card>
+      {user?.role === 'requester' && (
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <Card className="border-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Jobs Posted</CardTitle>
+              <Briefcase className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalJobs}</div>
+              <p className="text-xs text-muted-foreground">
+                <span className="text-success">{stats.completedJobs}</span> completed
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card className="border-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed Jobs</CardTitle>
-            <TrendingUp className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">18</div>
-            <p className="text-xs text-muted-foreground">
-              75% completion rate
-            </p>
-          </CardContent>
-        </Card>
+          <Card className="border-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
+              <TrendingUp className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.completionRate.toFixed(1)}%</div>
+              <p className="text-xs text-muted-foreground">
+                {stats.completedJobs} of {stats.totalJobs} jobs
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card className="border-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-            <DollarSign className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$2,450</div>
-            <p className="text-xs text-muted-foreground">
-              Across all services
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          <Card className="border-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
+              <DollarSign className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">${stats.totalSpent.toFixed(2)}</div>
+              <p className="text-xs text-muted-foreground">
+                Across all services
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {user?.role === 'provider' && (
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <Card className="border-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
+              <DollarSign className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">${stats.totalEarnings}</div>
+              <p className="text-xs text-muted-foreground">
+                From completed jobs
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Jobs Completed</CardTitle>
+              <Briefcase className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.completedJobs}</div>
+              <p className="text-xs text-muted-foreground">
+                All time
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
+              <TrendingUp className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.averageRating}</div>
+              <p className="text-xs text-muted-foreground">
+                From clients
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Reports Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
@@ -65,45 +179,49 @@ export default function Reports() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          <Card className="border-2">
-            <CardHeader>
-              <CardTitle>Activity Overview</CardTitle>
-              <CardDescription>Your job posting activity over time</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64 flex items-center justify-center border-2 border-dashed rounded-lg">
-                <p className="text-muted-foreground">Activity chart will be displayed here</p>
-              </div>
-            </CardContent>
-          </Card>
+          {user?.role === 'requester' && stats.jobsByCategory && (
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle>Jobs by Category</CardTitle>
+                <CardDescription>Distribution of your service requests</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Object.entries(stats.jobsByCategory).map(([catId, count]: [string, any]) => {
+                    const percentage = (count / stats.totalJobs) * 100;
+                    return (
+                      <div key={catId} className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium">{getCategoryName(catId)}</span>
+                          <span className="text-muted-foreground">{count} jobs</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div
+                            className="bg-primary h-2 rounded-full transition-all"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="border-2">
             <CardHeader>
-              <CardTitle>Jobs by Category</CardTitle>
-              <CardDescription>Distribution of your service requests</CardDescription>
+              <CardTitle>Activity Chart</CardTitle>
+              <CardDescription>Your activity over time</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[
-                  { name: 'Plumbing', count: 8, color: 'bg-blue-500' },
-                  { name: 'Electrical', count: 6, color: 'bg-yellow-500' },
-                  { name: 'Carpentry', count: 5, color: 'bg-orange-500' },
-                  { name: 'Cleaning', count: 3, color: 'bg-green-500' },
-                  { name: 'Other', count: 2, color: 'bg-purple-500' },
-                ].map((category) => (
-                  <div key={category.name} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{category.name}</span>
-                      <span className="text-muted-foreground">{category.count} jobs</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className={`${category.color} h-2 rounded-full transition-all`}
-                        style={{ width: `${(category.count / 24) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+              <div className="h-64 flex items-center justify-center border-2 border-dashed rounded-lg">
+                <p className="text-muted-foreground">
+                  {user?.role === 'provider' 
+                    ? 'Earnings and job completion chart'
+                    : 'Job posting activity chart'
+                  }
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -112,52 +230,51 @@ export default function Reports() {
         <TabsContent value="detailed" className="space-y-6">
           <Card className="border-2">
             <CardHeader>
-              <CardTitle>Job History</CardTitle>
-              <CardDescription>Detailed breakdown of all your jobs</CardDescription>
+              <CardTitle>
+                {user?.role === 'provider' ? 'Recent Jobs' : 'Job History'}
+              </CardTitle>
+              <CardDescription>Detailed breakdown of your jobs</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[
-                  {
-                    title: 'Fix leaking kitchen sink',
-                    date: '2024-01-15',
-                    status: 'Completed',
-                    provider: 'John Plumber',
-                    cost: '$150',
-                  },
-                  {
-                    title: 'Install new ceiling fan',
-                    date: '2024-01-10',
-                    status: 'Completed',
-                    provider: 'Mike Electrician',
-                    cost: '$200',
-                  },
-                  {
-                    title: 'Repair wooden deck',
-                    date: '2024-01-05',
-                    status: 'In Progress',
-                    provider: 'Sarah Carpenter',
-                    cost: '$450',
-                  },
-                ].map((job, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="space-y-1">
-                      <p className="font-medium">{job.title}</p>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>{job.date}</span>
-                        <span>•</span>
-                        <span>{job.provider}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <Badge variant={job.status === 'Completed' ? 'default' : 'secondary'}>
-                        {job.status}
-                      </Badge>
-                      <span className="font-semibold">{job.cost}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {stats.recentJobs && stats.recentJobs.length > 0 ? (
+                <div className="space-y-4">
+                  {stats.recentJobs.map((job: any) => (
+                    <Link key={job.id} href={`/jobs/${job.id}`}>
+                      <a>
+                        <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                          <div className="space-y-1 flex-1">
+                            <p className="font-medium">{job.title}</p>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>{new Date(job.createdAt).toLocaleDateString()}</span>
+                              {job.category && (
+                                <>
+                                  <span>•</span>
+                                  <span>{job.category.name}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <Badge variant={job.status === 'completed' ? 'default' : 'secondary'}>
+                              {job.status}
+                            </Badge>
+                            {(job.amountPaid || job.providerCharge) && (
+                              <span className="font-semibold">
+                                ${job.amountPaid || job.providerCharge}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </a>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No jobs found</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
