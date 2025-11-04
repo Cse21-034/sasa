@@ -1,438 +1,581 @@
-import { 
-  users, 
-  providers,
-  jobs, 
-  messages, 
-  ratings,
-  categories,
-  type User, 
-  type InsertUser,
-  type Provider,
-  type InsertProvider,
-  type Job,
-  // We now use the Zod-derived InsertJob type for better type alignment with the route
-  type InsertJob, 
-  type Message,
-  type InsertMessage,
-  type Rating,
-  // We now use the Zod-derived InsertRating type
-  type InsertRating,
-  type Category,
-  type InsertCategory,
+import { 
+  users, 
+  providers,
+  suppliers,
+  jobs, 
+  messages, 
+  ratings,
+  categories,
+  jobFeedback,
+  jobReports,
+  type User, 
+  type InsertUser,
+  type Provider,
+  type InsertProvider,
+  type Supplier,
+  type InsertSupplier,
+  type Job,
+  type InsertJob, 
+  type Message,
+  type InsertMessage,
+  type Rating,
+  type InsertRating,
+  type JobFeedback,
+  type InsertJobFeedback,
+  type JobReport,
+  type InsertJobReport,
+  type Category,
+  type InsertCategory,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, desc, asc } from "drizzle-orm";
-// Drizzle's InferSelect comes in handy for complex return types
+import { eq, and, sql, desc, asc, gte, lte } from "drizzle-orm";
 import { InferSelectModel } from 'drizzle-orm'; 
 
-// Define a type for a Job with related data (Requester, Category, optional Provider)
 type JobWithRelations = Job & {
     requester: User;
     provider?: User | null;
     category: Category;
 };
 
-// Define a type for a Provider search result
 type ProviderSearchResult = InferSelectModel<typeof providers> & {
     user: User;
-    // You might also want to add 'distance' or other computed fields here if you fully implement PostGIS
 };
 
-// Define a type for a Message with related Sender data
+type SupplierWithUser = Supplier & {
+    user: User;
+};
+
 type MessageWithSender = Message & {
     sender: User;
 };
 
-// Define a type for a Rating with related FromUser data
 type RatingWithFromUser = Rating & {
     fromUser: User;
 };
 
 export interface IStorage {
-  // Users
-  getUser(id: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  // Use Partial<User> which is more accurate than Partial<User> for updates
-  updateUser(id: string, data: Partial<User>): Promise<User | undefined>;
+  // Users
+  getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, data: Partial<User>): Promise<User | undefined>;
 
-  // Providers
-  getProvider(userId: string): Promise<Provider | undefined>;
-  createProvider(provider: InsertProvider & { userId: string }): Promise<Provider>;
-  updateProvider(userId: string, data: Partial<Provider>): Promise<Provider | undefined>;
-  // Fix return type from 'any[]'
-  searchProviders(params: {
-    categoryId?: number;
-    latitude?: number;
-    longitude?: number;
-    radius?: number;
-  }): Promise<ProviderSearchResult[]>;
+  // Providers
+  getProvider(userId: string): Promise<Provider | undefined>;
+  createProvider(provider: InsertProvider & { userId: string }): Promise<Provider>;
+  updateProvider(userId: string, data: Partial<Provider>): Promise<Provider | undefined>;
+  searchProviders(params: {
+    categoryId?: number;
+    latitude?: number;
+    longitude?: number;
+    radius?: number;
+  }): Promise<ProviderSearchResult[]>;
 
-  // Jobs
-  // Fix return type from 'any'
-  getJob(id: string): Promise<JobWithRelations | undefined>;
-  // Fix return type from 'any[]'
-  getJobs(params: {
-    categoryId?: string;
-    status?: string;
-    requesterId?: string;
-    providerId?: string;
-  }): Promise<JobWithRelations[]>;
-  // InsertJob is correct as it's the Zod-derived type from schema.ts
-  createJob(job: InsertJob & { requesterId: string }): Promise<Job>;
-  // Partial<Job> for update data is a good approximation
-  updateJob(id: string, data: Partial<Job>): Promise<Job | undefined>;
-  acceptJob(jobId: string, providerId: string): Promise<Job | undefined>;
+  // Suppliers - NEW
+  getSupplier(userId: string): Promise<Supplier | undefined>;
+  createSupplier(supplier: InsertSupplier & { userId: string }): Promise<Supplier>;
+  updateSupplier(userId: string, data: Partial<Supplier>): Promise<Supplier | undefined>;
+  getSuppliers(): Promise<SupplierWithUser[]>;
 
-  // Messages
-  // Fix return type from 'any[]'
-  getMessages(jobId: string): Promise<MessageWithSender[]>;
-  createMessage(message: InsertMessage & { senderId: string }): Promise<Message>;
-  // Fix return type from 'any[]' (though this still needs better type-modeling for the complex object)
-  getConversations(userId: string): Promise<any[]>; 
+  // Jobs
+  getJob(id: string): Promise<JobWithRelations | undefined>;
+  getJobs(params: {
+    categoryId?: string;
+    status?: string;
+    requesterId?: string;
+    providerId?: string;
+  }): Promise<JobWithRelations[]>;
+  createJob(job: InsertJob & { requesterId: string }): Promise<Job>;
+  updateJob(id: string, data: Partial<Job>): Promise<Job | undefined>;
+  acceptJob(jobId: string, providerId: string): Promise<Job | undefined>;
+  setProviderCharge(jobId: string, charge: string): Promise<Job | undefined>;
+  confirmPayment(jobId: string, amount: string): Promise<Job | undefined>;
 
-  // Ratings
-  createRating(rating: InsertRating & { fromUserId: string }): Promise<Rating>;
-  // Fix return type from 'any[]'
-  getProviderRatings(providerId: string): Promise<RatingWithFromUser[]>;
+  // Messages
+  getMessages(jobId: string): Promise<MessageWithSender[]>;
+  createMessage(message: InsertMessage & { senderId: string }): Promise<Message>;
+  getConversations(userId: string): Promise<any[]>; 
 
-  // Categories
-  getCategories(): Promise<Category[]>;
-  createCategory(category: InsertCategory): Promise<Category>;
+  // Ratings
+  createRating(rating: InsertRating & { fromUserId: string }): Promise<Rating>;
+  getProviderRatings(providerId: string): Promise<RatingWithFromUser[]>;
+
+  // Job Feedback - NEW
+  createJobFeedback(feedback: InsertJobFeedback & { providerId: string }): Promise<JobFeedback>;
+  getJobFeedback(jobId: string): Promise<JobFeedback[]>;
+
+  // Job Reports - NEW
+  createJobReport(report: InsertJobReport & { reporterId: string }): Promise<JobReport>;
+  getJobReports(jobId: string): Promise<JobReport[]>;
+
+  // Reports/Analytics - NEW
+  getRequesterStats(requesterId: string): Promise<any>;
+  getProviderStats(providerId: string): Promise<any>;
+
+  // Categories
+  getCategories(): Promise<Category[]>;
+  createCategory(category: InsertCategory): Promise<Category>;
 }
 
 export class DatabaseStorage implements IStorage {
-  // ... (User methods remain unchanged, as they were fine)
+  // Users
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
 
-  async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
-  }
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user || undefined;
-  }
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return user;
-  }
+  async updateUser(id: string, data: Partial<User>): Promise<User | undefined> {
+    const [updated] = await db
+      .update(users)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updated || undefined;
+  }
 
-  async updateUser(id: string, data: Partial<User>): Promise<User | undefined> {
-    const [updated] = await db
-      .update(users)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(users.id, id))
-      .returning();
-    return updated || undefined;
-  }
+  // Providers
+  async getProvider(userId: string): Promise<Provider | undefined> {
+    const [provider] = await db
+      .select()
+      .from(providers)
+      .where(eq(providers.userId, userId));
+    return provider || undefined;
+  }
 
-  // Providers
-  // ... (Provider methods remain unchanged, as they were fine except for searchProviders)
+  async createProvider(provider: InsertProvider & { userId: string }): Promise<Provider> {
+    const [created] = await db
+      .insert(providers)
+      .values(provider)
+      .returning();
+    return created;
+  }
 
-  async getProvider(userId: string): Promise<Provider | undefined> {
-    const [provider] = await db
-      .select()
-      .from(providers)
-      .where(eq(providers.userId, userId));
-    return provider || undefined;
-  }
+  async updateProvider(userId: string, data: Partial<Provider>): Promise<Provider | undefined> {
+    const [updated] = await db
+      .update(providers)
+      .set(data)
+      .where(eq(providers.userId, userId))
+      .returning();
+    return updated || undefined;
+  }
+  
+  async searchProviders(params: {
+    categoryId?: number;
+    latitude?: number;
+    longitude?: number;
+    radius?: number;
+  }): Promise<ProviderSearchResult[]> {
+    let query = db
+      .select({
+        userId: providers.userId,
+        companyName: providers.companyName,
+        serviceCategories: providers.serviceCategories,
+        ratingAverage: providers.ratingAverage,
+        completedJobsCount: providers.completedJobsCount,
+        isOnline: providers.isOnline,
+        latitude: providers.latitude,
+        longitude: providers.longitude,
+        user: users,
+      })
+      .from(providers)
+      .leftJoin(users, eq(providers.userId, users.id))
+      .where(eq(providers.isOnline, true));
 
-  async createProvider(provider: InsertProvider & { userId: string }): Promise<Provider> {
-    const [created] = await db
-      .insert(providers)
-      .values(provider)
-      .returning();
-    return created;
-  }
+    const results = await query;
+    return results.map((r) => ({ ...r.user, provider: { ...r, user: undefined } })) as unknown as ProviderSearchResult[]; 
+  }
 
-  async updateProvider(userId: string, data: Partial<Provider>): Promise<Provider | undefined> {
-    const [updated] = await db
-      .update(providers)
-      .set(data)
-      .where(eq(providers.userId, userId))
-      .returning();
-    return updated || undefined;
-  }
-  
-  // FIXED: Improved return type for searchProviders
-  async searchProviders(params: {
-    categoryId?: number;
-    latitude?: number;
-    longitude?: number;
-    radius?: number;
-  }): Promise<ProviderSearchResult[]> {
-    let query = db
-      .select({
-        userId: providers.userId,
-        companyName: providers.companyName,
-        serviceCategories: providers.serviceCategories,
-        ratingAverage: providers.ratingAverage,
-        completedJobsCount: providers.completedJobsCount,
-        isOnline: providers.isOnline,
-        latitude: providers.latitude,
-        longitude: providers.longitude,
-        user: users,
-      })
-      .from(providers)
-      .leftJoin(users, eq(providers.userId, users.id))
-      .where(eq(providers.isOnline, true));
+  // Suppliers - NEW
+  async getSupplier(userId: string): Promise<Supplier | undefined> {
+    const [supplier] = await db
+      .select()
+      .from(suppliers)
+      .where(eq(suppliers.userId, userId));
+    return supplier || undefined;
+  }
 
-    const results = await query;
-    // The mapping logic here is fine, but the type casting is handled better by the explicit return type
-    return results.map((r) => ({ ...r.user, provider: { ...r, user: undefined } })) as unknown as ProviderSearchResult[]; 
-  }
+  async createSupplier(supplier: InsertSupplier & { userId: string }): Promise<Supplier> {
+    const [created] = await db
+      .insert(suppliers)
+      .values(supplier)
+      .returning();
+    return created;
+  }
 
-  // Jobs
-  // FIXED: Added explicit JobWithRelations return type
-  async getJob(id: string): Promise<JobWithRelations | undefined> {
-    const [jobSelect] = await db
-      .select({
-        job: jobs,
-        requester: users,
-        category: categories,
-      })
-      .from(jobs)
-      .leftJoin(users, eq(jobs.requesterId, users.id))
-      .leftJoin(categories, eq(jobs.categoryId, categories.id))
-      .where(eq(jobs.id, id));
+  async updateSupplier(userId: string, data: Partial<Supplier>): Promise<Supplier | undefined> {
+    const [updated] = await db
+      .update(suppliers)
+      .set(data)
+      .where(eq(suppliers.userId, userId))
+      .returning();
+    return updated || undefined;
+  }
 
-    if (!jobSelect) return undefined;
+  async getSuppliers(): Promise<SupplierWithUser[]> {
+    const results = await db
+      .select({
+        supplier: suppliers,
+        user: users,
+      })
+      .from(suppliers)
+      .leftJoin(users, eq(suppliers.userId, users.id));
 
-    // Get provider if assigned
-    let provider = null;
-    if (jobSelect.job.providerId) {
-      const [providerData] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, jobSelect.job.providerId));
-      provider = providerData;
-    }
+    return results.map(r => ({
+      ...r.supplier,
+      user: r.user,
+    })) as SupplierWithUser[];
+  }
 
-    return {
-      ...jobSelect.job,
-      requester: jobSelect.requester,
-      provider, // provider will be User | null
-      category: jobSelect.category,
-    };
-  }
+  // Jobs
+  async getJob(id: string): Promise<JobWithRelations | undefined> {
+    const [jobSelect] = await db
+      .select({
+        job: jobs,
+        requester: users,
+        category: categories,
+      })
+      .from(jobs)
+      .leftJoin(users, eq(jobs.requesterId, users.id))
+      .leftJoin(categories, eq(jobs.categoryId, categories.id))
+      .where(eq(jobs.id, id));
 
-  // FIXED: Added explicit JobWithRelations[] return type
-  async getJobs(params: {
-    categoryId?: string;
-    status?: string;
-    requesterId?: string;
-    providerId?: string;
-  }): Promise<JobWithRelations[]> {
-    const conditions = [];
+    if (!jobSelect) return undefined;
 
-    if (params.categoryId) {
-      // FIXED: parseInt is correct here as categoryId is INT in DB
-      conditions.push(eq(jobs.categoryId, parseInt(params.categoryId)));
-    }
-    if (params.status) {
-      // FIXED: Explicitly cast status to the Drizzle column type
-      conditions.push(eq(jobs.status, params.status as Job['status']));
-    }
-    if (params.requesterId) {
-      conditions.push(eq(jobs.requesterId, params.requesterId));
-    }
-    if (params.providerId) {
-      conditions.push(eq(jobs.providerId, params.providerId));
-    }
+    let provider = null;
+    if (jobSelect.job.providerId) {
+      const [providerData] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, jobSelect.job.providerId));
+      provider = providerData;
+    }
 
-    const results = await db
-      .select({
-        job: jobs,
-        requester: users,
-        category: categories,
-      })
-      .from(jobs)
-      .leftJoin(users, eq(jobs.requesterId, users.id))
-      .leftJoin(categories, eq(jobs.categoryId, categories.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(jobs.createdAt));
+    return {
+      ...jobSelect.job,
+      requester: jobSelect.requester,
+      provider,
+      category: jobSelect.category,
+    };
+  }
 
-    // Note: Provider data is missing in this query but fetched in getJob. 
-    // For a cleaner approach, you might want to fetch provider data here too
-    // or rely on a subsequent call/data structure if performance is a concern.
-    // Assuming the structure is fine for now, we map it back to the expected type.
-    return results.map((r) => ({
-      ...r.job,
-      requester: r.requester,
-      category: r.category,
-    })) as unknown as JobWithRelations[]; // Casting for type safety
-  }
+  async getJobs(params: {
+    categoryId?: string;
+    status?: string;
+    requesterId?: string;
+    providerId?: string;
+  }): Promise<JobWithRelations[]> {
+    const conditions = [];
 
-  // No change needed here. InsertJob (the Zod type) is used correctly.
-  async createJob(insertJob: InsertJob & { requesterId: string }): Promise<Job> {
-    // Drizzle will automatically handle type conversion for latitude/longitude (TEXT) and preferredTime (Date)
-    const [job] = await db
-      .insert(jobs)
-      .values(insertJob)
-      .returning();
-    return job;
-  }
+    if (params.categoryId) {
+      conditions.push(eq(jobs.categoryId, parseInt(params.categoryId)));
+    }
+    if (params.status) {
+      conditions.push(eq(jobs.status, params.status as Job['status']));
+    }
+    if (params.requesterId) {
+      conditions.push(eq(jobs.requesterId, params.requesterId));
+    }
+    if (params.providerId) {
+      conditions.push(eq(jobs.providerId, params.providerId));
+    }
 
-  async updateJob(id: string, data: Partial<Job>): Promise<Job | undefined> {
-    // No change needed. data will be the validated { status: '...' } from routes.ts
-    const [updated] = await db
-      .update(jobs)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(jobs.id, id))
-      .returning();
-    return updated || undefined;
-  }
+    const results = await db
+      .select({
+        job: jobs,
+        requester: users,
+        category: categories,
+      })
+      .from(jobs)
+      .leftJoin(users, eq(jobs.requesterId, users.id))
+      .leftJoin(categories, eq(jobs.categoryId, categories.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(jobs.createdAt));
 
-  async acceptJob(jobId: string, providerId: string): Promise<Job | undefined> {
-    const [updated] = await db
-      .update(jobs)
-      .set({ 
-        providerId, 
-        status: 'accepted',
-        updatedAt: new Date() 
-      })
-      .where(eq(jobs.id, jobId))
-      .returning();
-    return updated || undefined;
-  }
+    return results.map((r) => ({
+      ...r.job,
+      requester: r.requester,
+      category: r.category,
+    })) as unknown as JobWithRelations[];
+  }
 
-  // Messages
-  // FIXED: Added explicit MessageWithSender[] return type
-  async getMessages(jobId: string): Promise<MessageWithSender[]> {
-    const results = await db
-      .select({
-        message: messages,
-        sender: users,
-      })
-      .from(messages)
-      .leftJoin(users, eq(messages.senderId, users.id))
-      .where(eq(messages.jobId, jobId))
-      .orderBy(asc(messages.createdAt));
+  async createJob(insertJob: InsertJob & { requesterId: string }): Promise<Job> {
+    const [job] = await db
+      .insert(jobs)
+      .values(insertJob)
+      .returning();
+    return job;
+  }
 
-    return results.map((r) => ({
-      ...r.message,
-      sender: r.sender,
-    }));
-  }
-  
-  // No change needed here. InsertMessage (the Zod type) is used correctly.
-  async createMessage(insertMessage: InsertMessage & { senderId: string }): Promise<Message> {
-    const [message] = await db
-      .insert(messages)
-      .values(insertMessage)
-      .returning();
-    return message;
-  }
+  async updateJob(id: string, data: Partial<Job>): Promise<Job | undefined> {
+    const [updated] = await db
+      .update(jobs)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(jobs.id, id))
+      .returning();
+    return updated || undefined;
+  }
 
-  // Conversations method logic is complex and best left as is for now, but type is fixed to any[]
-  async getConversations(userId: string): Promise<any[]> {
-        // ... (existing implementation)
-        
-    // Get all jobs where user is requester or provider
-    const userJobs = await db
-      .select({
-        job: jobs,
-        requester: users,
-      })
-      .from(jobs)
-      .leftJoin(users, eq(jobs.requesterId, users.id))
-      .where(
-        sql`${jobs.requesterId} = ${userId} OR ${jobs.providerId} = ${userId}`
-      );
+  async acceptJob(jobId: string, providerId: string): Promise<Job | undefined> {
+    const [updated] = await db
+      .update(jobs)
+      .set({ 
+        providerId, 
+        status: 'accepted',
+        updatedAt: new Date() 
+      })
+      .where(eq(jobs.id, jobId))
+      .returning();
+    return updated || undefined;
+  }
 
-    // For each job, get the last message
-    const conversations = [];
-    for (const { job, requester } of userJobs) {
-      const [lastMessage] = await db
-        .select()
-        .from(messages)
-        .where(eq(messages.jobId, job.id))
-        .orderBy(desc(messages.createdAt))
-        .limit(1);
+  async setProviderCharge(jobId: string, charge: string): Promise<Job | undefined> {
+    const [updated] = await db
+      .update(jobs)
+      .set({ 
+        providerCharge: charge,
+        updatedAt: new Date() 
+      })
+      .where(eq(jobs.id, jobId))
+      .returning();
+    return updated || undefined;
+  }
 
-      if (lastMessage) {
-        const otherUserId = job.requesterId === userId ? job.providerId : job.requesterId;
-        const [otherUser] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, otherUserId!));
+  async confirmPayment(jobId: string, amount: string): Promise<Job | undefined> {
+    const [updated] = await db
+      .update(jobs)
+      .set({ 
+        amountPaid: amount,
+        updatedAt: new Date() 
+      })
+      .where(eq(jobs.id, jobId))
+      .returning();
+    return updated || undefined;
+  }
 
-        conversations.push({
-          jobId: job.id,
-          jobTitle: job.title,
-          otherUser,
-          lastMessage: lastMessage.messageText,
-          lastMessageTime: lastMessage.createdAt,
-          unreadCount: 0, 
-        });
-      }
-    }
+  // Messages
+  async getMessages(jobId: string): Promise<MessageWithSender[]> {
+    const results = await db
+      .select({
+        message: messages,
+        sender: users,
+      })
+      .from(messages)
+      .leftJoin(users, eq(messages.senderId, users.id))
+      .where(eq(messages.jobId, jobId))
+      .orderBy(asc(messages.createdAt));
 
-    return conversations;
-  }
+    return results.map((r) => ({
+      ...r.message,
+      sender: r.sender,
+    }));
+  }
+  
+  async createMessage(insertMessage: InsertMessage & { senderId: string }): Promise<Message> {
+    const [message] = await db
+      .insert(messages)
+      .values(insertMessage)
+      .returning();
+    return message;
+  }
 
-  // Ratings
-  // No change needed here. InsertRating (the Zod type) is used correctly.
-  async createRating(insertRating: InsertRating & { fromUserId: string }): Promise<Rating> {
-    const [rating] = await db
-      .insert(ratings)
-      .values(insertRating)
-      .returning();
+  async getConversations(userId: string): Promise<any[]> {
+    const userJobs = await db
+      .select({
+        job: jobs,
+        requester: users,
+      })
+      .from(jobs)
+      .leftJoin(users, eq(jobs.requesterId, users.id))
+      .where(
+        sql`${jobs.requesterId} = ${userId} OR ${jobs.providerId} = ${userId}`
+      );
 
-    // Update provider's average rating
-    const providerRatings = await db
-      .select()
-      .from(ratings)
-      .where(eq(ratings.toUserId, insertRating.toUserId));
+    const conversations = [];
+    for (const { job, requester } of userJobs) {
+      const [lastMessage] = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.jobId, job.id))
+        .orderBy(desc(messages.createdAt))
+        .limit(1);
 
-    const avgRating =
-      providerRatings.reduce((sum, r) => sum + r.rating, 0) / providerRatings.length;
-     // FIXED: ensure ratingAverage is converted to a string to match the Drizzle schema's 'numeric' type.
-    await db
-      .update(providers)
-      .set({ ratingAverage: avgRating.toFixed(2).toString() })
-      .where(eq(providers.userId, insertRating.toUserId));
+      if (lastMessage) {
+        const otherUserId = job.requesterId === userId ? job.providerId : job.requesterId;
+        const [otherUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, otherUserId!));
 
-    return rating;
-  }
+        conversations.push({
+          jobId: job.id,
+          jobTitle: job.title,
+          otherUser,
+          lastMessage: lastMessage.messageText,
+          lastMessageTime: lastMessage.createdAt,
+          unreadCount: 0, 
+        });
+      }
+    }
 
-  // FIXED: Added explicit RatingWithFromUser[] return type
-  async getProviderRatings(providerId: string): Promise<RatingWithFromUser[]> {
-    const results = await db
-      .select({
-        rating: ratings,
-        fromUser: users,
-      })
-      .from(ratings)
-      .leftJoin(users, eq(ratings.fromUserId, users.id))
-      .where(eq(ratings.toUserId, providerId))
-      .orderBy(desc(ratings.createdAt));
+    return conversations;
+  }
 
-    return results.map((r) => ({
-      ...r.rating,
-      fromUser: r.fromUser,
-    }));
-  }
+  // Ratings
+  async createRating(insertRating: InsertRating & { fromUserId: string }): Promise<Rating> {
+    const [rating] = await db
+      .insert(ratings)
+      .values(insertRating)
+      .returning();
 
-  // Categories
-  // ... (Category methods remain unchanged)
+    const providerRatings = await db
+      .select()
+      .from(ratings)
+      .where(eq(ratings.toUserId, insertRating.toUserId));
 
-  async getCategories(): Promise<Category[]> {
-    return await db.select().from(categories);
-  }
+    const avgRating =
+      providerRatings.reduce((sum, r) => sum + r.rating, 0) / providerRatings.length;
+    
+    await db
+      .update(providers)
+      .set({ ratingAverage: avgRating.toFixed(2).toString() })
+      .where(eq(providers.userId, insertRating.toUserId));
 
-  async createCategory(insertCategory: InsertCategory): Promise<Category> {
-    const [category] = await db
-      .insert(categories)
-      .values(insertCategory)
-      .returning();
-    return category;
-  }
+    return rating;
+  }
+
+  async getProviderRatings(providerId: string): Promise<RatingWithFromUser[]> {
+    const results = await db
+      .select({
+        rating: ratings,
+        fromUser: users,
+      })
+      .from(ratings)
+      .leftJoin(users, eq(ratings.fromUserId, users.id))
+      .where(eq(ratings.toUserId, providerId))
+      .orderBy(desc(ratings.createdAt));
+
+    return results.map((r) => ({
+      ...r.rating,
+      fromUser: r.fromUser,
+    }));
+  }
+
+  // Job Feedback - NEW
+  async createJobFeedback(feedback: InsertJobFeedback & { providerId: string }): Promise<JobFeedback> {
+    const [created] = await db
+      .insert(jobFeedback)
+      .values(feedback)
+      .returning();
+    return created;
+  }
+
+  async getJobFeedback(jobId: string): Promise<JobFeedback[]> {
+    return await db
+      .select()
+      .from(jobFeedback)
+      .where(eq(jobFeedback.jobId, jobId));
+  }
+
+  // Job Reports - NEW
+  async createJobReport(report: InsertJobReport & { reporterId: string }): Promise<JobReport> {
+    const [created] = await db
+      .insert(jobReports)
+      .values(report)
+      .returning();
+    return created;
+  }
+
+  async getJobReports(jobId: string): Promise<JobReport[]> {
+    return await db
+      .select()
+      .from(jobReports)
+      .where(eq(jobReports.jobId, jobId));
+  }
+
+  // Analytics - NEW
+  async getRequesterStats(requesterId: string): Promise<any> {
+    const userJobs = await db
+      .select()
+      .from(jobs)
+      .where(eq(jobs.requesterId, requesterId));
+
+    const totalJobs = userJobs.length;
+    const completedJobs = userJobs.filter(j => j.status === 'completed').length;
+    const totalSpent = userJobs
+      .filter(j => j.amountPaid)
+      .reduce((sum, j) => sum + parseFloat(j.amountPaid || '0'), 0);
+
+    // Group by category
+    const jobsByCategory = userJobs.reduce((acc, job) => {
+      const catId = job.categoryId.toString();
+      acc[catId] = (acc[catId] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      totalJobs,
+      completedJobs,
+      totalSpent,
+      completionRate: totalJobs > 0 ? (completedJobs / totalJobs) * 100 : 0,
+      jobsByCategory,
+      recentJobs: userJobs.slice(0, 10),
+    };
+  }
+
+  async getProviderStats(providerId: string): Promise<any> {
+    const providerJobs = await db
+      .select()
+      .from(jobs)
+      .where(eq(jobs.providerId, providerId));
+
+    const totalJobs = providerJobs.length;
+    const completedJobs = providerJobs.filter(j => j.status === 'completed').length;
+    const totalEarnings = providerJobs
+      .filter(j => j.providerCharge)
+      .reduce((sum, j) => sum + parseFloat(j.providerCharge || '0'), 0);
+
+    const providerRatings = await db
+      .select()
+      .from(ratings)
+      .where(eq(ratings.toUserId, providerId));
+
+    const avgRating = providerRatings.length > 0
+      ? providerRatings.reduce((sum, r) => sum + r.rating, 0) / providerRatings.length
+      : 0;
+
+    return {
+      totalEarnings,
+      completedJobs,
+      averageRating: avgRating.toFixed(1),
+      avgResponseTime: 12, // Mock for now
+    };
+  }
+
+  // Categories
+  async getCategories(): Promise<Category[]> {
+    return await db.select().from(categories);
+  }
+
+  async createCategory(insertCategory: InsertCategory): Promise<Category> {
+    const [category] = await db
+      .insert(categories)
+      .values(insertCategory)
+      .returning();
+    return category;
+  }
 }
 
 export const storage = new DatabaseStorage();
