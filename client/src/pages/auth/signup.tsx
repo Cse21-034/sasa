@@ -15,27 +15,27 @@ import { apiRequest } from '@/lib/queryClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-// BASE SCHEMA WITHOUT .refine() - so we can extend it
-const baseSignupSchema = z.object({
+// Individual signup schema
+const individualSignupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   phone: z.string().optional(),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
-  role: z.enum(['requester', 'provider', 'supplier']),
+  role: z.enum(['requester', 'provider']),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
 });
 
-// INDIVIDUAL SIGNUP SCHEMA with password matching validation
-const signupSchema = baseSignupSchema.refine(
-  (data) => data.password === data.confirmPassword,
-  {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  }
-);
-
-// SUPPLIER SIGNUP SCHEMA - extend the base, then add refine
-const supplierSignupSchema = baseSignupSchema.extend({
+// Supplier signup schema
+const supplierSignupSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().optional(),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string(),
+  role: z.literal('supplier'),
   companyName: z.string().min(2, 'Company name is required'),
   physicalAddress: z.string().min(5, 'Physical address is required'),
   contactPerson: z.string().min(2, 'Contact person name is required'),
@@ -43,20 +43,13 @@ const supplierSignupSchema = baseSignupSchema.extend({
   companyEmail: z.string().email('Invalid company email'),
   companyPhone: z.string().min(5, 'Company phone is required'),
   industryType: z.string().min(2, 'Industry/Service type is required'),
-}).refine(
-  (data) => data.password === data.confirmPassword,
-  {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  }
-);
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
+});
 
-type SignupForm = z.infer<typeof signupSchema>;
+type IndividualSignupForm = z.infer<typeof individualSignupSchema>;
 type SupplierSignupForm = z.infer<typeof supplierSignupSchema>;
-
-// FIX: Define the generic form fields as the superset type (SupplierSignupForm)
-// This ensures RHF recognizes and controls all fields from the start.
-type FormFields = SupplierSignupForm;
 
 export default function Signup() {
   const [, setLocation] = useLocation();
@@ -65,8 +58,9 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const [accountType, setAccountType] = useState<'individual' | 'organization'>('individual');
 
-  const form = useForm<FormFields>({
-    resolver: zodResolver(accountType === 'individual' ? signupSchema : supplierSignupSchema),
+  // Use the appropriate schema based on account type
+  const form = useForm<IndividualSignupForm | SupplierSignupForm>({
+    resolver: zodResolver(accountType === 'individual' ? individualSignupSchema : supplierSignupSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -74,27 +68,45 @@ export default function Signup() {
       password: '',
       confirmPassword: '',
       role: 'requester',
-      // FIX: Initialize ALL fields present in the largest schema (SupplierSignupForm) 
-      // This is crucial for controlling conditional inputs correctly.
+      // Initialize all supplier fields
       companyName: '',
-      physicalAddress: '', 
+      physicalAddress: '',
       contactPerson: '',
       contactPosition: '',
       companyEmail: '',
       companyPhone: '',
       industryType: '',
-    } as any, // Cast to any to satisfy TS between FormFields and the actual object literal
+    } as any,
   });
 
-  const onSubmit = async (data: FormFields) => {
+  // Reset form when switching account types
+  const handleAccountTypeChange = (newType: 'individual' | 'organization') => {
+    setAccountType(newType);
+    // Reset to default values
+    form.reset({
+      name: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+      role: newType === 'organization' ? 'supplier' : 'requester',
+      companyName: '',
+      physicalAddress: '',
+      contactPerson: '',
+      contactPosition: '',
+      companyEmail: '',
+      companyPhone: '',
+      industryType: '',
+    } as any);
+  };
+
+  const onSubmit = async (data: IndividualSignupForm | SupplierSignupForm) => {
     setIsLoading(true);
     try {
-      // NOTE: Ensure the role is correctly set for the submission payload
       const payload = {
         ...data,
-        // The role value from the form control should be correct, but let's confirm
         role: accountType === 'organization' ? 'supplier' : data.role,
-      }
+      };
 
       const response = await apiRequest('POST', '/api/auth/signup', payload);
       const result = await response.json();
@@ -141,15 +153,7 @@ export default function Signup() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={accountType} onValueChange={(v) => {
-            setAccountType(v as any);
-            // Manually set the role field when switching tabs
-            if (v === 'organization') {
-              form.setValue('role', 'supplier' as any);
-            } else {
-               form.setValue('role', 'requester' as any);
-            }
-          }} className="mb-6">
+          <Tabs value={accountType} onValueChange={(v) => handleAccountTypeChange(v as any)} className="mb-6">
             <TabsList className="grid w-full grid-cols-2 h-12">
               <TabsTrigger value="individual" className="text-sm">
                 <UserCircle className="h-4 w-4 mr-2" />
@@ -175,7 +179,7 @@ export default function Signup() {
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
-                            defaultValue={field.value}
+                            value={field.value}
                             className="grid grid-cols-2 gap-4"
                           >
                             <label
@@ -257,7 +261,7 @@ export default function Signup() {
                         <FormItem>
                           <FormLabel>Company Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="ABC Suppliers Ltd" {...field} />
+                            <Input placeholder="ABC Suppliers Ltd" {...field} value={field.value || ''} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -270,7 +274,7 @@ export default function Signup() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Industry/Service Type</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ''}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select type" />
@@ -298,8 +302,12 @@ export default function Signup() {
                       <FormItem>
                         <FormLabel>Physical Address</FormLabel>
                         <FormControl>
-                          {/* This Input is now properly controlled by RHF */}
-                          <Input placeholder="123 Main St, City, State" {...field} />
+                          <Input 
+                            placeholder="123 Main St, City, State" 
+                            {...field} 
+                            value={field.value || ''} 
+                            onChange={(e) => field.onChange(e.target.value)}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -314,7 +322,7 @@ export default function Signup() {
                         <FormItem>
                           <FormLabel>Contact Person</FormLabel>
                           <FormControl>
-                            <Input placeholder="John Doe" {...field} />
+                            <Input placeholder="John Doe" {...field} value={field.value || ''} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -328,7 +336,7 @@ export default function Signup() {
                         <FormItem>
                           <FormLabel>Position/Role</FormLabel>
                           <FormControl>
-                            <Input placeholder="Manager" {...field} />
+                            <Input placeholder="Manager" {...field} value={field.value || ''} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -344,7 +352,7 @@ export default function Signup() {
                         <FormItem>
                           <FormLabel>Company Email</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="info@company.com" {...field} />
+                            <Input type="email" placeholder="info@company.com" {...field} value={field.value || ''} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -358,13 +366,41 @@ export default function Signup() {
                         <FormItem>
                           <FormLabel>Company Phone</FormLabel>
                           <FormControl>
-                            <Input type="tel" placeholder="+1234567890" {...field} />
+                            <Input type="tel" placeholder="+1234567890" {...field} value={field.value || ''} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Your Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John Doe" {...field} value={field.value || ''} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Your Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="you@example.com" {...field} value={field.value || ''} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </>
               )}
 
