@@ -482,5 +482,162 @@ app.get('/api/jobs/:id', authMiddleware, async (req: AuthRequest, res) => {
     }
   });
 
+  // Add these new routes to your existing server/routes.ts file
+
+// ==================== SUPPLIER ROUTES (ADD THESE) ====================
+
+app.get('/api/suppliers', async (req, res) => {
+  try {
+    const suppliers = await storage.getSuppliers();
+    res.json(suppliers);
+  } catch (error: any) {
+    console.error('Get suppliers error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ==================== JOB PAYMENT ROUTES (ADD THESE) ====================
+
+app.post('/api/jobs/:id/set-charge', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    if (req.user!.role !== 'provider') {
+      return res.status(403).json({ message: 'Only providers can set charges' });
+    }
+
+    const { providerCharge } = setProviderChargeSchema.parse(req.body);
+    const job = await storage.setProviderCharge(req.params.id, providerCharge);
+
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+
+    res.json(job);
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+      });
+    }
+    console.error('Set charge error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/api/jobs/:id/confirm-payment', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    if (req.user!.role !== 'requester') {
+      return res.status(403).json({ message: 'Only requesters can confirm payment' });
+    }
+
+    const { amountPaid } = confirmPaymentSchema.parse(req.body);
+    const job = await storage.confirmPayment(req.params.id, amountPaid);
+
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+
+    res.json(job);
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+      });
+    }
+    console.error('Confirm payment error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ==================== JOB FEEDBACK ROUTES (ADD THESE) ====================
+
+app.post('/api/jobs/:id/feedback', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    if (req.user!.role !== 'provider') {
+      return res.status(403).json({ message: 'Only providers can submit feedback' });
+    }
+
+    const validatedData = insertJobFeedbackSchema.parse(req.body);
+    const feedback = await storage.createJobFeedback({
+      ...validatedData,
+      providerId: req.user!.id,
+    });
+
+    res.json(feedback);
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+      });
+    }
+    console.error('Submit feedback error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/api/jobs/:id/feedback', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const feedback = await storage.getJobFeedback(req.params.id);
+    res.json(feedback);
+  } catch (error: any) {
+    console.error('Get feedback error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ==================== JOB REPORT ROUTES (ADD THESE) ====================
+
+app.post('/api/jobs/:id/report', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const validatedData = insertJobReportSchema.parse(req.body);
+    const report = await storage.createJobReport({
+      ...validatedData,
+      reporterId: req.user!.id,
+    });
+
+    res.json(report);
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+      });
+    }
+    console.error('Submit report error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ==================== ANALYTICS/REPORTS ROUTES (ADD THESE) ====================
+
+app.get('/api/reports/requester', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    if (req.user!.role !== 'requester') {
+      return res.status(403).json({ message: 'Only requesters can access this' });
+    }
+
+    const stats = await storage.getRequesterStats(req.user!.id);
+    res.json(stats);
+  } catch (error: any) {
+    console.error('Get requester stats error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/api/reports/provider', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    if (req.user!.role !== 'provider') {
+      return res.status(403).json({ message: 'Only providers can access this' });
+    }
+
+    const stats = await storage.getProviderStats(req.user!.id);
+    res.json(stats);
+  } catch (error: any) {
+    console.error('Get provider stats error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
   return httpServer;
 }
