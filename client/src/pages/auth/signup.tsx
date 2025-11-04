@@ -64,12 +64,20 @@ export default function Signup() {
   const form = useForm<SignupForm | SupplierSignupForm>({
     resolver: zodResolver(accountType === 'individual' ? signupSchema : supplierSignupSchema),
     defaultValues: {
-      name: '',
+ name: '',
       email: '',
       phone: '',
       password: '',
       confirmPassword: '',
       role: 'requester',
+      // 👇 ADDED: Initialize all supplier-specific fields to prevent input issues
+      companyName: '', 
+      physicalAddress: '', // This ensures the address field is controlled correctly
+      contactPerson: '',
+      contactPosition: '',
+      companyEmail: '',
+      companyPhone: '',
+      industryType: '',
     },
   });
 
