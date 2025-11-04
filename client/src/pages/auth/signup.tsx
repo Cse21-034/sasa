@@ -270,20 +270,19 @@ export default function Signup() {
                       )}
                     />
                   </div>
-
-                  <FormField
-                    control={form.control}
-                    name="physicalAddress"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Physical Address</FormLabel>
-                        <FormControl>
-                          <Input placeholder="123 Main St, City, State" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                     <FormField
+                      control={form.control}
+                      name="physicalAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                         <FormLabel>Physical Address</FormLabel>
+                          <FormControl>
+                            <Input placeholder="123 Main St, City, State" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
