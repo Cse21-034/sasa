@@ -22,7 +22,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -49,6 +48,8 @@ export default function JobDetail() {
   const [feedbackText, setFeedbackText] = useState('');
   const [providerCharge, setProviderCharge] = useState('');
   const [amountPaid, setAmountPaid] = useState('');
+  const [ratingComment, setRatingComment] = useState('');
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
   const jobId = params?.id;
 
@@ -92,6 +93,132 @@ export default function JobDetail() {
     },
   });
 
+  const setChargeMutation = useMutation({
+    mutationFn: async (charge: string) => {
+      if (!jobId) throw new Error('Job ID is missing');
+      const res = await apiRequest('POST', `/api/jobs/${jobId}/set-charge`, { providerCharge: charge });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['job', jobId] });
+      toast({
+        title: 'Charge set successfully',
+        description: 'Your charge has been saved.',
+      });
+      setProviderCharge('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to set charge',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const confirmPaymentMutation = useMutation({
+    mutationFn: async (amount: string) => {
+      if (!jobId) throw new Error('Job ID is missing');
+      const res = await apiRequest('POST', `/api/jobs/${jobId}/confirm-payment`, { amountPaid: amount });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['job', jobId] });
+      toast({
+        title: 'Payment confirmed',
+        description: 'Payment has been recorded successfully.',
+      });
+      setAmountPaid('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to confirm payment',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const submitRatingMutation = useMutation({
+    mutationFn: async () => {
+      if (!jobId || !job?.providerId) throw new Error('Missing data');
+      const res = await apiRequest('POST', '/api/ratings', {
+        jobId,
+        toUserId: job.providerId,
+        rating,
+        comment: ratingComment,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['job', jobId] });
+      toast({
+        title: 'Rating submitted',
+        description: 'Thank you for your feedback!',
+      });
+      setRating(0);
+      setRatingComment('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to submit rating',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const submitFeedbackMutation = useMutation({
+    mutationFn: async () => {
+      if (!jobId) throw new Error('Job ID is missing');
+      const res = await apiRequest('POST', `/api/jobs/${jobId}/feedback`, {
+        jobId,
+        feedbackText,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Feedback submitted',
+        description: 'Your feedback has been recorded.',
+      });
+      setFeedbackText('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to submit feedback',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const submitReportMutation = useMutation({
+    mutationFn: async () => {
+      if (!jobId) throw new Error('Job ID is missing');
+      const res = await apiRequest('POST', `/api/jobs/${jobId}/report`, {
+        jobId,
+        reason: reportReason,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Report submitted',
+        description: 'Thank you for your report. We will review it shortly.',
+      });
+      setReportReason('');
+      setShowReportDialog(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to submit report',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const openInMaps = () => {
     if (job?.latitude && job?.longitude) {
       const url = `https://www.google.com/maps/dir/?api=1&destination=${job.latitude},${job.longitude}`;
@@ -121,7 +248,7 @@ export default function JobDetail() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Card>
           <CardContent className="p-12 text-center">
-            <p className="text-muted-foreground">{error ? error.message : 'Job not found'}</p>
+            <p className="text-muted-foreground">{error ? (error as any).message : 'Job not found'}</p>
           </CardContent>
         </Card>
       </div>
@@ -274,6 +401,32 @@ export default function JobDetail() {
                 </div>
               )}
 
+              {/* Display provider charge if set */}
+              {(job as any).providerCharge && (
+                <div className="flex items-center gap-2 p-4 bg-primary/10 rounded-lg border border-primary/20">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Provider Charge</p>
+                    <p className="text-lg font-bold text-primary">
+                      ${(job as any).providerCharge}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Display amount paid if confirmed */}
+              {(job as any).amountPaid && (
+                <div className="flex items-center gap-2 p-4 bg-success/10 rounded-lg border border-success/20">
+                  <CheckCircle2 className="h-5 w-5 text-success" />
+                  <div>
+                    <p className="text-sm font-medium">Amount Paid</p>
+                    <p className="text-lg font-bold text-success">
+                      ${(job as any).amountPaid}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Job Photos */}
               {(job as any).photos && (job as any).photos.length > 0 && (
                 <div>
@@ -355,7 +508,7 @@ export default function JobDetail() {
         </div>
 
         {/* Provider Charge Input */}
-        {isAssignedProvider && job.status !== 'cancelled' && (
+        {isAssignedProvider && job.status !== 'cancelled' && !(job as any).providerCharge && (
           <Card className="border-2">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -371,14 +524,19 @@ export default function JobDetail() {
                   <Input
                     id="provider-charge"
                     type="number"
-                    placeholder="150"
+                    step="0.01"
+                    placeholder="150.00"
                     className="h-12 mt-2"
                     value={providerCharge}
                     onChange={(e) => setProviderCharge(e.target.value)}
                   />
                 </div>
-                <Button className="w-full md:w-auto">
-                  Save Charge
+                <Button 
+                  className="w-full md:w-auto"
+                  disabled={!providerCharge || setChargeMutation.isPending}
+                  onClick={() => setChargeMutation.mutate(providerCharge)}
+                >
+                  {setChargeMutation.isPending ? 'Saving...' : 'Save Charge'}
                 </Button>
               </div>
             </CardContent>
@@ -386,7 +544,7 @@ export default function JobDetail() {
         )}
 
         {/* Amount Paid Input (Requester) */}
-        {isRequester && job.status === 'completed' && (
+        {isRequester && job.status === 'completed' && (job as any).providerCharge && !(job as any).amountPaid && (
           <Card className="border-2">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -402,14 +560,19 @@ export default function JobDetail() {
                   <Input
                     id="amount-paid"
                     type="number"
-                    placeholder="150"
+                    step="0.01"
+                    placeholder={(job as any).providerCharge || "150.00"}
                     className="h-12 mt-2"
                     value={amountPaid}
                     onChange={(e) => setAmountPaid(e.target.value)}
                   />
                 </div>
-                <Button className="w-full md:w-auto">
-                  Confirm Payment
+                <Button 
+                  className="w-full md:w-auto"
+                  disabled={!amountPaid || confirmPaymentMutation.isPending}
+                  onClick={() => confirmPaymentMutation.mutate(amountPaid)}
+                >
+                  {confirmPaymentMutation.isPending ? 'Confirming...' : 'Confirm Payment'}
                 </Button>
               </div>
             </CardContent>
@@ -491,9 +654,15 @@ export default function JobDetail() {
                 <Textarea
                   placeholder="Share your experience... (Optional)"
                   className="min-h-24"
+                  value={ratingComment}
+                  onChange={(e) => setRatingComment(e.target.value)}
                 />
-                <Button className="w-full md:w-auto">
-                  Submit Rating
+                <Button 
+                  className="w-full md:w-auto"
+                  disabled={rating === 0 || submitRatingMutation.isPending}
+                  onClick={() => submitRatingMutation.mutate()}
+                >
+                  {submitRatingMutation.isPending ? 'Submitting...' : 'Submit Rating'}
                 </Button>
               </div>
             </CardContent>
@@ -515,8 +684,13 @@ export default function JobDetail() {
                   value={feedbackText}
                   onChange={(e) => setFeedbackText(e.target.value)}
                 />
-                <Button variant="outline" className="w-full md:w-auto">
-                  Submit Feedback
+                <Button 
+                  variant="outline" 
+                  className="w-full md:w-auto"
+                  disabled={!feedbackText || submitFeedbackMutation.isPending}
+                  onClick={() => submitFeedbackMutation.mutate()}
+                >
+                  {submitFeedbackMutation.isPending ? 'Submitting...' : 'Submit Feedback'}
                 </Button>
               </div>
             </CardContent>
@@ -533,13 +707,15 @@ export default function JobDetail() {
             <CardDescription>Report problems with this job</CardDescription>
           </CardHeader>
           <CardContent>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="destructive" className="w-full md:w-auto">
-                  <Flag className="mr-2 h-4 w-4" />
-                  Report Job
-                </Button>
-              </DialogTrigger>
+            <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+              <Button 
+                variant="destructive" 
+                className="w-full md:w-auto"
+                onClick={() => setShowReportDialog(true)}
+              >
+                <Flag className="mr-2 h-4 w-4" />
+                Report Job
+              </Button>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Report Job</DialogTitle>
@@ -549,15 +725,21 @@ export default function JobDetail() {
                 </DialogHeader>
                 <div className="space-y-4">
                   <Textarea
-                    placeholder="Describe the issue..."
+                    placeholder="Describe the issue in detail..."
                     className="min-h-32"
                     value={reportReason}
                     onChange={(e) => setReportReason(e.target.value)}
                   />
                 </div>
                 <DialogFooter>
-                  <Button variant="outline">Cancel</Button>
-                  <Button variant="destructive">Submit Report</Button>
+                  <Button variant="outline" onClick={() => setShowReportDialog(false)}>Cancel</Button>
+                  <Button 
+                    variant="destructive"
+                    disabled={reportReason.length < 10 || submitReportMutation.isPending}
+                    onClick={() => submitReportMutation.mutate()}
+                  >
+                    {submitReportMutation.isPending ? 'Submitting...' : 'Submit Report'}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
