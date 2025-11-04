@@ -54,6 +54,10 @@ const supplierSignupSchema = baseSignupSchema.extend({
 type SignupForm = z.infer<typeof signupSchema>;
 type SupplierSignupForm = z.infer<typeof supplierSignupSchema>;
 
+// FIX: Define the generic form fields as the superset type (SupplierSignupForm)
+// This ensures RHF recognizes and controls all fields from the start.
+type FormFields = SupplierSignupForm;
+
 export default function Signup() {
   const [, setLocation] = useLocation();
   const { setUser } = useAuth();
@@ -61,7 +65,7 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const [accountType, setAccountType] = useState<'individual' | 'organization'>('individual');
 
-  const form = useForm<SignupForm | SupplierSignupForm>({
+  const form = useForm<FormFields>({
     resolver: zodResolver(accountType === 'individual' ? signupSchema : supplierSignupSchema),
     defaultValues: {
       name: '',
@@ -70,7 +74,8 @@ export default function Signup() {
       password: '',
       confirmPassword: '',
       role: 'requester',
-      // 👇 FIX: Initialize all supplier-specific fields for proper form control
+      // FIX: Initialize ALL fields present in the largest schema (SupplierSignupForm) 
+      // This is crucial for controlling conditional inputs correctly.
       companyName: '',
       physicalAddress: '', 
       contactPerson: '',
@@ -78,18 +83,19 @@ export default function Signup() {
       companyEmail: '',
       companyPhone: '',
       industryType: '',
-    },
+    } as any, // Cast to any to satisfy TS between FormFields and the actual object literal
   });
 
-  const onSubmit = async (data: SignupForm | SupplierSignupForm) => {
+  const onSubmit = async (data: FormFields) => {
     setIsLoading(true);
     try {
       // NOTE: Ensure the role is correctly set for the submission payload
       const payload = {
         ...data,
-        role: accountType === 'organization' ? 'supplier' : (data as SignupForm).role,
+        // The role value from the form control should be correct, but let's confirm
+        role: accountType === 'organization' ? 'supplier' : data.role,
       }
-      
+
       const response = await apiRequest('POST', '/api/auth/signup', payload);
       const result = await response.json();
       
@@ -137,7 +143,7 @@ export default function Signup() {
         <CardContent>
           <Tabs value={accountType} onValueChange={(v) => {
             setAccountType(v as any);
-            // Manually set the role field for the organization tab
+            // Manually set the role field when switching tabs
             if (v === 'organization') {
               form.setValue('role', 'supplier' as any);
             } else {
@@ -292,6 +298,7 @@ export default function Signup() {
                       <FormItem>
                         <FormLabel>Physical Address</FormLabel>
                         <FormControl>
+                          {/* This Input is now properly controlled by RHF */}
                           <Input placeholder="123 Main St, City, State" {...field} />
                         </FormControl>
                         <FormMessage />
