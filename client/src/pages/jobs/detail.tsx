@@ -475,37 +475,52 @@ export default function JobDetail() {
           </Card>
 
           {/* Provider Info */}
-          {job.provider && (
-            <Card className="border-2">
-              <CardHeader>
-                <CardTitle className="text-lg">Assigned Provider</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={job.provider?.profilePhotoUrl} />
-                    <AvatarFallback className="text-lg">{job.provider?.name?.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-lg">{job.provider?.name}</p>
-                      {job.provider?.isVerified && (
-                        <Badge variant="secondary" className="text-xs">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Verified
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{job.provider?.email}</p>
-                    {job.provider?.phone && (
-                      <p className="text-sm text-muted-foreground">{job.provider?.phone}</p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+         // Add this section in the job-detail.tsx file where the Provider Info card is displayed
+// Replace the existing Provider Info card section with this:
+
+{/* Provider Info */}
+{job.provider && (
+  <Card className="border-2">
+    <CardHeader>
+      <CardTitle className="text-lg">Assigned Provider</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="flex items-center gap-4">
+        <Avatar className="h-16 w-16">
+          <AvatarImage src={job.provider?.profilePhotoUrl} />
+          <AvatarFallback className="text-lg">{job.provider?.name?.charAt(0)}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-lg">{job.provider?.name}</p>
+            {job.provider?.isVerified && (
+              <Badge variant="secondary" className="text-xs">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Verified
+              </Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">{job.provider?.email}</p>
+          {job.provider?.phone && (
+            <p className="text-sm text-muted-foreground">{job.provider?.phone}</p>
+          )}
+          {/* RATING DISPLAY - NEW */}
+          {(job.provider as any)?.ratingAverage && (
+            <div className="flex items-center gap-1 mt-2">
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <span className="font-semibold text-sm">
+                {parseFloat((job.provider as any).ratingAverage).toFixed(1)}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                ({(job.provider as any).completedJobsCount || 0} jobs)
+              </span>
+            </div>
           )}
         </div>
+      </div>
+    </CardContent>
+  </Card>
+)}
 
         {/* Provider Charge Input */}
         {isAssignedProvider && job.status !== 'cancelled' && !(job as any).providerCharge && (
