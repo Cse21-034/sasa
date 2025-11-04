@@ -28,29 +28,29 @@ import {
   type InsertCategory,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, desc, asc, gte, lte } from "drizzle-orm";
+import { eq, and, sql, desc, asc } from "drizzle-orm";
 import { InferSelectModel } from 'drizzle-orm'; 
 
 type JobWithRelations = Job & {
-    requester: User;
-    provider?: User | null;
-    category: Category;
+  requester: User;
+  provider?: (User & { ratingAverage?: string; completedJobsCount?: number }) | null;
+  category: Category;
 };
 
 type ProviderSearchResult = InferSelectModel<typeof providers> & {
-    user: User;
+  user: User;
 };
 
 type SupplierWithUser = Supplier & {
-    user: User;
+  user: User;
 };
 
 type MessageWithSender = Message & {
-    sender: User;
+  sender: User;
 };
 
 type RatingWithFromUser = Rating & {
-    fromUser: User;
+  fromUser: User;
 };
 
 export interface IStorage {
@@ -71,7 +71,7 @@ export interface IStorage {
     radius?: number;
   }): Promise<ProviderSearchResult[]>;
 
-  // Suppliers - NEW
+  // Suppliers
   getSupplier(userId: string): Promise<Supplier | undefined>;
   createSupplier(supplier: InsertSupplier & { userId: string }): Promise<Supplier>;
   updateSupplier(userId: string, data: Partial<Supplier>): Promise<Supplier | undefined>;
@@ -100,15 +100,15 @@ export interface IStorage {
   createRating(rating: InsertRating & { fromUserId: string }): Promise<Rating>;
   getProviderRatings(providerId: string): Promise<RatingWithFromUser[]>;
 
-  // Job Feedback - NEW
+  // Job Feedback
   createJobFeedback(feedback: InsertJobFeedback & { providerId: string }): Promise<JobFeedback>;
   getJobFeedback(jobId: string): Promise<JobFeedback[]>;
 
-  // Job Reports - NEW
+  // Job Reports
   createJobReport(report: InsertJobReport & { reporterId: string }): Promise<JobReport>;
   getJobReports(jobId: string): Promise<JobReport[]>;
 
-  // Reports/Analytics - NEW
+  // Analytics
   getRequesterStats(requesterId: string): Promise<any>;
   getProviderStats(providerId: string): Promise<any>;
 
@@ -130,10 +130,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
@@ -148,18 +145,12 @@ export class DatabaseStorage implements IStorage {
 
   // Providers
   async getProvider(userId: string): Promise<Provider | undefined> {
-    const [provider] = await db
-      .select()
-      .from(providers)
-      .where(eq(providers.userId, userId));
+    const [provider] = await db.select().from(providers).where(eq(providers.userId, userId));
     return provider || undefined;
   }
 
   async createProvider(provider: InsertProvider & { userId: string }): Promise<Provider> {
-    const [created] = await db
-      .insert(providers)
-      .values(provider)
-      .returning();
+    const [created] = await db.insert(providers).values(provider).returning();
     return created;
   }
 
@@ -171,14 +162,14 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updated || undefined;
   }
-  
+
   async searchProviders(params: {
     categoryId?: number;
     latitude?: number;
     longitude?: number;
     radius?: number;
   }): Promise<ProviderSearchResult[]> {
-    let query = db
+    const results = await db
       .select({
         userId: providers.userId,
         companyName: providers.companyName,
@@ -194,24 +185,17 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(providers.userId, users.id))
       .where(eq(providers.isOnline, true));
 
-    const results = await query;
-    return results.map((r) => ({ ...r.user, provider: { ...r, user: undefined } })) as unknown as ProviderSearchResult[]; 
+    return results.map((r) => ({ ...r, user: r.user })) as ProviderSearchResult[];
   }
 
-  // Suppliers - NEW
+  // Suppliers
   async getSupplier(userId: string): Promise<Supplier | undefined> {
-    const [supplier] = await db
-      .select()
-      .from(suppliers)
-      .where(eq(suppliers.userId, userId));
+    const [supplier] = await db.select().from(suppliers).where(eq(suppliers.userId, userId));
     return supplier || undefined;
   }
 
   async createSupplier(supplier: InsertSupplier & { userId: string }): Promise<Supplier> {
-    const [created] = await db
-      .insert(suppliers)
-      .values(supplier)
-      .returning();
+    const [created] = await db.insert(suppliers).values(supplier).returning();
     return created;
   }
 
@@ -239,7 +223,7 @@ export class DatabaseStorage implements IStorage {
     })) as SupplierWithUser[];
   }
 
-  // Jobs
+  // ✅ Updated getJob method with provider rating info
   async getJob(id: string): Promise<JobWithRelations | undefined> {
     const [jobSelect] = await db
       .select({
@@ -256,11 +240,23 @@ export class DatabaseStorage implements IStorage {
 
     let provider = null;
     if (jobSelect.job.providerId) {
+      // Get provider user data
       const [providerData] = await db
         .select()
         .from(users)
         .where(eq(users.id, jobSelect.job.providerId));
-      provider = providerData;
+      
+      // Get provider profile with rating and completed jobs
+      const [providerProfile] = await db
+        .select()
+        .from(providers)
+        .where(eq(providers.userId, jobSelect.job.providerId));
+      
+      provider = {
+        ...providerData,
+        ratingAverage: providerProfile?.ratingAverage || '0',
+        completedJobsCount: providerProfile?.completedJobsCount || 0,
+      };
     }
 
     return {
@@ -279,18 +275,10 @@ export class DatabaseStorage implements IStorage {
   }): Promise<JobWithRelations[]> {
     const conditions = [];
 
-    if (params.categoryId) {
-      conditions.push(eq(jobs.categoryId, parseInt(params.categoryId)));
-    }
-    if (params.status) {
-      conditions.push(eq(jobs.status, params.status as Job['status']));
-    }
-    if (params.requesterId) {
-      conditions.push(eq(jobs.requesterId, params.requesterId));
-    }
-    if (params.providerId) {
-      conditions.push(eq(jobs.providerId, params.providerId));
-    }
+    if (params.categoryId) conditions.push(eq(jobs.categoryId, parseInt(params.categoryId)));
+    if (params.status) conditions.push(eq(jobs.status, params.status as Job['status']));
+    if (params.requesterId) conditions.push(eq(jobs.requesterId, params.requesterId));
+    if (params.providerId) conditions.push(eq(jobs.providerId, params.providerId));
 
     const results = await db
       .select({
@@ -301,21 +289,18 @@ export class DatabaseStorage implements IStorage {
       .from(jobs)
       .leftJoin(users, eq(jobs.requesterId, users.id))
       .leftJoin(categories, eq(jobs.categoryId, categories.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(desc(jobs.createdAt));
 
     return results.map((r) => ({
       ...r.job,
       requester: r.requester,
       category: r.category,
-    })) as unknown as JobWithRelations[];
+    })) as JobWithRelations[];
   }
 
   async createJob(insertJob: InsertJob & { requesterId: string }): Promise<Job> {
-    const [job] = await db
-      .insert(jobs)
-      .values(insertJob)
-      .returning();
+    const [job] = await db.insert(jobs).values(insertJob).returning();
     return job;
   }
 
@@ -331,11 +316,7 @@ export class DatabaseStorage implements IStorage {
   async acceptJob(jobId: string, providerId: string): Promise<Job | undefined> {
     const [updated] = await db
       .update(jobs)
-      .set({ 
-        providerId, 
-        status: 'accepted',
-        updatedAt: new Date() 
-      })
+      .set({ providerId, status: 'accepted', updatedAt: new Date() })
       .where(eq(jobs.id, jobId))
       .returning();
     return updated || undefined;
@@ -344,10 +325,7 @@ export class DatabaseStorage implements IStorage {
   async setProviderCharge(jobId: string, charge: string): Promise<Job | undefined> {
     const [updated] = await db
       .update(jobs)
-      .set({ 
-        providerCharge: charge,
-        updatedAt: new Date() 
-      })
+      .set({ providerCharge: charge, updatedAt: new Date() })
       .where(eq(jobs.id, jobId))
       .returning();
     return updated || undefined;
@@ -356,10 +334,7 @@ export class DatabaseStorage implements IStorage {
   async confirmPayment(jobId: string, amount: string): Promise<Job | undefined> {
     const [updated] = await db
       .update(jobs)
-      .set({ 
-        amountPaid: amount,
-        updatedAt: new Date() 
-      })
+      .set({ amountPaid: amount, updatedAt: new Date() })
       .where(eq(jobs.id, jobId))
       .returning();
     return updated || undefined;
@@ -382,12 +357,9 @@ export class DatabaseStorage implements IStorage {
       sender: r.sender,
     }));
   }
-  
+
   async createMessage(insertMessage: InsertMessage & { senderId: string }): Promise<Message> {
-    const [message] = await db
-      .insert(messages)
-      .values(insertMessage)
-      .returning();
+    const [message] = await db.insert(messages).values(insertMessage).returning();
     return message;
   }
 
@@ -399,9 +371,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(jobs)
       .leftJoin(users, eq(jobs.requesterId, users.id))
-      .where(
-        sql`${jobs.requesterId} = ${userId} OR ${jobs.providerId} = ${userId}`
-      );
+      .where(sql`${jobs.requesterId} = ${userId} OR ${jobs.providerId} = ${userId}`);
 
     const conversations = [];
     for (const { job, requester } of userJobs) {
@@ -414,10 +384,7 @@ export class DatabaseStorage implements IStorage {
 
       if (lastMessage) {
         const otherUserId = job.requesterId === userId ? job.providerId : job.requesterId;
-        const [otherUser] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, otherUserId!));
+        const [otherUser] = await db.select().from(users).where(eq(users.id, otherUserId!));
 
         conversations.push({
           jobId: job.id,
@@ -425,7 +392,7 @@ export class DatabaseStorage implements IStorage {
           otherUser,
           lastMessage: lastMessage.messageText,
           lastMessageTime: lastMessage.createdAt,
-          unreadCount: 0, 
+          unreadCount: 0,
         });
       }
     }
@@ -435,10 +402,7 @@ export class DatabaseStorage implements IStorage {
 
   // Ratings
   async createRating(insertRating: InsertRating & { fromUserId: string }): Promise<Rating> {
-    const [rating] = await db
-      .insert(ratings)
-      .values(insertRating)
-      .returning();
+    const [rating] = await db.insert(ratings).values(insertRating).returning();
 
     const providerRatings = await db
       .select()
@@ -447,7 +411,7 @@ export class DatabaseStorage implements IStorage {
 
     const avgRating =
       providerRatings.reduce((sum, r) => sum + r.rating, 0) / providerRatings.length;
-    
+
     await db
       .update(providers)
       .set({ ratingAverage: avgRating.toFixed(2).toString() })
@@ -473,44 +437,29 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  // Job Feedback - NEW
+  // Job Feedback
   async createJobFeedback(feedback: InsertJobFeedback & { providerId: string }): Promise<JobFeedback> {
-    const [created] = await db
-      .insert(jobFeedback)
-      .values(feedback)
-      .returning();
+    const [created] = await db.insert(jobFeedback).values(feedback).returning();
     return created;
   }
 
   async getJobFeedback(jobId: string): Promise<JobFeedback[]> {
-    return await db
-      .select()
-      .from(jobFeedback)
-      .where(eq(jobFeedback.jobId, jobId));
+    return await db.select().from(jobFeedback).where(eq(jobFeedback.jobId, jobId));
   }
 
-  // Job Reports - NEW
+  // Job Reports
   async createJobReport(report: InsertJobReport & { reporterId: string }): Promise<JobReport> {
-    const [created] = await db
-      .insert(jobReports)
-      .values(report)
-      .returning();
+    const [created] = await db.insert(jobReports).values(report).returning();
     return created;
   }
 
   async getJobReports(jobId: string): Promise<JobReport[]> {
-    return await db
-      .select()
-      .from(jobReports)
-      .where(eq(jobReports.jobId, jobId));
+    return await db.select().from(jobReports).where(eq(jobReports.jobId, jobId));
   }
 
-  // Analytics - NEW
+  // Analytics
   async getRequesterStats(requesterId: string): Promise<any> {
-    const userJobs = await db
-      .select()
-      .from(jobs)
-      .where(eq(jobs.requesterId, requesterId));
+    const userJobs = await db.select().from(jobs).where(eq(jobs.requesterId, requesterId));
 
     const totalJobs = userJobs.length;
     const completedJobs = userJobs.filter(j => j.status === 'completed').length;
@@ -518,7 +467,6 @@ export class DatabaseStorage implements IStorage {
       .filter(j => j.amountPaid)
       .reduce((sum, j) => sum + parseFloat(j.amountPaid || '0'), 0);
 
-    // Group by category
     const jobsByCategory = userJobs.reduce((acc, job) => {
       const catId = job.categoryId.toString();
       acc[catId] = (acc[catId] || 0) + 1;
@@ -536,10 +484,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProviderStats(providerId: string): Promise<any> {
-    const providerJobs = await db
-      .select()
-      .from(jobs)
-      .where(eq(jobs.providerId, providerId));
+    const providerJobs = await db.select().from(jobs).where(eq(jobs.providerId, providerId));
 
     const totalJobs = providerJobs.length;
     const completedJobs = providerJobs.filter(j => j.status === 'completed').length;
@@ -547,20 +492,18 @@ export class DatabaseStorage implements IStorage {
       .filter(j => j.providerCharge)
       .reduce((sum, j) => sum + parseFloat(j.providerCharge || '0'), 0);
 
-    const providerRatings = await db
-      .select()
-      .from(ratings)
-      .where(eq(ratings.toUserId, providerId));
+    const providerRatings = await db.select().from(ratings).where(eq(ratings.toUserId, providerId));
 
-    const avgRating = providerRatings.length > 0
-      ? providerRatings.reduce((sum, r) => sum + r.rating, 0) / providerRatings.length
-      : 0;
+    const avgRating =
+      providerRatings.length > 0
+        ? providerRatings.reduce((sum, r) => sum + r.rating, 0) / providerRatings.length
+        : 0;
 
     return {
       totalEarnings,
       completedJobs,
       averageRating: avgRating.toFixed(1),
-      avgResponseTime: 12, // Mock for now
+      avgResponseTime: 12,
     };
   }
 
@@ -570,10 +513,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCategory(insertCategory: InsertCategory): Promise<Category> {
-    const [category] = await db
-      .insert(categories)
-      .values(insertCategory)
-      .returning();
+    const [category] = await db.insert(categories).values(insertCategory).returning();
     return category;
   }
 }
