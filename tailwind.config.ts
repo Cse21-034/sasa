@@ -88,14 +88,39 @@ export default {
           busy: "rgb(239 68 68)",
           offline: "rgb(156 163 175)",
         },
-        // Custom orange and lime shades
+        // New color palette based on your image
+        sage: {
+          50: '#f8faf2',
+          100: '#f1f5e9',
+          200: '#e4edd4',
+          300: '#d4e2bb',
+          400: '#b8d192',
+          500: '#a0c878', // Primary sage green
+          600: '#84a85e',
+          700: '#668449',
+          800: '#52683b',
+          900: '#445531',
+        },
+        cream: {
+          50: '#fffefc',
+          100: '#fffdf6', // Main cream color
+          200: '#faf6e9', // Secondary cream
+          300: '#f5efdc',
+          400: '#eee5c9',
+          500: '#e6dbb6',
+          600: '#d4c9a4',
+          700: '#b8ad8a',
+          800: '#9c916f',
+          900: '#80765a',
+        },
+        // Keeping orange and lime for reference but they won't be used in the new theme
         orange: {
           50: '#fff7ed',
           100: '#ffedd5',
           200: '#fed7aa',
           300: '#fdba74',
           400: '#fb923c',
-          500: '#f97316', // Primary orange
+          500: '#f97316',
           600: '#ea580c',
           700: '#c2410c',
           800: '#9a3412',
@@ -107,7 +132,7 @@ export default {
           200: '#d9f99d',
           300: '#bef264',
           400: '#a3e635',
-          500: '#84cc16', // Primary lime
+          500: '#84cc16',
           600: '#65a30d',
           700: '#4d7c0f',
           800: '#3f6212',
@@ -166,18 +191,22 @@ export default {
         },
         float: {
           "0%, 100%": { transform: "translateY(0px)" },
-          "50%": { transform: "translateY(-20px)" },
+          "50%": { transform: "translateY(-10px)" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px rgba(249, 115, 22, 0.4)" },
-          "50%": { boxShadow: "0 0 40px rgba(249, 115, 22, 0.8)" },
+          "0%, 100%": { boxShadow: "0 0 20px rgba(160, 200, 120, 0.4)" },
+          "50%": { boxShadow: "0 0 40px rgba(160, 200, 120, 0.8)" },
+        },
+        "slide-up": {
+          from: { transform: "translateY(20px)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
-        "slide-up": "slide-up 0.3s ease-out",
+        "slide-up": "slide-up 0.6s ease-out",
         "slide-down": "slide-down 0.3s ease-out",
         "slide-left": "slide-left 0.3s ease-out",
         "slide-right": "slide-right 0.3s ease-out",
@@ -191,8 +220,8 @@ export default {
       boxShadow: {
         'inner-sm': 'inset 0 1px 2px 0 rgba(0, 0, 0, 0.05)',
         'inner-md': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
-        'glow-orange': '0 0 20px rgba(249, 115, 22, 0.3)',
-        'glow-lime': '0 0 20px rgba(132, 204, 22, 0.3)',
+        'glow-sage': '0 0 20px rgba(160, 200, 120, 0.3)',
+        'glow-cream': '0 0 20px rgba(255, 253, 246, 0.3)',
       },
     },
   },
