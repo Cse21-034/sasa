@@ -1,370 +1,169 @@
- // client/src/pages/landing.tsx
+// client/src/pages/landing.tsx
 import { Link } from 'wouter';
-import { 
-  Search, MapPin, MessageSquare, Star, Shield, Clock, ArrowRight, 
-  TrendingUp, CheckCircle, Users, Award, Headphones, Play
-} from 'lucide-react';
+import { ArrowRight, Search, MapPin, CheckCircle, Users, Star, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth-context';
-import { useState, useEffect } from 'react';
 
 export default function Landing() {
   const { isAuthenticated } = useAuth();
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-  const heroSlides = [
-    {
-      title: "Find Trusted Local Professionals",
-      subtitle: "Connect with verified service providers in your area",
-      image: "/api/placeholder/800/600?text=Professional+Services"
-    },
-    {
-      title: "Quality Work Guaranteed",
-      subtitle: "Every provider is vetted and reviewed by the community",
-      image: "/api/placeholder/800/600?text=Quality+Work"
-    },
-    {
-      title: "Fast & Reliable Service",
-      subtitle: "Get your jobs done quickly with our efficient platform",
-      image: "/api/placeholder/800/600?text=Fast+Service"
-    }
-  ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   const features = [
     {
-      image: "/api/placeholder/400/300?text=Location+Services",
-      title: 'Location-Based Matching',
-      description: 'Find service providers near you with real-time distance tracking',
+      title: "Verified Professionals",
+      description: "Every service provider is thoroughly vetted and background checked.",
+      icon: Shield
     },
     {
-      image: "/api/placeholder/400/300?text=Verified+Providers",
-      title: 'Verified Providers',
-      description: 'All providers are verified with certificates and ID documentation',
+      title: "Instant Matching",
+      description: "Get connected with available professionals in your area instantly.",
+      icon: Search
     },
     {
-      image: "/api/placeholder/400/300?text=Real+Time+Chat",
-      title: 'Real-Time Chat',
-      description: 'Communicate directly with providers through instant messaging',
+      title: "Secure Payments",
+      description: "Safe and secure payment processing with money-back guarantee.",
+      icon: CheckCircle
     },
     {
-      image: "/api/placeholder/400/300?text=Ratings+Reviews",
-      title: 'Ratings & Reviews',
-      description: 'Make informed decisions based on community feedback',
-    },
+      title: "Real Reviews",
+      description: "Make informed decisions with authentic customer reviews and ratings.",
+      icon: Star
+    }
   ];
 
-  const categories = [
-    { 
-      name: 'Plumbing', 
-      image: '/api/placeholder/300/200?text=Plumbing+Services',
-      jobs: '250+ Providers'
+  const services = [
+    {
+      name: "Home Services",
+      image: "/api/placeholder/400/300?text=Home+Services",
+      count: "500+ Providers"
     },
-    { 
-      name: 'Electrical', 
-      image: '/api/placeholder/300/200?text=Electrical+Work',
-      jobs: '180+ Providers'
+    {
+      name: "Professional Services",
+      image: "/api/placeholder/400/300?text=Professional+Services",
+      count: "300+ Providers"
     },
-    { 
-      name: 'Carpentry', 
-      image: '/api/placeholder/300/200?text=Carpentry+Work',
-      jobs: '120+ Providers'
+    {
+      name: "Creative Services",
+      image: "/api/placeholder/400/300?text=Creative+Services",
+      count: "200+ Providers"
     },
-    { 
-      name: 'Painting', 
-      image: '/api/placeholder/300/200?text=Painting+Services',
-      jobs: '90+ Providers'
-    },
-    { 
-      name: 'Cleaning', 
-      image: '/api/placeholder/300/200?text=Cleaning+Services',
-      jobs: '300+ Providers'
-    },
-    { 
-      name: 'Gardening', 
-      image: '/api/placeholder/300/200?text=Gardening+Services',
-      jobs: '150+ Providers'
-    },
-  ];
-
-  const stats = [
-    { number: '10,000+', label: 'Happy Customers', icon: Users },
-    { number: '500+', label: 'Verified Providers', icon: Shield },
-    { number: '50,000+', label: 'Jobs Completed', icon: CheckCircle },
-    { number: '4.9/5', label: 'Average Rating', icon: Star },
+    {
+      name: "Tech Services",
+      image: "/api/placeholder/400/300?text=Tech+Services",
+      count: "150+ Providers"
+    }
   ];
 
   return (
-    <div className="flex flex-col overflow-hidden">
-      {/* Modern Hero Section with Slideshow */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
-        {/* Slideshow Background */}
-        <div className="absolute inset-0">
-          {heroSlides.map((slide, index) => (
-            <div
-              key={index}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                index === currentSlide ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <img
-                src={slide.image}
-                alt={slide.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-background/60 backdrop-blur-sm"></div>
-            </div>
-          ))}
-        </div>
-
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-muted/50" />
+        
         <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-            {/* Content */}
-            <div className="text-left space-y-8 animate-slide-up">
-              <div className="space-y-4">
-                <Badge className="bg-primary/20 text-foreground border-primary/30">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  #1 Service Marketplace
-                </Badge>
-                
-                <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                  <span className="text-foreground">
-                    Find Trusted
-                  </span>
-                  <br />
-                  <span className="text-primary">Service Professionals</span>
-                </h1>
+          <div className="max-w-6xl mx-auto text-center">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card/50 backdrop-blur-sm mb-8">
+              <div className="w-2 h-2 rounded-full bg-foreground animate-pulse" />
+              <span className="text-sm font-medium">Trusted by 10,000+ professionals</span>
+            </div>
 
-                <p className="text-xl text-muted-foreground max-w-2xl leading-relaxed">
-                  Connect with verified professionals for all your service needs. 
-                  From plumbers to electricians, all rated and reviewed by the community.
-                </p>
-              </div>
+            {/* Main Heading */}
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 text-balance">
+              Find Your Perfect
+              <span className="block bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                Service Match
+              </span>
+            </h1>
 
-              {/* Search Bar */}
-              <Card className="bg-card/80 backdrop-blur-lg border border-border shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 relative group">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                      <Input
-                        placeholder="What service do you need?"
-                        className="pl-12 h-12 border-border focus:border-primary transition-all bg-background/50"
-                      />
-                    </div>
-                    <div className="flex-1 relative group">
-                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                      <Input
-                        placeholder="Enter your location"
-                        className="pl-12 h-12 border-border focus:border-primary transition-all bg-background/50"
-                      />
-                    </div>
-                    <Button 
-                      className="h-12 px-8 bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300"
-                    >
-                      <Search className="h-4 w-4" />
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12 text-balance leading-relaxed">
+              Connect with verified professionals for any service need. Quality guaranteed, satisfaction delivered.
+            </p>
+
+            {/* Search Bar */}
+            <Card className="max-w-2xl mx-auto mb-12 modern-card">
+              <CardContent className="p-6">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="What service do you need?"
+                      className="pl-10 h-12 modern-input"
+                    />
+                  </div>
+                  <div className="flex-1 relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Location"
+                      className="pl-10 h-12 modern-input"
+                    />
+                  </div>
+                  <Button className="h-12 px-8 gap-2">
+                    <Search className="h-4 w-4" />
+                    Search
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {isAuthenticated ? (
+                <>
+                  <Link href="/jobs">
+                    <Button size="lg" className="h-12 px-8 gap-2">
+                      Browse Services
+                      <ArrowRight className="h-4 w-4" />
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                {isAuthenticated ? (
-                  <>
-                    <Link href="/jobs">
-                      <Button 
-                        size="lg" 
-                        className="w-full sm:w-auto text-lg px-8 py-6 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300"
-                      >
-                        Browse Services
-                        <ArrowRight className="ml-2 h-5 w-5" />
-                      </Button>
-                    </Link>
-                    <Link href="/post-job">
-                      <Button 
-                        variant="outline" 
-                        size="lg" 
-                        className="w-full sm:w-auto text-lg px-8 py-6 border-2 border-primary text-foreground hover:bg-primary/10 transition-all duration-300"
-                      >
-                        Post a Request
-                      </Button>
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/signup">
-                      <Button 
-                        size="lg" 
-                        className="w-full sm:w-auto text-lg px-8 py-6 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300"
-                      >
-                        Get Started Free
-                        <ArrowRight className="ml-2 h-5 w-5" />
-                      </Button>
-                    </Link>
-                    <Link href="/login">
-                      <Button 
-                        variant="outline" 
-                        size="lg" 
-                        className="w-full sm:w-auto text-lg px-8 py-6 border-2 border-primary text-foreground hover:bg-primary/10 transition-all duration-300"
-                      >
-                        Login
-                      </Button>
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Slideshow Preview */}
-            <div className="relative hidden lg:block">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-                <img
-                  src={heroSlides[currentSlide].image}
-                  alt={heroSlides[currentSlide].title}
-                  className="w-full h-96 object-cover"
-                />
-                <div className="absolute bottom-4 left-4 right-4 bg-background/80 backdrop-blur-lg rounded-lg p-4">
-                  <h3 className="font-semibold text-foreground">{heroSlides[currentSlide].title}</h3>
-                  <p className="text-sm text-muted-foreground">{heroSlides[currentSlide].subtitle}</p>
-                </div>
-              </div>
-              
-              {/* Slide Indicators */}
-              <div className="flex justify-center gap-2 mt-4">
-                {heroSlides.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentSlide(index)}
-                    className={`w-3 h-3 rounded-full transition-all ${
-                      index === currentSlide ? 'bg-primary' : 'bg-primary/30'
-                    }`}
-                  />
-                ))}
-              </div>
+                  </Link>
+                  <Link href="/post-job">
+                    <Button variant="outline" size="lg" className="h-12 px-8">
+                      Post a Request
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/signup">
+                    <Button size="lg" className="h-12 px-8 gap-2">
+                      Get Started Free
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/login">
+                    <Button variant="outline" size="lg" className="h-12 px-8">
+                      Sign In
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 border-2 border-primary rounded-full flex justify-center">
-            <div className="w-1 h-3 bg-primary rounded-full mt-2"></div>
-          </div>
-        </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-primary/5 border-y border-border">
+      {/* Features Section */}
+      <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div 
-                key={index}
-                className="text-center transform hover:scale-105 transition-transform duration-300"
-              >
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/20 rounded-full mb-4">
-                  <stat.icon className="w-6 h-6 text-primary" />
-                </div>
-                <div className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                  {stat.number}
-                </div>
-                <div className="text-muted-foreground font-medium">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Categories Section with Images */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-primary/20 text-foreground border-primary/30">
-              Popular Services
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
-              Browse by Category
+          <div className="max-w-4xl mx-auto text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
+              Why Choose JobTrade
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Discover professional services tailored to your needs with real images of work
+            <p className="text-lg text-muted-foreground">
+              Experience the future of service matching with our platform
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories.map((category) => (
-              <Card 
-                key={category.name}
-                className="group cursor-pointer border border-border hover:border-primary transition-all duration-300 hover-lift overflow-hidden"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img 
-                    src={category.image} 
-                    alt={category.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </div>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-bold text-lg group-hover:text-primary transition-colors">
-                      {category.name}
-                    </h3>
-                    <Badge variant="secondary" className="bg-primary/10 text-foreground">
-                      {category.jobs}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section with Modern Cards */}
-      <section className="py-20 bg-primary/5">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-primary/20 text-foreground border-primary/30">
-              Why Choose Us
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
-              Everything You Need
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              We provide the best platform to connect you with verified professionals
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
-              <Card 
-                key={feature.title}
-                className="group border border-border hover:border-primary transition-all duration-500 hover-lift overflow-hidden"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img 
-                    src={feature.image} 
-                    alt={feature.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">
-                    {feature.title}
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed">
+              <Card key={feature.title} className="modern-card group hover:shadow-lg">
+                <CardContent className="p-6 text-center">
+                  <div className="w-12 h-12 rounded-lg bg-foreground/5 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <feature.icon className="h-6 w-6 text-foreground" />
+                  </div>
+                  <h3 className="font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     {feature.description}
                   </p>
                 </CardContent>
@@ -374,75 +173,92 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 text-center">
-          <div className="max-w-4xl mx-auto">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-foreground/20 backdrop-blur-lg rounded-full mb-8">
-              <Headphones className="w-8 h-8 text-primary-foreground" />
+      {/* Services Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
+              Popular Services
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Discover services across multiple categories
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {services.map((service) => (
+              <Card key={service.name} className="modern-card group overflow-hidden cursor-pointer">
+                <div className="aspect-[4/3] overflow-hidden">
+                  <img
+                    src={service.image}
+                    alt={service.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold">{service.name}</h3>
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                      {service.count}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div className="space-y-2">
+              <div className="text-3xl md:text-4xl font-bold">10K+</div>
+              <div className="text-sm text-muted-foreground">Happy Customers</div>
             </div>
-            
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            <div className="space-y-2">
+              <div className="text-3xl md:text-4xl font-bold">500+</div>
+              <div className="text-sm text-muted-foreground">Verified Providers</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-3xl md:text-4xl font-bold">50K+</div>
+              <div className="text-sm text-muted-foreground">Jobs Completed</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-3xl md:text-4xl font-bold">4.9</div>
+              <div className="text-sm text-muted-foreground">Average Rating</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
               Ready to Get Started?
             </h2>
-            <p className="text-lg mb-10 text-primary-foreground/90 max-w-2xl mx-auto leading-relaxed">
-              Join thousands of users who trust JobTradeSasa for their service needs.
-              Whether you're looking for help or offering your skills, we've got you covered.
+            <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Join thousands of professionals and customers who trust JobTrade for their service needs.
             </p>
-            
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/signup">
-                <Button 
-                  size="lg" 
-                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  I Need Services
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                <Button size="lg" className="h-12 px-8 gap-2">
+                  Start Today
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/signup">
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="border-2 border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  I'm a Service Provider
+              <Link href="/about">
+                <Button variant="outline" size="lg" className="h-12 px-8">
+                  Learn More
                 </Button>
               </Link>
             </div>
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border py-12 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                <Briefcase className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <span className="text-lg font-bold text-foreground">
-                JobTradeSasa
-              </span>
-            </div>
-            <p className="text-muted-foreground">
-              &copy; 2025 JobTradeSasa. All rights reserved.
-            </p>
-            <div className="flex gap-4">
-              <Badge variant="outline" className="border-primary text-foreground">
-                Terms
-              </Badge>
-              <Badge variant="outline" className="border-primary text-foreground">
-                Privacy
-              </Badge>
-              <Badge variant="outline" className="border-primary text-foreground">
-                Contact
-              </Badge>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
