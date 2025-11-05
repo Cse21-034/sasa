@@ -204,17 +204,17 @@
 }
 
 @layer utilities {
-  /* Gradient backgrounds */
-  .gradient-orange-lime {
-    background: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(84 81% 44%) 100%);
+  /* Solid color backgrounds (replaced gradients) */
+  .solid-orange-lime {
+    background: hsl(25 95% 53%);
   }
 
-  .gradient-orange {
-    background: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(25 95% 43%) 100%);
+  .solid-orange {
+    background: hsl(25 95% 53%);
   }
 
-  .gradient-lime {
-    background: linear-gradient(135deg, hsl(84 81% 44%) 0%, hsl(84 81% 34%) 100%);
+  .solid-lime {
+    background: hsl(84 81% 44%);
   }
 
   /* Glass morphism effect */
@@ -232,12 +232,11 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  /* Animated gradient border */
-  .gradient-border {
+  /* Solid color border */
+  .solid-border {
     position: relative;
-    border: 2px solid transparent;
-    background: linear-gradient(white, white) padding-box,
-                linear-gradient(135deg, hsl(25 95% 53%), hsl(84 81% 44%)) border-box;
+    border: 2px solid hsl(25 95% 53%);
+    background: white;
   }
 
   /* Floating animation */
