@@ -8,6 +8,7 @@ import {
   categories,
   jobFeedback,
   jobReports,
+  serviceAreaMigrations,
   type User, 
   type InsertUser,
   type Provider,
@@ -24,11 +25,13 @@ import {
   type InsertJobFeedback,
   type JobReport,
   type InsertJobReport,
+  type ServiceAreaMigration,
+  type InsertServiceAreaMigration,
   type Category,
   type InsertCategory,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, desc, asc } from "drizzle-orm";
+import { eq, and, sql, desc, asc, inArray } from "drizzle-orm";
 import { InferSelectModel } from 'drizzle-orm'; 
 
 type JobWithRelations = Job & {
@@ -64,8 +67,10 @@ export interface IStorage {
   getProvider(userId: string): Promise<Provider | undefined>;
   createProvider(provider: InsertProvider & { userId: string }): Promise<Provider>;
   updateProvider(userId: string, data: Partial<Provider>): Promise<Provider | undefined>;
+  updateProviderServiceArea(userId: string, primaryCity: string, primaryRegion?: string): Promise<Provider | undefined>;
   searchProviders(params: {
     categoryId?: number;
+    city?: string;
     latitude?: number;
     longitude?: number;
     radius?: number;
@@ -77,6 +82,13 @@ export interface IStorage {
   updateSupplier(userId: string, data: Partial<Supplier>): Promise<Supplier | undefined>;
   getSuppliers(): Promise<SupplierWithUser[]>;
 
+  // Service Area Migrations
+  createServiceAreaMigration(migration: InsertServiceAreaMigration & { providerId: string }): Promise<ServiceAreaMigration>;
+  getProviderMigrations(providerId: string): Promise<ServiceAreaMigration[]>;
+  getPendingMigrations(): Promise<ServiceAreaMigration[]>;
+  approveMigration(migrationId: string, reviewerId: string, notes?: string): Promise<ServiceAreaMigration | undefined>;
+  rejectMigration(migrationId: string, reviewerId: string, notes?: string): Promise<ServiceAreaMigration | undefined>;
+
   // Jobs
   getJob(id: string): Promise<JobWithRelations | undefined>;
   getJobs(params: {
@@ -84,7 +96,9 @@ export interface IStorage {
     status?: string;
     requesterId?: string;
     providerId?: string;
+    city?: string;
   }): Promise<JobWithRelations[]>;
+  getJobsByCity(cities: string[]): Promise<JobWithRelations[]>;
   createJob(job: InsertJob & { requesterId: string }): Promise<Job>;
   updateJob(id: string, data: Partial<Job>): Promise<Job | undefined>;
   acceptJob(jobId: string, providerId: string): Promise<Job | undefined>;
@@ -163,13 +177,26 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
+  async updateProviderServiceArea(userId: string, primaryCity: string, primaryRegion?: string): Promise<Provider | undefined> {
+    const [updated] = await db
+      .update(providers)
+      .set({ 
+        primaryCity, 
+        primaryRegion,
+      })
+      .where(eq(providers.userId, userId))
+      .returning();
+    return updated || undefined;
+  }
+
   async searchProviders(params: {
     categoryId?: number;
+    city?: string;
     latitude?: number;
     longitude?: number;
     radius?: number;
   }): Promise<ProviderSearchResult[]> {
-    const results = await db
+    let query = db
       .select({
         userId: providers.userId,
         companyName: providers.companyName,
@@ -179,12 +206,24 @@ export class DatabaseStorage implements IStorage {
         isOnline: providers.isOnline,
         latitude: providers.latitude,
         longitude: providers.longitude,
+        primaryCity: providers.primaryCity,
+        approvedServiceAreas: providers.approvedServiceAreas,
         user: users,
       })
       .from(providers)
       .leftJoin(users, eq(providers.userId, users.id))
       .where(eq(providers.isOnline, true));
 
+    // Filter by city if provided
+    if (params.city) {
+      const results = await query;
+      return results.filter(r => 
+        r.approvedServiceAreas && 
+        (r.approvedServiceAreas as string[]).includes(params.city!)
+      ).map((r) => ({ ...r, user: r.user })) as ProviderSearchResult[];
+    }
+
+    const results = await query;
     return results.map((r) => ({ ...r, user: r.user })) as ProviderSearchResult[];
   }
 
@@ -223,58 +262,131 @@ export class DatabaseStorage implements IStorage {
     })) as SupplierWithUser[];
   }
 
-// Update the getJob method in server/storage.ts to include provider rating info
-async getJob(id: string): Promise<JobWithRelations | undefined> {
-  const [jobSelect] = await db
-    .select({
-      job: jobs,
-      requester: users,
-      category: categories,
-    })
-    .from(jobs)
-    .leftJoin(users, eq(jobs.requesterId, users.id))
-    .leftJoin(categories, eq(jobs.categoryId, categories.id))
-    .where(eq(jobs.id, id));
-
-  if (!jobSelect) return undefined;
-
-  let provider = null;
-  if (jobSelect.job.providerId) {
-    // Get provider user data
-    const [providerData] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, jobSelect.job.providerId));
-    
-    // Get provider profile data with rating
-    const [providerProfile] = await db
-      .select()
-      .from(providers)
-      .where(eq(providers.userId, jobSelect.job.providerId));
-    
-    if (providerData) {
-      // Merge provider data with rating information
-      provider = {
-        ...providerData,
-        ratingAverage: providerProfile?.ratingAverage || '0',
-        completedJobsCount: providerProfile?.completedJobsCount || 0,
-        isVerified: providerProfile?.isVerified || false,
-      };
-    }
+  // Service Area Migrations
+  async createServiceAreaMigration(migration: InsertServiceAreaMigration & { providerId: string }): Promise<ServiceAreaMigration> {
+    const [created] = await db.insert(serviceAreaMigrations).values(migration).returning();
+    return created;
   }
 
-  return {
-    ...jobSelect.job,
-    requester: jobSelect.requester,
-    provider,
-    category: jobSelect.category,
-  };
-}
+  async getProviderMigrations(providerId: string): Promise<ServiceAreaMigration[]> {
+    return await db
+      .select()
+      .from(serviceAreaMigrations)
+      .where(eq(serviceAreaMigrations.providerId, providerId))
+      .orderBy(desc(serviceAreaMigrations.createdAt));
+  }
+
+  async getPendingMigrations(): Promise<ServiceAreaMigration[]> {
+    return await db
+      .select()
+      .from(serviceAreaMigrations)
+      .where(eq(serviceAreaMigrations.status, 'pending'))
+      .orderBy(desc(serviceAreaMigrations.createdAt));
+  }
+
+  async approveMigration(migrationId: string, reviewerId: string, notes?: string): Promise<ServiceAreaMigration | undefined> {
+    const [migration] = await db
+      .select()
+      .from(serviceAreaMigrations)
+      .where(eq(serviceAreaMigrations.id, migrationId));
+
+    if (!migration) return undefined;
+
+    // Add city to provider's approved service areas
+    const provider = await this.getProvider(migration.providerId);
+    if (provider) {
+      const currentAreas = (provider.approvedServiceAreas as string[]) || [];
+      if (!currentAreas.includes(migration.requestedCity)) {
+        await db
+          .update(providers)
+          .set({
+            approvedServiceAreas: [...currentAreas, migration.requestedCity],
+          })
+          .where(eq(providers.userId, migration.providerId));
+      }
+    }
+
+    // Update migration status
+    const [updated] = await db
+      .update(serviceAreaMigrations)
+      .set({
+        status: 'approved',
+        reviewedBy: reviewerId,
+        reviewedAt: new Date(),
+        reviewNotes: notes,
+      })
+      .where(eq(serviceAreaMigrations.id, migrationId))
+      .returning();
+
+    return updated || undefined;
+  }
+
+  async rejectMigration(migrationId: string, reviewerId: string, notes?: string): Promise<ServiceAreaMigration | undefined> {
+    const [updated] = await db
+      .update(serviceAreaMigrations)
+      .set({
+        status: 'rejected',
+        reviewedBy: reviewerId,
+        reviewedAt: new Date(),
+        reviewNotes: notes,
+      })
+      .where(eq(serviceAreaMigrations.id, migrationId))
+      .returning();
+
+    return updated || undefined;
+  }
+
+  // Jobs
+  async getJob(id: string): Promise<JobWithRelations | undefined> {
+    const [jobSelect] = await db
+      .select({
+        job: jobs,
+        requester: users,
+        category: categories,
+      })
+      .from(jobs)
+      .leftJoin(users, eq(jobs.requesterId, users.id))
+      .leftJoin(categories, eq(jobs.categoryId, categories.id))
+      .where(eq(jobs.id, id));
+
+    if (!jobSelect) return undefined;
+
+    let provider = null;
+    if (jobSelect.job.providerId) {
+      const [providerData] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, jobSelect.job.providerId));
+      
+      const [providerProfile] = await db
+        .select()
+        .from(providers)
+        .where(eq(providers.userId, jobSelect.job.providerId));
+      
+      if (providerData) {
+        provider = {
+          ...providerData,
+          ratingAverage: providerProfile?.ratingAverage || '0',
+          completedJobsCount: providerProfile?.completedJobsCount || 0,
+          isVerified: providerProfile?.isVerified || false,
+        };
+      }
+    }
+
+    return {
+      ...jobSelect.job,
+      requester: jobSelect.requester,
+      provider,
+      category: jobSelect.category,
+    };
+  }
+
   async getJobs(params: {
     categoryId?: string;
     status?: string;
     requesterId?: string;
     providerId?: string;
+    city?: string;
   }): Promise<JobWithRelations[]> {
     const conditions = [];
 
@@ -282,6 +394,7 @@ async getJob(id: string): Promise<JobWithRelations | undefined> {
     if (params.status) conditions.push(eq(jobs.status, params.status as Job['status']));
     if (params.requesterId) conditions.push(eq(jobs.requesterId, params.requesterId));
     if (params.providerId) conditions.push(eq(jobs.providerId, params.providerId));
+    if (params.city) conditions.push(eq(jobs.city, params.city));
 
     const results = await db
       .select({
@@ -293,6 +406,28 @@ async getJob(id: string): Promise<JobWithRelations | undefined> {
       .leftJoin(users, eq(jobs.requesterId, users.id))
       .leftJoin(categories, eq(jobs.categoryId, categories.id))
       .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(jobs.createdAt));
+
+    return results.map((r) => ({
+      ...r.job,
+      requester: r.requester,
+      category: r.category,
+    })) as JobWithRelations[];
+  }
+
+  async getJobsByCity(cities: string[]): Promise<JobWithRelations[]> {
+    if (!cities || cities.length === 0) return [];
+
+    const results = await db
+      .select({
+        job: jobs,
+        requester: users,
+        category: categories,
+      })
+      .from(jobs)
+      .leftJoin(users, eq(jobs.requesterId, users.id))
+      .leftJoin(categories, eq(jobs.categoryId, categories.id))
+      .where(sql`${jobs.city} = ANY(${cities})`)
       .orderBy(desc(jobs.createdAt));
 
     return results.map((r) => ({

@@ -28,6 +28,9 @@ export const jobStatusEnum = pgEnum("job_status", [
   "cancelled"
 ]);
 
+// 🆕 Migration status enum
+export const migrationStatusEnum = pgEnum("migration_status", ["pending", "approved", "rejected"]);
+
 // Users table
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -43,7 +46,7 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Suppliers table - NEW
+// Suppliers table
 export const suppliers = pgTable("suppliers", {
   userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
   companyName: text("company_name").notNull(),
@@ -69,13 +72,18 @@ export const categories = pgTable("categories", {
   icon: text("icon"),
 });
 
-// Providers extended profile
+// 🆕 Providers extended profile with service areas
 export const providers = pgTable("providers", {
   userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
   companyName: text("company_name"),
   serviceCategories: jsonb("service_categories").notNull().$type<number[]>(),
   basePriceInfo: jsonb("base_price_info").$type<Record<string, any>>(),
   serviceAreaRadiusMeters: integer("service_area_radius_meters").default(10000).notNull(),
+  // 🆕 Primary service city/area
+  primaryCity: text("primary_city").notNull(),
+  primaryRegion: text("primary_region"),
+  // 🆕 Approved service areas (array of cities)
+  approvedServiceAreas: jsonb("approved_service_areas").default([]).$type<string[]>(),
   averageResponseTimeSeconds: integer("average_response_time_seconds"),
   ratingAverage: numeric("rating_average", { precision: 3, scale: 2 }).default("0"),
   completedJobsCount: integer("completed_jobs_count").default(0).notNull(),
@@ -85,7 +93,21 @@ export const providers = pgTable("providers", {
   longitude: numeric("longitude", { precision: 10, scale: 7 }),
 });
 
-// Jobs table - UPDATED with budget and payment fields
+// 🆕 Service Area Migration Requests table
+export const serviceAreaMigrations = pgTable("service_area_migrations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  providerId: uuid("provider_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  requestedCity: text("requested_city").notNull(),
+  requestedRegion: text("requested_region"),
+  reason: text("reason").notNull(),
+  status: migrationStatusEnum("status").default("pending").notNull(),
+  reviewedBy: uuid("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 🆕 Jobs table with city/region fields
 export const jobs = pgTable("jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
   requesterId: uuid("requester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -97,6 +119,9 @@ export const jobs = pgTable("jobs", {
   latitude: text("latitude").notNull(),
   longitude: text("longitude").notNull(),
   address: text("address"),
+  // 🆕 City and region for filtering
+  city: text("city").notNull(),
+  region: text("region"),
   urgency: urgencyEnum("urgency").default("normal").notNull(),
   preferredTime: timestamp("preferred_time"),
   status: jobStatusEnum("status").default("open").notNull(),
@@ -132,7 +157,7 @@ export const ratings = pgTable("ratings", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Job Feedback table - NEW
+// Job Feedback table
 export const jobFeedback = pgTable("job_feedback", {
   id: uuid("id").primaryKey().defaultRandom(),
   jobId: uuid("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
@@ -141,7 +166,7 @@ export const jobFeedback = pgTable("job_feedback", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Job Reports table - NEW
+// Job Reports table
 export const jobReports = pgTable("job_reports", {
   id: uuid("id").primaryKey().defaultRandom(),
   jobId: uuid("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
@@ -179,6 +204,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   ratingsReceived: many(ratings, { relationName: "ratingTo" }),
   jobFeedback: many(jobFeedback),
   jobReports: many(jobReports),
+  migrationRequests: many(serviceAreaMigrations),
 }));
 
 export const suppliersRelations = relations(suppliers, ({ one }) => ({
@@ -191,6 +217,17 @@ export const suppliersRelations = relations(suppliers, ({ one }) => ({
 export const providersRelations = relations(providers, ({ one }) => ({
   user: one(users, {
     fields: [providers.userId],
+    references: [users.id],
+  }),
+}));
+
+export const serviceAreaMigrationsRelations = relations(serviceAreaMigrations, ({ one }) => ({
+  provider: one(users, {
+    fields: [serviceAreaMigrations.providerId],
+    references: [users.id],
+  }),
+  reviewer: one(users, {
+    fields: [serviceAreaMigrations.reviewedBy],
     references: [users.id],
   }),
 }));
@@ -277,6 +314,29 @@ export const jobReportsRelations = relations(jobReports, ({ one }) => ({
 
 // ============ SCHEMAS ============
 
+// 🆕 Cities list for Botswana
+export const botswanaCities = [
+  "Gaborone",
+  "Francistown",
+  "Molepolole",
+  "Maun",
+  "Serowe",
+  "Selibe-Phikwe",
+  "Kanye",
+  "Mochudi",
+  "Mahalapye",
+  "Palapye",
+  "Tlokweng",
+  "Lobatse",
+  "Ramotswa",
+  "Letlhakane",
+  "Tonota",
+  "Moshupa",
+  "Thamaga",
+  "Jwaneng",
+  "Orapa",
+] as const;
+
 // User Schemas
 export const baseUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -286,7 +346,31 @@ export const baseUserSchema = createInsertSchema(users).omit({
   passwordHash: true,
 });
 
-// Supplier signup schema
+// 🆕 Updated individual signup schema (NO physical address)
+export const individualSignupSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().optional(),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string(),
+  role: z.enum(['requester', 'provider']),
+  // 🆕 City selection for providers
+  primaryCity: z.enum(botswanaCities).optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
+}).refine((data) => {
+  // If provider, city is required
+  if (data.role === 'provider') {
+    return !!data.primaryCity;
+  }
+  return true;
+}, {
+  message: "City is required for service providers",
+  path: ['primaryCity'],
+});
+
+// Supplier signup schema (WITH physical address)
 export const supplierSignupSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
@@ -301,20 +385,14 @@ export const supplierSignupSchema = z.object({
   companyEmail: z.string().email(),
   companyPhone: z.string().min(5),
   industryType: z.string().min(2),
-}).refine(data => data.password === data.confirmPassword, {
+}).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
 });
 
 // Schema for signup request from frontend
 export const createUserRequestSchema = z.union([
-  baseUserSchema.extend({
-    password: z.string().min(6),
-    confirmPassword: z.string(),
-  }).refine(data => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  }),
+  individualSignupSchema,
   supplierSignupSchema,
 ]);
 
@@ -325,9 +403,18 @@ export const insertUserSchema = createInsertSchema(users).omit({
   isVerified: true,
 });
 
-// Provider Schema
-export const insertProviderSchema = createInsertSchema(providers).omit({
-  userId: true,
+// 🆕 Provider Schema with city
+export const insertProviderSchema = z.object({
+  companyName: z.string().optional(),
+  serviceCategories: z.array(z.number()),
+  basePriceInfo: z.record(z.any()).optional(),
+  serviceAreaRadiusMeters: z.number().default(10000),
+  primaryCity: z.enum(botswanaCities),
+  primaryRegion: z.string().optional(),
+  approvedServiceAreas: z.array(z.string()).default([]),
+  verificationDocuments: z.array(z.string()).optional(),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
 });
 
 // Supplier Schema
@@ -335,7 +422,7 @@ export const insertSupplierSchema = createInsertSchema(suppliers).omit({
   userId: true,
 });
 
-// Job Schema - UPDATED with budget fields
+// 🆕 Job Schema with city
 export const insertJobSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
@@ -343,6 +430,8 @@ export const insertJobSchema = z.object({
   latitude: z.string(),
   longitude: z.string(),
   address: z.string().optional(),
+  city: z.enum(botswanaCities),
+  region: z.string().optional(),
   urgency: z.enum(["normal", "emergency"]).default("normal"),
   preferredTime: z.union([z.string(), z.date()]).optional().transform(val => {
     if (!val) return undefined;
@@ -351,6 +440,13 @@ export const insertJobSchema = z.object({
   photos: z.array(z.string()).optional().default([]),
   budgetMin: z.string().optional(),
   budgetMax: z.string().optional(),
+});
+
+// 🆕 Service Area Migration Schema
+export const insertServiceAreaMigrationSchema = z.object({
+  requestedCity: z.enum(botswanaCities),
+  requestedRegion: z.string().optional(),
+  reason: z.string().min(20, "Please provide a detailed reason (minimum 20 characters)"),
 });
 
 // Message Schema
@@ -369,24 +465,24 @@ export const insertRatingSchema = z.object({
   comment: z.string().optional(),
 });
 
-// Job Feedback Schema - NEW
+// Job Feedback Schema
 export const insertJobFeedbackSchema = z.object({
   jobId: z.string().uuid(),
   feedbackText: z.string().min(1, "Feedback cannot be empty"),
 });
 
-// Job Report Schema - NEW
+// Job Report Schema
 export const insertJobReportSchema = z.object({
   jobId: z.string().uuid(),
   reason: z.string().min(10, "Please provide a detailed reason"),
 });
 
-// Provider Charge Schema - NEW
+// Provider Charge Schema
 export const setProviderChargeSchema = z.object({
   providerCharge: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid amount"),
 });
 
-// Payment Confirmation Schema - NEW
+// Payment Confirmation Schema
 export const confirmPaymentSchema = z.object({
   amountPaid: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid amount"),
 });
@@ -401,6 +497,12 @@ export const updateProfileSchema = z.object({
   name: z.string().min(2).optional(),
   phone: z.string().optional(),
   bio: z.string().optional(),
+});
+
+// 🆕 Update Provider Service Area Schema
+export const updateProviderServiceAreaSchema = z.object({
+  primaryCity: z.enum(botswanaCities),
+  primaryRegion: z.string().optional(),
 });
 
 // Update Job Status Schema
@@ -419,6 +521,9 @@ export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 
 export type Provider = typeof providers.$inferSelect;
 export type InsertProvider = z.infer<typeof insertProviderSchema>;
+
+export type ServiceAreaMigration = typeof serviceAreaMigrations.$inferSelect;
+export type InsertServiceAreaMigration = z.infer<typeof insertServiceAreaMigrationSchema>;
 
 export type Job = typeof jobs.$inferSelect;
 export type InsertJob = z.infer<typeof insertJobSchema>;
@@ -441,6 +546,7 @@ export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Promotion = typeof promotions.$inferSelect;
 
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
+export type UpdateProviderServiceArea = z.infer<typeof updateProviderServiceAreaSchema>;
 export type UpdateJobStatus = z.infer<typeof updateJobStatusSchema>;
 export type SetProviderCharge = z.infer<typeof setProviderChargeSchema>;
 export type ConfirmPayment = z.infer<typeof confirmPaymentSchema>;

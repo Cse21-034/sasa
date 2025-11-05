@@ -1,8 +1,8 @@
- import type { Express } from "express";
+import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import bcrypt from "bcrypt";
-import cors from "cors"; // Added for CORS support
+import cors from "cors";
 import { storage } from "./storage";
 import { authMiddleware, generateToken, type AuthRequest } from "./middleware/auth";
 import { 
@@ -12,18 +12,18 @@ import {
   insertRatingSchema,
   updateProfileSchema,
   updateJobStatusSchema,
-  // 👇 FIX: Added missing Zod schemas for validation
   setProviderChargeSchema,
   confirmPaymentSchema,
   insertJobFeedbackSchema,
   insertJobReportSchema,
+  insertServiceAreaMigrationSchema,
+  updateProviderServiceAreaSchema,
 } from "@shared/schema";
 import { ZodError } from 'zod'; 
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Add CORS middleware
   app.use(cors({
-    origin: process.env.VERCEL_URL || 'https://sasa-indol.vercel.app', // Adjust to your frontend URL
+    origin: process.env.VERCEL_URL || 'https://sasa-indol.vercel.app',
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   }));
@@ -77,117 +77,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== AUTH ROUTES ====================
   
-  // REPLACE your existing /api/auth/signup route with this:
-
-app.post('/api/auth/signup', async (req, res) => {
-  try {
-    const rawValidatedData = createUserRequestSchema.parse(req.body);
-    const { password, confirmPassword, ...userData } = rawValidatedData;
-    
-    if (password !== confirmPassword) {
-      return res.status(400).json({ message: "Passwords do not match." });
-    }
-
-    const existingUser = await storage.getUserByEmail(userData.email);
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-    
-    // Extract supplier-specific fields if role is supplier
-    const isSupplier = userData.role === 'supplier';
-    let supplierData: any = null;
-    
-    if (isSupplier) {
-      const {
-        companyName,
-        physicalAddress,
-        contactPerson,
-        contactPosition,
-        companyEmail,
-        companyPhone,
-        industryType,
-        ...baseUserData
-      } = userData as any;
+  app.post('/api/auth/signup', async (req, res) => {
+    try {
+      const rawValidatedData = createUserRequestSchema.parse(req.body);
+      const { password, confirmPassword, primaryCity, ...userData } = rawValidatedData as any;
       
-      supplierData = {
-        companyName,
-        physicalAddress,
-        contactPerson,
-        contactPosition,
-        companyEmail,
-        companyPhone,
-        industryType,
-      };
+      if (password !== confirmPassword) {
+        return res.status(400).json({ message: "Passwords do not match." });
+      }
+
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'User already exists' });
+      }
+
+      const passwordHash = await bcrypt.hash(password, 10);
       
-      // Use baseUserData for user creation
-      Object.keys(userData).forEach(key => {
-        if (!(key in baseUserData)) {
-          delete (userData as any)[key];
+      const isSupplier = userData.role === 'supplier';
+      let supplierData: any = null;
+      
+      if (isSupplier) {
+        const {
+          companyName,
+          physicalAddress,
+          contactPerson,
+          contactPosition,
+          companyEmail,
+          companyPhone,
+          industryType,
+          ...baseUserData
+        } = userData as any;
+        
+        supplierData = {
+          companyName,
+          physicalAddress,
+          contactPerson,
+          contactPosition,
+          companyEmail,
+          companyPhone,
+          industryType,
+        };
+        
+        Object.keys(userData).forEach(key => {
+          if (!(key in baseUserData)) {
+            delete (userData as any)[key];
+          }
+        });
+      }
+
+      const user = await storage.createUser({
+        ...userData,
+        passwordHash,
+      });
+
+      // Create role-specific profile
+      if (user.role === 'provider') {
+        if (!primaryCity) {
+          return res.status(400).json({ message: 'City is required for service providers' });
         }
+        
+        await storage.createProvider({
+          userId: user.id,
+          serviceCategories: [],
+          primaryCity,
+          approvedServiceAreas: [primaryCity], // Initially just their primary city
+          serviceAreaRadiusMeters: 10000,
+        });
+      } else if (user.role === 'supplier' && supplierData) {
+        await storage.createSupplier({
+          userId: user.id,
+          ...supplierData,
+        });
+      }
+
+      const token = generateToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
       });
+
+      const { passwordHash: _, ...userWithoutPassword } = user;
+      res.json({ user: userWithoutPassword, token });
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+        });
+      }
+      console.error('Signup error:', error);
+      res.status(400).json({ message: error.message || 'Signup failed' });
     }
-
-    // Create user account
-    const user = await storage.createUser({
-      ...userData,
-      passwordHash,
-    });
-
-    // Create role-specific profile
-    if (user.role === 'provider') {
-      await storage.createProvider({
-        userId: user.id,
-        serviceCategories: [],
-        serviceAreaRadiusMeters: 10000,
-      });
-    } else if (user.role === 'supplier' && supplierData) {
-      await storage.createSupplier({
-        userId: user.id,
-        ...supplierData,
-      });
-    }
-
-    const token = generateToken({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    });
-
-    const { passwordHash: _, ...userWithoutPassword } = user;
-    res.json({ user: userWithoutPassword, token });
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
-      });
-    }
-    console.error('Signup error:', error);
-    res.status(400).json({ message: error.message || 'Signup failed' });
-  }
-});
+  });
 
   app.post('/api/auth/login', async (req, res) => {
-    console.log('Received login request:', req.body); // Log request for debugging
     try {
       const { email, password } = req.body;
 
       if (!email || !password) {
-        console.error('Login failed: Missing email or password', { email });
         return res.status(400).json({ message: 'Email and password are required' });
       }
 
       const user = await storage.getUserByEmail(email);
       if (!user) {
-        console.error('Login failed: User not found', { email });
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
       const isValid = await bcrypt.compare(password, user.passwordHash);
       if (!isValid) {
-        console.error('Login failed: Invalid password', { email });
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
@@ -198,7 +195,6 @@ app.post('/api/auth/signup', async (req, res) => {
       });
 
       const { passwordHash: _, ...userWithoutPassword } = user;
-      console.log('Login successful:', { userId: user.id, email });
       res.json({ user: userWithoutPassword, token });
     } catch (error: any) {
       console.error('Login error:', error);
@@ -208,96 +204,118 @@ app.post('/api/auth/signup', async (req, res) => {
 
   // ==================== JOB ROUTES ====================
 
-  // In server/routes.ts - Update the GET /api/jobs endpoint
-
-app.get('/api/jobs', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const { category, status, sort } = req.query;
-    const params: any = {};
-    
-    if (category && category !== 'all') {
-      params.categoryId = category as string;
-    }
-    if (status) {
-      params.status = status as string;
-    }
-
-    // IMPORTANT: Filter jobs based on user role
-    if (req.user!.role === 'requester') {
-      // Requesters only see their own jobs
-      params.requesterId = req.user!.id;
-    } else if (req.user!.role === 'provider') {
-      // Providers see all open jobs and jobs assigned to them
-      // This is handled in the storage layer below
-      params.providerId = req.user!.id;
-    }
-    // Admins see all jobs (no filter added)
-
-    let jobs = await storage.getJobs(params);
-
-    // If provider, also include open jobs they can accept
-    if (req.user!.role === 'provider') {
-      const openJobs = await storage.getJobs({ status: 'open' });
-      // Merge and deduplicate
-      const jobMap = new Map();
-      [...jobs, ...openJobs].forEach(job => {
-        if (!jobMap.has(job.id)) {
-          jobMap.set(job.id, job);
+  // 🆕 UPDATED: Get jobs with city-based filtering for providers
+  app.get('/api/jobs', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const { category, status, sort } = req.query;
+      
+      if (req.user!.role === 'requester') {
+        // Requesters only see their own jobs
+        const params: any = { requesterId: req.user!.id };
+        if (category && category !== 'all') params.categoryId = category as string;
+        if (status) params.status = status as string;
+        
+        const jobs = await storage.getJobs(params);
+        res.json(jobs);
+      } else if (req.user!.role === 'provider') {
+        // Providers see:
+        // 1. Jobs in their approved service areas (open jobs)
+        // 2. Jobs they are assigned to (any status)
+        
+        const provider = await storage.getProvider(req.user!.id);
+        if (!provider) {
+          return res.status(404).json({ message: 'Provider profile not found' });
         }
-      });
-      jobs = Array.from(jobMap.values());
+
+        const approvedCities = (provider.approvedServiceAreas as string[]) || [provider.primaryCity];
+        
+        // Get open jobs in approved cities
+        const openJobs = await storage.getJobsByCity(approvedCities);
+        const openJobsFiltered = openJobs.filter(j => j.status === 'open');
+        
+        // Get jobs assigned to this provider
+        const assignedJobs = await storage.getJobs({ providerId: req.user!.id });
+        
+        // Merge and deduplicate
+        const jobMap = new Map();
+        [...openJobsFiltered, ...assignedJobs].forEach(job => {
+          if (!jobMap.has(job.id)) {
+            jobMap.set(job.id, job);
+          }
+        });
+        
+        let jobs = Array.from(jobMap.values());
+
+        // Apply filters
+        if (category && category !== 'all') {
+          jobs = jobs.filter(j => j.categoryId === parseInt(category as string));
+        }
+        if (status) {
+          jobs = jobs.filter(j => j.status === status);
+        }
+
+        // Sort
+        if (sort === 'urgent') {
+          jobs = jobs.sort((a, b) => {
+            if (a.urgency === 'emergency' && b.urgency !== 'emergency') return -1;
+            if (a.urgency !== 'emergency' && b.urgency === 'emergency') return 1;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          });
+        } else if (sort === 'recent') {
+          jobs = jobs.sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        }
+
+        res.json(jobs);
+      } else {
+        // Admin sees all jobs
+        const jobs = await storage.getJobs({});
+        res.json(jobs);
+      }
+    } catch (error: any) {
+      console.error('Get jobs error:', error);
+      res.status(500).json({ message: error.message });
     }
+  });
 
-    // Sort based on query parameter
-    if (sort === 'urgent') {
-      jobs = jobs.sort((a, b) => {
-        if (a.urgency === 'emergency' && b.urgency !== 'emergency') return -1;
-        if (a.urgency !== 'emergency' && b.urgency === 'emergency') return 1;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-    } else if (sort === 'recent') {
-      jobs = jobs.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-    } else if (sort === 'distance') {
-      jobs = jobs.sort(() => Math.random() - 0.5);
+  app.get('/api/jobs/:id', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const job = await storage.getJob(req.params.id);
+      if (!job) {
+        return res.status(404).json({ message: 'Job not found' });
+      }
+
+      // Check permissions based on role
+      if (req.user!.role === 'requester' && job.requesterId !== req.user!.id) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      if (req.user!.role === 'provider') {
+        // Provider can see if:
+        // 1. They are assigned to it
+        // 2. It's open and in their approved service areas
+        if (job.providerId !== req.user!.id && job.status !== 'open') {
+          return res.status(403).json({ message: 'Access denied' });
+        }
+        
+        if (job.status === 'open') {
+          const provider = await storage.getProvider(req.user!.id);
+          const approvedCities = (provider?.approvedServiceAreas as string[]) || [provider?.primaryCity];
+          
+          if (!approvedCities.includes(job.city)) {
+            return res.status(403).json({ message: 'This job is not in your service area' });
+          }
+        }
+      }
+
+      res.json(job);
+    } catch (error: any) {
+      console.error('Get job error:', error);
+      res.status(500).json({ message: error.message });
     }
+  });
 
-    res.json(jobs);
-  } catch (error: any) {
-    console.error('Get jobs error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Also update GET /api/jobs/:id to ensure user can only access their own jobs
-app.get('/api/jobs/:id', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const job = await storage.getJob(req.params.id);
-    if (!job) {
-      return res.status(404).json({ message: 'Job not found' });
-    }
-
-    // Check permissions based on role
-    if (req.user!.role === 'requester' && job.requesterId !== req.user!.id) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-    
-    if (req.user!.role === 'provider' && 
-        job.providerId !== req.user!.id && 
-        job.status !== 'open') {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
-    res.json(job);
-  } catch (error: any) {
-    console.error('Get job error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-
-  
   app.post('/api/jobs', authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'requester') {
@@ -345,21 +363,180 @@ app.get('/api/jobs/:id', authMiddleware, async (req: AuthRequest, res) => {
     }
   });
 
+  // 🆕 UPDATED: Accept job with city validation
   app.post('/api/jobs/:id/accept', authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'provider') {
         return res.status(403).json({ message: 'Only providers can accept jobs' });
       }
 
-      const job = await storage.acceptJob(req.params.id, req.user!.id);
-      
+      const job = await storage.getJob(req.params.id);
       if (!job) {
+        return res.status(404).json({ message: 'Job not found' });
+      }
+
+      // Check if job is in provider's approved service areas
+      const provider = await storage.getProvider(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: 'Provider profile not found' });
+      }
+
+      const approvedCities = (provider.approvedServiceAreas as string[]) || [provider.primaryCity];
+      if (!approvedCities.includes(job.city)) {
+        return res.status(403).json({ 
+          message: `This job is in ${job.city}. You can only accept jobs in: ${approvedCities.join(', ')}. Apply for migration to work in other cities.` 
+        });
+      }
+
+      const acceptedJob = await storage.acceptJob(req.params.id, req.user!.id);
+      
+      if (!acceptedJob) {
         return res.status(404).json({ message: 'Job not found or already accepted' });
       }
 
-      res.json(job);
+      res.json(acceptedJob);
     } catch (error: any) {
       console.error('Accept job error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ==================== SERVICE AREA MIGRATION ROUTES ====================
+
+  // 🆕 Request migration to new service area
+  app.post('/api/provider/migration-request', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'provider') {
+        return res.status(403).json({ message: 'Only providers can request migrations' });
+      }
+
+      const validatedData = insertServiceAreaMigrationSchema.parse(req.body);
+      
+      // Check if already approved for this city
+      const provider = await storage.getProvider(req.user!.id);
+      const approvedCities = (provider?.approvedServiceAreas as string[]) || [];
+      
+      if (approvedCities.includes(validatedData.requestedCity)) {
+        return res.status(400).json({ message: 'You are already approved to work in this city' });
+      }
+
+      const migration = await storage.createServiceAreaMigration({
+        ...validatedData,
+        providerId: req.user!.id,
+      });
+
+      res.status(201).json(migration);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+        });
+      }
+      console.error('Migration request error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get provider's migration requests
+  app.get('/api/provider/migrations', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'provider') {
+        return res.status(403).json({ message: 'Only providers can view migrations' });
+      }
+
+      const migrations = await storage.getProviderMigrations(req.user!.id);
+      res.json(migrations);
+    } catch (error: any) {
+      console.error('Get migrations error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Admin: Get pending migrations
+  app.get('/api/admin/migrations/pending', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const migrations = await storage.getPendingMigrations();
+      res.json(migrations);
+    } catch (error: any) {
+      console.error('Get pending migrations error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Admin: Approve migration
+  app.post('/api/admin/migrations/:id/approve', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const { notes } = req.body;
+      const migration = await storage.approveMigration(req.params.id, req.user!.id, notes);
+
+      if (!migration) {
+        return res.status(404).json({ message: 'Migration request not found' });
+      }
+
+      res.json(migration);
+    } catch (error: any) {
+      console.error('Approve migration error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Admin: Reject migration
+  app.post('/api/admin/migrations/:id/reject', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const { notes } = req.body;
+      const migration = await storage.rejectMigration(req.params.id, req.user!.id, notes);
+
+      if (!migration) {
+        return res.status(404).json({ message: 'Migration request not found' });
+      }
+
+      res.json(migration);
+    } catch (error: any) {
+      console.error('Reject migration error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // 🆕 Update provider's primary service area
+  app.patch('/api/provider/service-area', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'provider') {
+        return res.status(403).json({ message: 'Only providers can update service area' });
+      }
+
+      const validatedData = updateProviderServiceAreaSchema.parse(req.body);
+      const updated = await storage.updateProviderServiceArea(
+        req.user!.id,
+        validatedData.primaryCity,
+        validatedData.primaryRegion
+      );
+
+      if (!updated) {
+        return res.status(404).json({ message: 'Provider not found' });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+        });
+      }
+      console.error('Update service area error:', error);
       res.status(500).json({ message: error.message });
     }
   });
@@ -368,9 +545,10 @@ app.get('/api/jobs/:id', authMiddleware, async (req: AuthRequest, res) => {
 
   app.get('/api/providers', authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const { categoryId, latitude, longitude, radius } = req.query;
+      const { categoryId, city, latitude, longitude, radius } = req.query;
       const params: any = {};
       if (categoryId) params.categoryId = parseInt(categoryId as string);
+      if (city) params.city = city as string;
       if (latitude) params.latitude = parseFloat(latitude as string);
       if (longitude) params.longitude = parseFloat(longitude as string);
       if (radius) params.radius = parseInt(radius as string);
@@ -527,110 +705,108 @@ app.get('/api/jobs/:id', authMiddleware, async (req: AuthRequest, res) => {
 
   // ==================== SUPPLIER ROUTES ====================
 
-app.get('/api/suppliers', async (req, res) => {
-  try {
-    const suppliers = await storage.getSuppliers();
-    res.json(suppliers);
-  } catch (error: any) {
-    console.error('Get suppliers error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// ==================== JOB PAYMENT ROUTES ====================
-
-app.post('/api/jobs/:id/set-charge', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    if (req.user!.role !== 'provider') {
-      return res.status(403).json({ message: 'Only providers can set charges' });
+  app.get('/api/suppliers', async (req, res) => {
+    try {
+      const suppliers = await storage.getSuppliers();
+      res.json(suppliers);
+    } catch (error: any) {
+      console.error('Get suppliers error:', error);
+      res.status(500).json({ message: error.message });
     }
+  });
 
-    // FIX: setProviderChargeSchema is now imported
-    const { providerCharge } = setProviderChargeSchema.parse(req.body);
-    const job = await storage.setProviderCharge(req.params.id, providerCharge);
+  // ==================== JOB PAYMENT ROUTES ====================
 
-    if (!job) {
-      return res.status(404).json({ message: 'Job not found' });
+  app.post('/api/jobs/:id/set-charge', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'provider') {
+        return res.status(403).json({ message: 'Only providers can set charges' });
+      }
+
+      const { providerCharge } = setProviderChargeSchema.parse(req.body);
+      const job = await storage.setProviderCharge(req.params.id, providerCharge);
+
+      if (!job) {
+        return res.status(404).json({ message: 'Job not found' });
+      }
+
+      res.json(job);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+        });
+      }
+      console.error('Set charge error:', error);
+      res.status(500).json({ message: error.message });
     }
+  });
 
-    res.json(job);
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+  app.post('/api/jobs/:id/confirm-payment', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'requester') {
+        return res.status(403).json({ message: 'Only requesters can confirm payment' });
+      }
+
+      const { amountPaid } = confirmPaymentSchema.parse(req.body);
+      const job = await storage.confirmPayment(req.params.id, amountPaid);
+
+      if (!job) {
+        return res.status(404).json({ message: 'Job not found' });
+      }
+
+      res.json(job);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+        });
+      }
+      console.error('Confirm payment error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ==================== JOB FEEDBACK ROUTES ====================
+
+  app.post('/api/jobs/:id/feedback', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'provider') {
+        return res.status(403).json({ message: 'Only providers can submit feedback' });
+      }
+
+      const validatedData = insertJobFeedbackSchema.parse(req.body);
+      const feedback = await storage.createJobFeedback({
+        ...validatedData,
+        providerId: req.user!.id,
       });
+
+      res.json(feedback);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+        });
+      }
+      console.error('Submit feedback error:', error);
+      res.status(500).json({ message: error.message });
     }
-    console.error('Set charge error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
+  });
 
-app.post('/api/jobs/:id/confirm-payment', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    if (req.user!.role !== 'requester') {
-      return res.status(403).json({ message: 'Only requesters can confirm payment' });
+  app.get('/api/jobs/:id/feedback', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const feedback = await storage.getJobFeedback(req.params.id);
+      res.json(feedback);
+    } catch (error: any) {
+      console.error('Get feedback error:', error);
+      res.status(500).json({ message: error.message });
     }
+  });
 
-    // FIX: confirmPaymentSchema is now imported
-    const { amountPaid } = confirmPaymentSchema.parse(req.body);
-    const job = await storage.confirmPayment(req.params.id, amountPaid);
-
-    if (!job) {
-      return res.status(404).json({ message: 'Job not found' });
-    }
-
-    res.json(job);
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
-      });
-    }
-    console.error('Confirm payment error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// ==================== JOB FEEDBACK ROUTES ====================
-
-app.post('/api/jobs/:id/feedback', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    if (req.user!.role !== 'provider') {
-      return res.status(403).json({ message: 'Only providers can submit feedback' });
-    }
-
-    // FIX: insertJobFeedbackSchema is now imported
-    const validatedData = insertJobFeedbackSchema.parse(req.body);
-    const feedback = await storage.createJobFeedback({
-      ...validatedData,
-      providerId: req.user!.id,
-    });
-
-    res.json(feedback);
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
-      });
-    }
-    console.error('Submit feedback error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-app.get('/api/jobs/:id/feedback', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const feedback = await storage.getJobFeedback(req.params.id);
-    res.json(feedback);
-  } catch (error: any) {
-    console.error('Get feedback error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
+  // ==================== JOB REPORT ROUTES ====================
 // ==================== JOB REPORT ROUTES (ADD THESE) ====================
 
 app.post('/api/jobs/:id/report', authMiddleware, async (req: AuthRequest, res) => {

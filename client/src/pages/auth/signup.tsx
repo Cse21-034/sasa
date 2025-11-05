@@ -3,19 +3,20 @@ import { Link, useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Briefcase, Loader2, UserCircle, Wrench, Building2 } from 'lucide-react';
+import { Briefcase, Loader2, UserCircle, Wrench, Building2, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest } from '@/lib/queryClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { botswanaCities } from '@shared/schema';
 
-// Individual signup schema
+// Individual signup schema (NO physical address)
 const individualSignupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
@@ -23,12 +24,21 @@ const individualSignupSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
   role: z.enum(['requester', 'provider']),
+  primaryCity: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
+}).refine((data) => {
+  if (data.role === 'provider') {
+    return !!data.primaryCity;
+  }
+  return true;
+}, {
+  message: "City is required for service providers",
+  path: ['primaryCity'],
 });
 
-// Supplier signup schema
+// Supplier signup schema (WITH physical address)
 const supplierSignupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
@@ -68,6 +78,7 @@ export default function Signup() {
       password: '',
       confirmPassword: '',
       role: 'requester',
+      primaryCity: undefined,
     },
   });
 
@@ -91,8 +102,8 @@ export default function Signup() {
     },
   });
 
-  // Use the appropriate form based on account type
   const form = accountType === 'individual' ? individualForm : supplierForm;
+  const selectedRole = accountType === 'individual' ? individualForm.watch('role') : 'supplier';
 
   const handleAccountTypeChange = (newType: 'individual' | 'organization') => {
     setAccountType(newType);
@@ -207,6 +218,39 @@ export default function Signup() {
                     )}
                   />
 
+                  {selectedRole === 'provider' && (
+                    <FormField
+                      control={individualForm.control}
+                      name="primaryCity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Your City / Service Area</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select your city" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {botswanaCities.map((city) => (
+                                <SelectItem key={city} value={city}>
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="h-4 w-4" />
+                                    {city}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            You will only see jobs in this city. You can apply to work in other cities later.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
                   <FormField
                     control={form.control}
                     name="name"
@@ -242,7 +286,7 @@ export default function Signup() {
                       <FormItem>
                         <FormLabel>Phone (Optional)</FormLabel>
                         <FormControl>
-                          <Input type="tel" placeholder="+1234567890" {...field} />
+                          <Input type="tel" placeholder="+267 12345678" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -301,7 +345,7 @@ export default function Signup() {
                         <FormLabel>Physical Address</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="123 Main St, City, State" 
+                            placeholder="123 Main St, Gaborone" 
                             {...field} 
                           />
                         </FormControl>
@@ -362,7 +406,7 @@ export default function Signup() {
                         <FormItem>
                           <FormLabel>Company Phone</FormLabel>
                           <FormControl>
-                            <Input type="tel" placeholder="+1234567890" {...field} />
+                            <Input type="tel" placeholder="+267 12345678" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

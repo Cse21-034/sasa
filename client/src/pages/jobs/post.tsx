@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { insertJobSchema, type Category } from '@shared/schema';
+import { insertJobSchema, type Category, botswanaCities } from '@shared/schema';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 
 export default function PostJob() {
@@ -34,6 +34,8 @@ export default function PostJob() {
       latitude: '',
       longitude: '',
       address: '',
+      city: undefined as any,
+      region: '',
       urgency: 'normal' as const,
       preferredTime: undefined,
       photos: [],
@@ -51,7 +53,7 @@ export default function PostJob() {
       queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
       toast({
         title: 'Job posted successfully!',
-        description: 'Service providers near you will be notified.',
+        description: 'Service providers in your area will be notified.',
       });
       setLocation('/my-jobs');
     },
@@ -79,6 +81,16 @@ export default function PostJob() {
               if (data.display_name) {
                 form.setValue('address', data.display_name);
               }
+              // Try to extract city from address
+              if (data.address) {
+                const city = data.address.city || data.address.town || data.address.village;
+                const matchedCity = botswanaCities.find(c => 
+                  city?.toLowerCase().includes(c.toLowerCase())
+                );
+                if (matchedCity) {
+                  form.setValue('city', matchedCity as any);
+                }
+              }
             });
         },
         (error) => {
@@ -95,7 +107,6 @@ export default function PostJob() {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      // Simulate photo upload - in production, this would upload to a server
       Array.from(files).forEach((file) => {
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -122,7 +133,7 @@ export default function PostJob() {
         <CardHeader>
           <CardTitle className="text-3xl">Post a Service Request</CardTitle>
           <CardDescription>
-            Describe what you need and connect with qualified service providers
+            Describe what you need and connect with qualified service providers in your area
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -197,6 +208,38 @@ export default function PostJob() {
                 )}
               />
 
+              {/* City Selection */}
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City / Location</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Select city" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {botswanaCities.map((city) => (
+                          <SelectItem key={city} value={city}>
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4" />
+                              {city}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Only service providers in this city will see your job
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Budget Range */}
               <div className="space-y-4">
                 <FormLabel className="text-base flex items-center gap-2">
@@ -209,11 +252,11 @@ export default function PostJob() {
                     name="budgetMin"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Minimum ($)</FormLabel>
+                        <FormLabel>Minimum (BWP)</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
-                            placeholder="50"
+                            placeholder="500"
                             className="h-12"
                             {...field}
                           />
@@ -227,11 +270,11 @@ export default function PostJob() {
                     name="budgetMax"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Maximum ($)</FormLabel>
+                        <FormLabel>Maximum (BWP)</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
-                            placeholder="150"
+                            placeholder="1500"
                             className="h-12"
                             {...field}
                           />
@@ -296,7 +339,7 @@ export default function PostJob() {
               </div>
 
               <div className="space-y-4">
-                <FormLabel>Location</FormLabel>
+                <FormLabel>Detailed Location</FormLabel>
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -316,7 +359,7 @@ export default function PostJob() {
                     <FormItem>
                       <FormControl>
                         <Input
-                          placeholder="Enter address or location"
+                          placeholder="Enter specific address or landmark"
                           className="h-12"
                           data-testid="input-job-address"
                           {...field}
