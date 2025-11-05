@@ -26,47 +26,71 @@ export default function Landing() {
       icon: MapPin,
       title: 'Location-Based Matching',
       description: 'Find service providers near you with real-time distance tracking',
-      gradient: 'from-orange-500 to-orange-600',
+      color: 'orange',
     },
     {
       icon: Shield,
       title: 'Verified Providers',
       description: 'All providers are verified with certificates and ID documentation',
-      gradient: 'from-lime-500 to-lime-600',
+      color: 'lime',
     },
     {
       icon: MessageSquare,
       title: 'Real-Time Chat',
       description: 'Communicate directly with providers through instant messaging',
-      gradient: 'from-orange-500 to-lime-500',
+      color: 'orange',
     },
     {
       icon: Star,
       title: 'Ratings & Reviews',
       description: 'Make informed decisions based on community feedback',
-      gradient: 'from-lime-500 to-green-500',
+      color: 'lime',
     },
     {
       icon: Clock,
       title: 'Fast Response',
       description: 'Get connected with available providers within minutes',
-      gradient: 'from-orange-600 to-orange-700',
+      color: 'orange',
     },
     {
       icon: Award,
       title: 'Quality Assurance',
       description: 'Premium service standards guaranteed by our platform',
-      gradient: 'from-lime-600 to-lime-700',
+      color: 'lime',
     },
   ];
 
   const categories = [
-    { name: 'Plumbing', icon: Wrench, color: 'orange' },
-    { name: 'Electrical', icon: Zap, color: 'lime' },
-    { name: 'Carpentry', icon: Hammer, color: 'orange' },
-    { name: 'Painting', icon: Paintbrush, color: 'lime' },
-    { name: 'Cleaning', icon: Sparkles, color: 'orange' },
-    { name: 'Gardening', icon: Leaf, color: 'lime' },
+    { 
+      name: 'Plumbing', 
+      image: '/api/placeholder/200/200?text=Plumbing',
+      color: 'orange' 
+    },
+    { 
+      name: 'Electrical', 
+      image: '/api/placeholder/200/200?text=Electrical',
+      color: 'lime' 
+    },
+    { 
+      name: 'Carpentry', 
+      image: '/api/placeholder/200/200?text=Carpentry',
+      color: 'orange' 
+    },
+    { 
+      name: 'Painting', 
+      image: '/api/placeholder/200/200?text=Painting',
+      color: 'lime' 
+    },
+    { 
+      name: 'Cleaning', 
+      image: '/api/placeholder/200/200?text=Cleaning',
+      color: 'orange' 
+    },
+    { 
+      name: 'Gardening', 
+      image: '/api/placeholder/200/200?text=Gardening',
+      color: 'lime' 
+    },
   ];
 
   const stats = [
@@ -78,13 +102,13 @@ export default function Landing() {
 
   return (
     <div className="flex flex-col overflow-hidden">
-      {/* Hero Section with Animated Background */}
+      {/* Hero Section with Search Bar */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-lime-50 dark:from-orange-950 dark:via-gray-900 dark:to-lime-950">
-          <div className="absolute inset-0 opacity-30">
-            <div className="absolute top-0 -left-4 w-72 h-72 bg-orange-300 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
-            <div className="absolute top-0 -right-4 w-72 h-72 bg-lime-300 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
+        {/* Solid color background */}
+        <div className="absolute inset-0 bg-white dark:bg-gray-900">
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-0 -left-4 w-72 h-72 bg-orange-500 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+            <div className="absolute top-0 -right-4 w-72 h-72 bg-lime-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
             <div className="absolute -bottom-8 left-20 w-72 h-72 bg-orange-400 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
           </div>
         </div>
@@ -100,7 +124,7 @@ export default function Landing() {
           <div className="max-w-5xl mx-auto text-center">
             {/* Floating badge */}
             <div className="mb-8 animate-bounce">
-              <Badge className="bg-gradient-to-r from-orange-500 to-lime-500 text-white text-sm px-4 py-2 shadow-lg">
+              <Badge className="bg-orange-500 text-white text-sm px-4 py-2 shadow-lg">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 #1 Service Marketplace in Your Area
               </Badge>
@@ -108,7 +132,7 @@ export default function Landing() {
 
             {/* Main Heading */}
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-lime-600 bg-clip-text text-transparent">
+              <span className="text-orange-600">
                 Connect with Trusted
               </span>
               <br />
@@ -122,14 +146,41 @@ export default function Landing() {
               carpenters to cleaners - all verified and rated by the community.
             </p>
 
+            {/* Search Bar - Moved to Hero Section */}
+            <Card className="max-w-3xl mx-auto shadow-2xl border-2 border-orange-200 dark:border-orange-800 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 mb-16">
+              <CardContent className="p-6">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1 relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-500 group-hover:text-orange-600 transition-colors" />
+                    <Input
+                      placeholder="What service do you need?"
+                      className="pl-12 h-14 text-lg border-2 border-gray-200 focus:border-orange-500 transition-all"
+                    />
+                  </div>
+                  <div className="flex-1 relative group">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-lime-500 group-hover:text-lime-600 transition-colors" />
+                    <Input
+                      placeholder="Enter your location"
+                      className="pl-12 h-14 text-lg border-2 border-gray-200 focus:border-lime-500 transition-all"
+                    />
+                  </div>
+                  <Button 
+                    className="h-14 px-8 bg-orange-500 hover:bg-orange-600 text-lg font-semibold shadow-lg"
+                  >
+                    <Search className="h-5 w-5" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {isAuthenticated ? (
                 <>
                   <Link href="/jobs">
                     <Button 
                       size="lg" 
-                      className="w-full sm:w-auto text-lg px-8 py-6 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                      className="w-full sm:w-auto text-lg px-8 py-6 bg-orange-500 hover:bg-orange-600 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                     >
                       Browse Services
                       <ArrowRight className="ml-2 h-5 w-5" />
@@ -150,7 +201,7 @@ export default function Landing() {
                   <Link href="/signup">
                     <Button 
                       size="lg" 
-                      className="w-full sm:w-auto text-lg px-8 py-6 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                      className="w-full sm:w-auto text-lg px-8 py-6 bg-orange-500 hover:bg-orange-600 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                     >
                       Get Started Free
                       <ArrowRight className="ml-2 h-5 w-5" />
@@ -168,33 +219,6 @@ export default function Landing() {
                 </>
               )}
             </div>
-
-            {/* Enhanced Search Bar */}
-            <Card className="max-w-3xl mx-auto shadow-2xl border-2 border-orange-200 dark:border-orange-800 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90">
-              <CardContent className="p-6">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1 relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-500 group-hover:text-orange-600 transition-colors" />
-                    <Input
-                      placeholder="What service do you need?"
-                      className="pl-12 h-14 text-lg border-2 border-gray-200 focus:border-orange-500 transition-all"
-                    />
-                  </div>
-                  <div className="flex-1 relative group">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-lime-500 group-hover:text-lime-600 transition-colors" />
-                    <Input
-                      placeholder="Enter your location"
-                      className="pl-12 h-14 text-lg border-2 border-gray-200 focus:border-lime-500 transition-all"
-                    />
-                  </div>
-                  <Button 
-                    className="h-14 px-8 bg-gradient-to-r from-orange-500 to-lime-500 hover:from-orange-600 hover:to-lime-600 text-lg font-semibold shadow-lg"
-                  >
-                    <Search className="h-5 w-5" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
 
@@ -207,7 +231,7 @@ export default function Landing() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-gradient-to-r from-orange-500 to-lime-500 relative overflow-hidden">
+      <section className="py-20 bg-orange-500 relative overflow-hidden">
         <div className="absolute inset-0 bg-grid-white/[0.1] bg-[size:20px_20px]"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -231,7 +255,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Categories Section */}
+      {/* Categories Section with Images */}
       <section className="py-20 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -239,7 +263,7 @@ export default function Landing() {
               Popular Services
             </Badge>
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-orange-600 to-lime-600 bg-clip-text text-transparent">
+              <span className="text-orange-600">
                 Browse by Category
               </span>
             </h2>
@@ -249,14 +273,18 @@ export default function Landing() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {categories.map((category, index) => (
+            {categories.map((category) => (
               <Card 
                 key={category.name}
                 className={`group cursor-pointer border-2 hover:border-${category.color}-500 transition-all duration-300 hover:shadow-2xl transform hover:scale-105 hover:-rotate-2`}
               >
-                <CardContent className="flex flex-col items-center justify-center p-8 gap-4">
-                  <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${category.color === 'orange' ? 'from-orange-400 to-orange-600' : 'from-lime-400 to-lime-600'} flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300`}>
-                    <category.icon className="h-10 w-10 text-white" />
+                <CardContent className="flex flex-col items-center justify-center p-4 gap-4">
+                  <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <img 
+                      src={category.image} 
+                      alt={category.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
                   </div>
                   <p className="font-bold text-lg text-center group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                     {category.name}
@@ -270,14 +298,14 @@ export default function Landing() {
 
       {/* Features Section with Modern Cards */}
       <section className="py-20 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-white via-orange-50/30 to-lime-50/30 dark:from-gray-900 dark:via-orange-950/30 dark:to-lime-950/30"></div>
+        <div className="absolute inset-0 bg-white dark:bg-gray-900"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
             <Badge className="mb-4 bg-lime-100 text-lime-600 dark:bg-lime-900 dark:text-lime-300">
               Why Choose Us
             </Badge>
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-lime-600 to-orange-600 bg-clip-text text-transparent">
+              <span className="text-lime-600">
                 Everything You Need
               </span>
             </h2>
@@ -292,9 +320,9 @@ export default function Landing() {
                 key={feature.title}
                 className="group relative overflow-hidden border-2 hover:border-transparent transition-all duration-500 hover:shadow-2xl transform hover:-translate-y-2"
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
+                <div className={`absolute inset-0 bg-${feature.color}-500 opacity-0 group-hover:opacity-5 transition-opacity duration-500`}></div>
                 <CardContent className="p-8 relative z-10">
-                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                  <div className={`w-16 h-16 rounded-2xl bg-${feature.color}-500 flex items-center justify-center mb-6 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
                     <feature.icon className="h-8 w-8 text-white" />
                   </div>
                   <h3 className="text-2xl font-bold mb-3 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
@@ -310,9 +338,9 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA Section with Gradient */}
+      {/* CTA Section with Solid Color */}
       <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-600 via-orange-500 to-lime-600"></div>
+        <div className="absolute inset-0 bg-orange-500"></div>
         <div className="absolute inset-0 bg-grid-white/[0.1] bg-[size:20px_20px]"></div>
         
         <div className="container mx-auto px-4 text-center relative z-10">
@@ -355,12 +383,12 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t-2 border-orange-200 dark:border-orange-800 py-12 bg-gradient-to-b from-white to-orange-50/30 dark:from-gray-900 dark:to-orange-950/30">
+      <footer className="border-t-2 border-orange-200 dark:border-orange-800 py-12 bg-white dark:bg-gray-900">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-lime-500"></div>
-              <span className="text-xl font-bold bg-gradient-to-r from-orange-600 to-lime-600 bg-clip-text text-transparent">
+              <div className="w-10 h-10 rounded-full bg-orange-500"></div>
+              <span className="text-xl font-bold text-orange-600">
                 JobTradeSasa
               </span>
             </div>
