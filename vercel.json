@@ -2,68 +2,31 @@
   "version": 2,
   "name": "jobtradesasa-frontend",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/public",
+  "outputDirectory": "dist",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": null,
-  "rewrites": [
- 
+  "routes": [
     {
-      "source": "/assets/(.*)",
-      "destination": "/assets/$1"
-    },
- 
-    {
-      "source": "/(index-\\w+\\.\\w+)",
-      "destination": "/$1"
-    }, 
-    {
-      "source": "/favicon.ico",
-      "destination": "/favicon.ico"
+      "handle": "filesystem"
     },
     {
-      "source": "/android-chrome-192x192.png",
-      "destination": "/android-chrome-192x192.png"
-    },
-    {
-      "source": "/android-chrome-512x512.png",
-      "destination": "/android-chrome-512x512.png"
-    },
-    {
-      "source": "/manifest.json",
-      "destination": "/manifest.json"
-    },
-    {
-      "source": "/service-worker.js",
-      "destination": "/service-worker.js"
-    },
- 
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "headers": [
     {
       "source": "/service-worker.js",
       "headers": [
-        {
-          "key": "Service-Worker-Allowed",
-          "value": "/"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
+        { "key": "Service-Worker-Allowed", "value": "/" },
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
       ]
     },
     {
       "source": "/manifest.json",
       "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/manifest+json"
-        }
+        { "key": "Content-Type", "value": "application/manifest+json" }
       ]
     }
   ]
