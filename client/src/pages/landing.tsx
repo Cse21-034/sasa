@@ -89,22 +89,22 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Floating shapes
+        {/* Floating shapes*/}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-64 h-64 border-2 border-orange-200 rounded-full animate-float" style={{ animationDelay: '0s' }}></div>
           <div className="absolute top-1/3 right-1/4 w-48 h-48 border-2 border-lime-200 rounded-full animate-float" style={{ animationDelay: '1s' }}></div>
           <div className="absolute bottom-1/4 left-1/3 w-56 h-56 border-2 border-orange-300 rounded-full animate-float" style={{ animationDelay: '2s' }}></div>
-        </div> */}
+        </div> 
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-5xl mx-auto text-center">
-            {/* Floating badge */}
+            {/* Floating badge 
             <div className="mb-8 animate-bounce">
               <Badge className="bg-gradient-to-r from-orange-500 to-lime-500 text-white text-sm px-4 py-2 shadow-lg">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 #1 Service Marketplace in Your Area
               </Badge>
-            </div>
+            </div>*/}
 
             {/* Main Heading */}
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
