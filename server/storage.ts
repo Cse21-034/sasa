@@ -415,7 +415,7 @@ export class DatabaseStorage implements IStorage {
     })) as JobWithRelations[];
   }
 
-  async getJobsByCity(cities: string[]): Promise<JobWithRelations[]> {
+ async getJobsByCity(cities: string[]): Promise<JobWithRelations[]> {
     if (!cities || cities.length === 0) return [];
 
     const results = await db
@@ -427,7 +427,7 @@ export class DatabaseStorage implements IStorage {
       .from(jobs)
       .leftJoin(users, eq(jobs.requesterId, users.id))
       .leftJoin(categories, eq(jobs.categoryId, categories.id))
-      .where(sql`${jobs.city} = ANY(${cities})`)
+      .where(inArray(jobs.city, cities)) // ⬅️ FIX: Changed from sql`${jobs.city} = ANY(${cities})` to inArray
       .orderBy(desc(jobs.createdAt));
 
     return results.map((r) => ({
@@ -436,7 +436,7 @@ export class DatabaseStorage implements IStorage {
       category: r.category,
     })) as JobWithRelations[];
   }
-
+  
   async createJob(insertJob: InsertJob & { requesterId: string }): Promise<Job> {
     const [job] = await db.insert(jobs).values(insertJob).returning();
     return job;
