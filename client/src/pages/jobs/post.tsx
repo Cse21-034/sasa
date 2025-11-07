@@ -1,9 +1,11 @@
+// client/src/pages/jobs/post.tsx - WITH HIGH ACCURACY LOCATION
+
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { MapPin, Upload, AlertCircle, Loader2, Camera, X, DollarSign } from 'lucide-react';
+import { MapPin, Upload, AlertCircle, Loader2, Camera, X, DollarSign, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -14,12 +16,14 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { insertJobSchema, type Category, botswanaCities } from '@shared/schema';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function PostJob() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -66,42 +70,96 @@ export default function PostJob() {
     },
   });
 
+  // IMPROVED: High-accuracy location with better error handling
   const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setLocationCoords({ lat: latitude, lng: longitude });
-          form.setValue('latitude', latitude.toString());
-          form.setValue('longitude', longitude.toString());
-          
-          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.display_name) {
-                form.setValue('address', data.display_name);
-              }
-              // Try to extract city from address
-              if (data.address) {
-                const city = data.address.city || data.address.town || data.address.village;
-                const matchedCity = botswanaCities.find(c => 
-                  city?.toLowerCase().includes(c.toLowerCase())
-                );
-                if (matchedCity) {
-                  form.setValue('city', matchedCity as any);
-                }
-              }
-            });
-        },
-        (error) => {
-          toast({
-            title: 'Location error',
-            description: 'Unable to get your location. Please enter it manually.',
-            variant: 'destructive',
-          });
-        }
-      );
+    if (!navigator.geolocation) {
+      toast({
+        title: 'Geolocation not supported',
+        description: 'Your browser does not support location services.',
+        variant: 'destructive',
+      });
+      return;
     }
+
+    setIsGettingLocation(true);
+
+    // Request high accuracy location with timeout
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        
+        // Store coordinates with accuracy
+        setLocationCoords({ lat: latitude, lng: longitude, accuracy });
+        
+        // Set form values with high precision
+        form.setValue('latitude', latitude.toFixed(7));
+        form.setValue('longitude', longitude.toFixed(7));
+        
+        // Reverse geocode to get address
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+          );
+          const data = await response.json();
+          
+          if (data.display_name) {
+            form.setValue('address', data.display_name);
+          }
+          
+          // Extract city from address
+          if (data.address) {
+            const city = data.address.city || data.address.town || data.address.village;
+            const matchedCity = botswanaCities.find(c => 
+              city?.toLowerCase().includes(c.toLowerCase())
+            );
+            if (matchedCity) {
+              form.setValue('city', matchedCity as any);
+            }
+          }
+
+          toast({
+            title: 'Location captured',
+            description: `Accuracy: ${accuracy.toFixed(0)} meters`,
+          });
+        } catch (error) {
+          console.error('Reverse geocoding error:', error);
+          toast({
+            title: 'Location captured',
+            description: 'Please enter your address manually.',
+            variant: 'default',
+          });
+        } finally {
+          setIsGettingLocation(false);
+        }
+      },
+      (error) => {
+        setIsGettingLocation(false);
+        let errorMessage = 'Unable to get your location.';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location permission denied. Please enable location access in your browser settings.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information is unavailable. Please try again.';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out. Please try again.';
+            break;
+        }
+
+        toast({
+          title: 'Location error',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+      },
+      {
+        enableHighAccuracy: true,  // Request GPS-level accuracy
+        timeout: 10000,            // 10 second timeout
+        maximumAge: 0              // Don't use cached position
+      }
+    );
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -338,33 +396,64 @@ export default function PostJob() {
                 )}
               </div>
 
+              {/* HIGH ACCURACY LOCATION SECTION */}
               <div className="space-y-4">
-                <FormLabel>Detailed Location</FormLabel>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={getCurrentLocation}
-                    className="flex-1 h-12"
-                    data-testid="button-current-location"
-                  >
-                    <MapPin className="mr-2 h-4 w-4" />
-                    Use Current Location
-                  </Button>
-                </div>
+                <FormLabel className="text-base flex items-center gap-2">
+                  <Navigation className="h-5 w-5" />
+                  Precise Location
+                </FormLabel>
+                
+                {locationCoords && (
+                  <Alert className="bg-success/10 border-success/20">
+                    <MapPin className="h-4 w-4 text-success" />
+                    <AlertDescription>
+                      Location captured with {locationCoords.accuracy.toFixed(0)}m accuracy
+                      <br />
+                      <span className="text-xs text-muted-foreground">
+                        Coordinates: {locationCoords.lat.toFixed(7)}, {locationCoords.lng.toFixed(7)}
+                      </span>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={getCurrentLocation}
+                  disabled={isGettingLocation}
+                  className="w-full h-12"
+                  data-testid="button-current-location"
+                >
+                  {isGettingLocation ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Getting precise location...
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="mr-2 h-4 w-4" />
+                      Use Current Location (High Accuracy)
+                    </>
+                  )}
+                </Button>
+
                 <FormField
                   control={form.control}
                   name="address"
                   render={({ field }) => (
                     <FormItem>
+                      <FormLabel>Detailed Address / Landmark</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Enter specific address or landmark"
+                          placeholder="Enter specific address, building name, or nearby landmark"
                           className="h-12"
                           data-testid="input-job-address"
                           {...field}
                         />
                       </FormControl>
+                      <FormDescription>
+                        Help providers find you easily with clear directions
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
