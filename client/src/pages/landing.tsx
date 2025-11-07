@@ -231,6 +231,67 @@ export default function Landing() {
         </div>
       </section>
 
+
+{/* Categories Section */}
+      <section className="py-20 bg-gray-50 dark:bg-gray-900">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge className="mb-4 bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-300">
+              Popular Services
+            </Badge>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-orange-600 to-lime-600 bg-clip-text text-transparent">
+                Browse by Category
+              </span>
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              Discover professional services tailored to your needs
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            {categories.map((category, index) => (
+              <Card 
+                key={category.name}
+                className="group cursor-pointer border-2 hover:border-orange-500 transition-all duration-300 hover:shadow-2xl transform hover:scale-105 overflow-hidden"
+              >
+                <CardContent className="p-0">
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src={`https://images.unsplash.com/photo-${
+                        category.name === 'Plumbing' ? '1585704032-7a4b5c34c5df?w=400' :
+                        category.name === 'Electrical' ? '1621905251189-08b45d6a269e?w=400' :
+                        category.name === 'Carpentry' ? '1600585152915-199e76e90137?w=400' :
+                        category.name === 'Painting' ? '1562259949-e8e7689d7828?w=400' :
+                        category.name === 'Cleaning' ? '1581578731144-8c66106e6041?w=400' :
+                        '1416879595882-3373a0480b5b?w=400'
+                      }&auto=format&fit=crop&q=80`}
+                      alt={category.name}
+                      className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <p className="font-bold text-lg text-white text-center drop-shadow-lg">
+                        {category.name}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
+
+
+
+
+
+
+      
       {/* Categories Section */}
       <section className="py-20 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4">
