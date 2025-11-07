@@ -1,4 +1,4 @@
-import { useState } from 'react';
+ import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -175,7 +175,8 @@ export default function Signup() {
             </TabsList>
           </Tabs>
 
-          <Form {...form}>
+          {/* 🚨 FIX: Added key={accountType} to force React Hook Form to reset completely when switching tabs. */}
+          <Form {...form} key={accountType}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               {accountType === 'individual' ? (
                 <>
@@ -293,7 +294,7 @@ export default function Signup() {
                     )}
                   />
 
-                  {/* Explicit Password Fields for Individual */}
+                  {/* Password Fields for Individual */}
                   <FormField
                     control={individualForm.control}
                     name="password"
@@ -457,7 +458,6 @@ export default function Signup() {
                     )}
                   />
                   
-                  {/* Phone number is optional, using explicit control */}
                   <FormField
                     control={supplierForm.control}
                     name="phone"
