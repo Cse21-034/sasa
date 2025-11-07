@@ -1,3 +1,5 @@
+// client/src/pages/auth/signup.tsx - FIXED VERSION
+
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useForm, UseFormReturn } from 'react-hook-form';
@@ -15,8 +17,6 @@ import { useAuth } from '@/lib/auth-context';
 import { apiRequest } from '@/lib/queryClient';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { botswanaCities } from '@shared/schema';
-
-// --- SCHEMAS ---
 
 // Individual signup schema (NO physical address)
 const individualSignupSchema = z.object({
@@ -64,8 +64,7 @@ type IndividualSignupForm = z.infer<typeof individualSignupSchema>;
 type SupplierSignupForm = z.infer<typeof supplierSignupSchema>;
 type SignupData = IndividualSignupForm | SupplierSignupForm;
 
-// --- INDIVIDUAL FORM COMPONENT ---
-
+// INDIVIDUAL FORM COMPONENT
 interface IndividualFormProps {
   form: UseFormReturn<IndividualSignupForm>;
   selectedRole: 'requester' | 'provider';
@@ -236,8 +235,7 @@ const IndividualForm = ({ form, selectedRole, isLoading, onSubmit }: IndividualF
   </Form>
 );
 
-// --- ORGANIZATION FORM COMPONENT ---
-
+// ORGANIZATION FORM COMPONENT
 interface OrganizationFormProps {
   form: UseFormReturn<SupplierSignupForm>;
   isLoading: boolean;
@@ -454,8 +452,7 @@ const OrganizationForm = ({ form, isLoading, onSubmit }: OrganizationFormProps) 
   </Form>
 );
 
-// --- MAIN SIGNUP COMPONENT ---
-
+// MAIN SIGNUP COMPONENT
 export default function Signup() {
   const [, setLocation] = useLocation();
   const { setUser } = useAuth();
@@ -467,8 +464,13 @@ export default function Signup() {
     resolver: zodResolver(individualSignupSchema),
     mode: 'onBlur',
     defaultValues: {
-      name: '', email: '', phone: '', password: '', confirmPassword: '',
-      role: 'requester', primaryCity: undefined,
+      name: '', 
+      email: '', 
+      phone: '', 
+      password: '', 
+      confirmPassword: '',
+      role: 'requester', 
+      primaryCity: '',
     },
   });
 
@@ -476,20 +478,52 @@ export default function Signup() {
     resolver: zodResolver(supplierSignupSchema),
     mode: 'onBlur',
     defaultValues: {
-      name: '', email: '', phone: '', password: '', confirmPassword: '',
-      role: 'supplier', companyName: '', physicalAddress: '', contactPerson: '',
-      contactPosition: '', companyEmail: '', companyPhone: '', industryType: '',
+      name: '', 
+      email: '', 
+      phone: '', 
+      password: '', 
+      confirmPassword: '',
+      role: 'supplier', 
+      companyName: '', 
+      physicalAddress: '', 
+      contactPerson: '',
+      contactPosition: '', 
+      companyEmail: '', 
+      companyPhone: '', 
+      industryType: '',
     },
   });
   
   const selectedRole = individualForm.watch('role');
 
+  // FIX: Proper form reset when switching tabs
   const handleAccountTypeChange = (newType: 'individual' | 'organization') => {
-    // Reset the unused form when switching types
     if (newType === 'individual') {
-        supplierForm.reset(supplierForm.options.defaultValues);
+      supplierForm.reset({
+        name: '', 
+        email: '', 
+        phone: '', 
+        password: '', 
+        confirmPassword: '',
+        role: 'supplier', 
+        companyName: '', 
+        physicalAddress: '', 
+        contactPerson: '',
+        contactPosition: '', 
+        companyEmail: '', 
+        companyPhone: '', 
+        industryType: '',
+      });
     } else {
-        individualForm.reset(individualForm.options.defaultValues);
+      individualForm.reset({
+        name: '', 
+        email: '', 
+        phone: '', 
+        password: '', 
+        confirmPassword: '',
+        role: 'requester', 
+        primaryCity: '',
+      });
     }
     setAccountType(newType);
   };
