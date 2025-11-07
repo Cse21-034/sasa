@@ -102,7 +102,6 @@ export default function Signup() {
     },
   });
 
-  // The form reference passed to <Form> changes to trigger RHF updates
   const form = accountType === 'individual' ? individualForm : supplierForm;
   const selectedRole = accountType === 'individual' ? individualForm.watch('role') : 'supplier';
 
@@ -444,7 +443,6 @@ export default function Signup() {
                     />
                   </div>
                   
-                  {/* Fields moved and explicitly using supplierForm.control */}
                   <FormField
                     control={supplierForm.control}
                     name="name"
@@ -453,6 +451,21 @@ export default function Signup() {
                         <FormLabel>Your Full Name</FormLabel>
                         <FormControl>
                           <Input placeholder="John Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* Phone number is optional, using explicit control */}
+                  <FormField
+                    control={supplierForm.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone (Optional)</FormLabel>
+                        <FormControl>
+                          <Input type="tel" placeholder="+267 12345678" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
