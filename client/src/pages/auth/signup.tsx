@@ -102,6 +102,7 @@ export default function Signup() {
     },
   });
 
+  // The form reference passed to <Form> changes to trigger RHF updates
   const form = accountType === 'individual' ? individualForm : supplierForm;
   const selectedRole = accountType === 'individual' ? individualForm.watch('role') : 'supplier';
 
@@ -180,7 +181,7 @@ export default function Signup() {
               {accountType === 'individual' ? (
                 <>
                   <FormField
-                    control={form.control}
+                    control={individualForm.control}
                     name="role"
                     render={({ field }) => (
                       <FormItem>
@@ -252,7 +253,7 @@ export default function Signup() {
                   )}
 
                   <FormField
-                    control={form.control}
+                    control={individualForm.control}
                     name="name"
                     render={({ field }) => (
                       <FormItem>
@@ -266,7 +267,7 @@ export default function Signup() {
                   />
 
                   <FormField
-                    control={form.control}
+                    control={individualForm.control}
                     name="email"
                     render={({ field }) => (
                       <FormItem>
@@ -280,7 +281,7 @@ export default function Signup() {
                   />
 
                   <FormField
-                    control={form.control}
+                    control={individualForm.control}
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
@@ -292,12 +293,41 @@ export default function Signup() {
                       </FormItem>
                     )}
                   />
+
+                  {/* Explicit Password Fields for Individual */}
+                  <FormField
+                    control={individualForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={individualForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </>
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
-                      control={form.control}
+                      control={supplierForm.control}
                       name="companyName"
                       render={({ field }) => (
                         <FormItem>
@@ -311,7 +341,7 @@ export default function Signup() {
                     />
 
                     <FormField
-                      control={form.control}
+                      control={supplierForm.control}
                       name="industryType"
                       render={({ field }) => (
                         <FormItem>
@@ -338,7 +368,7 @@ export default function Signup() {
                   </div>
 
                   <FormField
-                    control={form.control}
+                    control={supplierForm.control}
                     name="physicalAddress"
                     render={({ field }) => (
                       <FormItem>
@@ -356,7 +386,7 @@ export default function Signup() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
-                      control={form.control}
+                      control={supplierForm.control}
                       name="contactPerson"
                       render={({ field }) => (
                         <FormItem>
@@ -370,7 +400,7 @@ export default function Signup() {
                     />
 
                     <FormField
-                      control={form.control}
+                      control={supplierForm.control}
                       name="contactPosition"
                       render={({ field }) => (
                         <FormItem>
@@ -386,7 +416,7 @@ export default function Signup() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
-                      control={form.control}
+                      control={supplierForm.control}
                       name="companyEmail"
                       render={({ field }) => (
                         <FormItem>
@@ -400,7 +430,7 @@ export default function Signup() {
                     />
 
                     <FormField
-                      control={form.control}
+                      control={supplierForm.control}
                       name="companyPhone"
                       render={({ field }) => (
                         <FormItem>
@@ -413,9 +443,10 @@ export default function Signup() {
                       )}
                     />
                   </div>
-
+                  
+                  {/* Fields moved and explicitly using supplierForm.control */}
                   <FormField
-                    control={form.control}
+                    control={supplierForm.control}
                     name="name"
                     render={({ field }) => (
                       <FormItem>
@@ -429,7 +460,7 @@ export default function Signup() {
                   />
 
                   <FormField
-                    control={form.control}
+                    control={supplierForm.control}
                     name="email"
                     render={({ field }) => (
                       <FormItem>
@@ -441,36 +472,36 @@ export default function Signup() {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={supplierForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={supplierForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </>
               )}
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <Button
                 type="submit"
