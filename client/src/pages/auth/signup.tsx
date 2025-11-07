@@ -1,6 +1,6 @@
- import { useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { useForm } from 'react-hook-form';
+import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Briefcase, Loader2, UserCircle, Wrench, Building2, MapPin } from 'lucide-react';
@@ -13,8 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest } from '@/lib/queryClient';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { botswanaCities } from '@shared/schema';
+
+// --- SCHEMAS ---
 
 // Individual signup schema (NO physical address)
 const individualSignupSchema = z.object({
@@ -60,6 +62,399 @@ const supplierSignupSchema = z.object({
 
 type IndividualSignupForm = z.infer<typeof individualSignupSchema>;
 type SupplierSignupForm = z.infer<typeof supplierSignupSchema>;
+type SignupData = IndividualSignupForm | SupplierSignupForm;
+
+// --- INDIVIDUAL FORM COMPONENT ---
+
+interface IndividualFormProps {
+  form: UseFormReturn<IndividualSignupForm>;
+  selectedRole: 'requester' | 'provider';
+  isLoading: boolean;
+  onSubmit: (data: SignupData) => void;
+}
+
+const IndividualForm = ({ form, selectedRole, isLoading, onSubmit }: IndividualFormProps) => (
+  <Form {...form}>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <FormField
+        control={form.control}
+        name="role"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>I want to</FormLabel>
+            <FormControl>
+              <RadioGroup
+                onValueChange={field.onChange}
+                value={field.value}
+                className="grid grid-cols-2 gap-4"
+              >
+                <label
+                  htmlFor="requester"
+                  className={`flex flex-col items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover-elevate transition-all ${
+                    field.value === 'requester' ? 'border-primary bg-primary/5' : 'border-border'
+                  }`}
+                >
+                  <RadioGroupItem value="requester" id="requester" className="sr-only" />
+                  <UserCircle className="h-8 w-8" />
+                  <span className="font-medium text-sm">Find Services</span>
+                </label>
+                <label
+                  htmlFor="provider"
+                  className={`flex flex-col items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover-elevate transition-all ${
+                    field.value === 'provider' ? 'border-primary bg-primary/5' : 'border-border'
+                  }`}
+                >
+                  <RadioGroupItem value="provider" id="provider" className="sr-only" />
+                  <Wrench className="h-8 w-8" />
+                  <span className="font-medium text-sm">Offer Services</span>
+                </label>
+              </RadioGroup>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {selectedRole === 'provider' && (
+        <FormField
+          control={form.control}
+          name="primaryCity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Your City / Service Area</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your city" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {botswanaCities.map((city) => (
+                    <SelectItem key={city} value={city}>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        {city}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                You will only see jobs in this city. You can apply to work in other cities later.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+
+      <FormField
+        control={form.control}
+        name="name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Full Name</FormLabel>
+            <FormControl>
+              <Input placeholder="John Doe" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="email"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Email</FormLabel>
+            <FormControl>
+              <Input type="email" placeholder="you@example.com" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="phone"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Phone (Optional)</FormLabel>
+            <FormControl>
+              <Input type="tel" placeholder="+267 12345678" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      
+      <FormField
+        control={form.control}
+        name="password"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Password</FormLabel>
+            <FormControl>
+              <Input type="password" placeholder="••••••••" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="confirmPassword"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Confirm Password</FormLabel>
+            <FormControl>
+              <Input type="password" placeholder="••••••••" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <Button
+        type="submit"
+        className="w-full h-12"
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Creating account...
+          </>
+        ) : (
+          'Create Account'
+        )}
+      </Button>
+    </form>
+  </Form>
+);
+
+// --- ORGANIZATION FORM COMPONENT ---
+
+interface OrganizationFormProps {
+  form: UseFormReturn<SupplierSignupForm>;
+  isLoading: boolean;
+  onSubmit: (data: SignupData) => void;
+}
+
+const OrganizationForm = ({ form, isLoading, onSubmit }: OrganizationFormProps) => (
+  <Form {...form}>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="companyName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Name</FormLabel>
+              <FormControl>
+                <Input placeholder="ABC Suppliers Ltd" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="industryType"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Industry/Service Type</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="hardware">Hardware Supplies</SelectItem>
+                  <SelectItem value="plumbing">Plumbing Supplies</SelectItem>
+                  <SelectItem value="electrical">Electrical Supplies</SelectItem>
+                  <SelectItem value="construction">Construction Materials</SelectItem>
+                  <SelectItem value="tools">Tools & Equipment</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <FormField
+        control={form.control}
+        name="physicalAddress"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Physical Address</FormLabel>
+            <FormControl>
+              <Input 
+                placeholder="123 Main St, Gaborone" 
+                {...field} 
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="contactPerson"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Contact Person</FormLabel>
+              <FormControl>
+                <Input placeholder="John Doe" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="contactPosition"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Position/Role</FormLabel>
+              <FormControl>
+                <Input placeholder="Manager" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="companyEmail"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="info@company.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="companyPhone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Phone</FormLabel>
+              <FormControl>
+                <Input type="tel" placeholder="+267 12345678" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+      
+      <FormField
+        control={form.control}
+        name="name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Your Full Name</FormLabel>
+            <FormControl>
+              <Input placeholder="John Doe" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      
+      <FormField
+        control={form.control}
+        name="phone"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Phone (Optional)</FormLabel>
+            <FormControl>
+              <Input type="tel" placeholder="+267 12345678" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="email"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Your Email</FormLabel>
+            <FormControl>
+              <Input type="email" placeholder="you@example.com" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="password"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Password</FormLabel>
+            <FormControl>
+              <Input type="password" placeholder="••••••••" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="confirmPassword"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Confirm Password</FormLabel>
+            <FormControl>
+              <Input type="password" placeholder="••••••••" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      
+      <Button
+        type="submit"
+        className="w-full h-12"
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Creating account...
+          </>
+        ) : (
+          'Create Account'
+        )}
+      </Button>
+    </form>
+  </Form>
+);
+
+// --- MAIN SIGNUP COMPONENT ---
 
 export default function Signup() {
   const [, setLocation] = useLocation();
@@ -68,48 +463,38 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const [accountType, setAccountType] = useState<'individual' | 'organization'>('individual');
 
-  // Individual form
   const individualForm = useForm<IndividualSignupForm>({
     resolver: zodResolver(individualSignupSchema),
+    mode: 'onBlur',
     defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      password: '',
-      confirmPassword: '',
-      role: 'requester',
-      primaryCity: undefined,
+      name: '', email: '', phone: '', password: '', confirmPassword: '',
+      role: 'requester', primaryCity: undefined,
     },
   });
 
-  // Supplier form
   const supplierForm = useForm<SupplierSignupForm>({
     resolver: zodResolver(supplierSignupSchema),
+    mode: 'onBlur',
     defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      password: '',
-      confirmPassword: '',
-      role: 'supplier',
-      companyName: '',
-      physicalAddress: '',
-      contactPerson: '',
-      contactPosition: '',
-      companyEmail: '',
-      companyPhone: '',
-      industryType: '',
+      name: '', email: '', phone: '', password: '', confirmPassword: '',
+      role: 'supplier', companyName: '', physicalAddress: '', contactPerson: '',
+      contactPosition: '', companyEmail: '', companyPhone: '', industryType: '',
     },
   });
-
-  const form = accountType === 'individual' ? individualForm : supplierForm;
-  const selectedRole = accountType === 'individual' ? individualForm.watch('role') : 'supplier';
+  
+  const selectedRole = individualForm.watch('role');
 
   const handleAccountTypeChange = (newType: 'individual' | 'organization') => {
+    // Reset the unused form when switching types
+    if (newType === 'individual') {
+        supplierForm.reset(supplierForm.options.defaultValues);
+    } else {
+        individualForm.reset(individualForm.options.defaultValues);
+    }
     setAccountType(newType);
   };
 
-  const onSubmit = async (data: IndividualSignupForm | SupplierSignupForm) => {
+  const onSubmit = async (data: SignupData) => {
     setIsLoading(true);
     try {
       const payload = {
@@ -174,364 +559,21 @@ export default function Signup() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-
-          {/* 🚨 FIX: Added key={accountType} to force React Hook Form to reset completely when switching tabs. */}
-          <Form {...form} key={accountType}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {accountType === 'individual' ? (
-                <>
-                  <FormField
-                    control={individualForm.control}
-                    name="role"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>I want to</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            value={field.value}
-                            className="grid grid-cols-2 gap-4"
-                          >
-                            <label
-                              htmlFor="requester"
-                              className={`flex flex-col items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover-elevate transition-all ${
-                                field.value === 'requester' ? 'border-primary bg-primary/5' : 'border-border'
-                              }`}
-                            >
-                              <RadioGroupItem value="requester" id="requester" className="sr-only" />
-                              <UserCircle className="h-8 w-8" />
-                              <span className="font-medium text-sm">Find Services</span>
-                            </label>
-                            <label
-                              htmlFor="provider"
-                              className={`flex flex-col items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover-elevate transition-all ${
-                                field.value === 'provider' ? 'border-primary bg-primary/5' : 'border-border'
-                              }`}
-                            >
-                              <RadioGroupItem value="provider" id="provider" className="sr-only" />
-                              <Wrench className="h-8 w-8" />
-                              <span className="font-medium text-sm">Offer Services</span>
-                            </label>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {selectedRole === 'provider' && (
-                    <FormField
-                      control={individualForm.control}
-                      name="primaryCity"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Your City / Service Area</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select your city" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {botswanaCities.map((city) => (
-                                <SelectItem key={city} value={city}>
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="h-4 w-4" />
-                                    {city}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            You will only see jobs in this city. You can apply to work in other cities later.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-
-                  <FormField
-                    control={individualForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={individualForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="you@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={individualForm.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone (Optional)</FormLabel>
-                        <FormControl>
-                          <Input type="tel" placeholder="+267 12345678" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Password Fields for Individual */}
-                  <FormField
-                    control={individualForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={individualForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirm Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={supplierForm.control}
-                      name="companyName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Company Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="ABC Suppliers Ltd" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={supplierForm.control}
-                      name="industryType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Industry/Service Type</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="hardware">Hardware Supplies</SelectItem>
-                              <SelectItem value="plumbing">Plumbing Supplies</SelectItem>
-                              <SelectItem value="electrical">Electrical Supplies</SelectItem>
-                              <SelectItem value="construction">Construction Materials</SelectItem>
-                              <SelectItem value="tools">Tools & Equipment</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={supplierForm.control}
-                    name="physicalAddress"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Physical Address</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="123 Main St, Gaborone" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={supplierForm.control}
-                      name="contactPerson"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Contact Person</FormLabel>
-                          <FormControl>
-                            <Input placeholder="John Doe" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={supplierForm.control}
-                      name="contactPosition"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Position/Role</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Manager" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={supplierForm.control}
-                      name="companyEmail"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Company Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="info@company.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={supplierForm.control}
-                      name="companyPhone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Company Phone</FormLabel>
-                          <FormControl>
-                            <Input type="tel" placeholder="+267 12345678" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <FormField
-                    control={supplierForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Your Full Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={supplierForm.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone (Optional)</FormLabel>
-                        <FormControl>
-                          <Input type="tel" placeholder="+267 12345678" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={supplierForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Your Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="you@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={supplierForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={supplierForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirm Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
-
-              <Button
-                type="submit"
-                className="w-full h-12"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating account...
-                  </>
-                ) : (
-                  'Create Account'
-                )}
-              </Button>
-            </form>
-          </Form>
+          
+          {accountType === 'individual' ? (
+            <IndividualForm 
+                form={individualForm}
+                selectedRole={selectedRole}
+                isLoading={isLoading}
+                onSubmit={onSubmit}
+            />
+          ) : (
+            <OrganizationForm 
+                form={supplierForm}
+                isLoading={isLoading}
+                onSubmit={onSubmit}
+            />
+          )}
 
           <div className="mt-6 text-center text-sm">
             <p className="text-muted-foreground">
