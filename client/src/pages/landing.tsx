@@ -61,7 +61,15 @@ export default function Landing() {
   ];
 
  
-
+  const categories = [
+    { name: 'Plumbing', icon: Wrench, color: 'orange' },
+    { name: 'Electrical', icon: Zap, color: 'lime' },
+    { name: 'Carpentry', icon: Hammer, color: 'orange' },
+    { name: 'Painting', icon: Paintbrush, color: 'lime' },
+    { name: 'Cleaning', icon: Sparkles, color: 'orange' },
+    { name: 'Gardening', icon: Leaf, color: 'lime' },
+  ];
+ 
   const stats = [
     { number: '10,000+', label: 'Happy Customers', icon: Users },
     { number: '500+', label: 'Verified Providers', icon: Shield },
