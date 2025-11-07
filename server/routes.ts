@@ -206,78 +206,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // 🆕 UPDATED: Get jobs with city-based filtering for providers
   app.get('/api/jobs', authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const { category, status, sort } = req.query;
+  try {
+    const { category, status, sort } = req.query;
+    
+    if (req.user!.role === 'requester') {
+      // Requesters only see their own jobs
+      const params: any = { requesterId: req.user!.id };
+      if (category && category !== 'all') params.categoryId = category as string;
+      if (status) params.status = status as string;
       
-      if (req.user!.role === 'requester') {
-        // Requesters only see their own jobs
-        const params: any = { requesterId: req.user!.id };
-        if (category && category !== 'all') params.categoryId = category as string;
-        if (status) params.status = status as string;
-        
-        const jobs = await storage.getJobs(params);
-        res.json(jobs);
-      } else if (req.user!.role === 'provider') {
-        // Providers see:
-        // 1. Jobs in their approved service areas (open jobs)
-        // 2. Jobs they are assigned to (any status)
-        
-        const provider = await storage.getProvider(req.user!.id);
-        if (!provider) {
-          return res.status(404).json({ message: 'Provider profile not found' });
-        }
-
-        const approvedCities = (provider.approvedServiceAreas as string[]) || [provider.primaryCity];
-        
-        // Get open jobs in approved cities
-        const openJobs = await storage.getJobsByCity(approvedCities);
-        const openJobsFiltered = openJobs.filter(j => j.status === 'open');
-        
-        // Get jobs assigned to this provider
-        const assignedJobs = await storage.getJobs({ providerId: req.user!.id });
-        
-        // Merge and deduplicate
-        const jobMap = new Map();
-        [...openJobsFiltered, ...assignedJobs].forEach(job => {
-          if (!jobMap.has(job.id)) {
-            jobMap.set(job.id, job);
-          }
-        });
-        
-        let jobs = Array.from(jobMap.values());
-
-        // Apply filters
-        if (category && category !== 'all') {
-          jobs = jobs.filter(j => j.categoryId === parseInt(category as string));
-        }
-        if (status) {
-          jobs = jobs.filter(j => j.status === status);
-        }
-
-        // Sort
-        if (sort === 'urgent') {
-          jobs = jobs.sort((a, b) => {
-            if (a.urgency === 'emergency' && b.urgency !== 'emergency') return -1;
-            if (a.urgency !== 'emergency' && b.urgency === 'emergency') return 1;
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          });
-        } else if (sort === 'recent') {
-          jobs = jobs.sort((a, b) => 
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        }
-
-        res.json(jobs);
-      } else {
-        // Admin sees all jobs
-        const jobs = await storage.getJobs({});
-        res.json(jobs);
+      const jobs = await storage.getJobs(params);
+      res.json(jobs);
+    } else if (req.user!.role === 'provider') {
+      // 🆕 ENHANCED: Filter by provider's selected service categories
+      const provider = await storage.getProvider(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: 'Provider profile not found' });
       }
-    } catch (error: any) {
-      console.error('Get jobs error:', error);
-      res.status(500).json({ message: error.message });
+
+      const approvedCities = (provider.approvedServiceAreas as string[]) || [provider.primaryCity];
+      const serviceCategories = (provider.serviceCategories as number[]) || [];
+
+      // Get open jobs in approved cities
+      const openJobs = await storage.getJobsByCity(approvedCities);
+      
+      // 🆕 Filter by service categories if provider has selected any
+      const openJobsFiltered = openJobs.filter(j => {
+        const matchesStatus = j.status === 'open';
+        const matchesCategory = serviceCategories.length === 0 || 
+          serviceCategories.includes(j.categoryId);
+        return matchesStatus && matchesCategory;
+      });
+      
+      // Get jobs assigned to this provider
+      const assignedJobs = await storage.getJobs({ providerId: req.user!.id });
+      
+      // Merge and deduplicate
+      const jobMap = new Map();
+      [...openJobsFiltered, ...assignedJobs].forEach(job => {
+        if (!jobMap.has(job.id)) {
+          jobMap.set(job.id, job);
+        }
+      });
+      
+      let jobs = Array.from(jobMap.values());
+
+      // Apply additional filters
+      if (category && category !== 'all') {
+        jobs = jobs.filter(j => j.categoryId === parseInt(category as string));
+      }
+      if (status) {
+        jobs = jobs.filter(j => j.status === status);
+      }
+
+      // Sort
+      if (sort === 'urgent') {
+        jobs = jobs.sort((a, b) => {
+          if (a.urgency === 'emergency' && b.urgency !== 'emergency') return -1;
+          if (a.urgency !== 'emergency' && b.urgency === 'emergency') return 1;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+      } else if (sort === 'recent') {
+        jobs = jobs.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      }
+
+      res.json(jobs);
+    } else {
+      // Admin sees all jobs
+      const jobs = await storage.getJobs({});
+      res.json(jobs);
     }
-  });
+  } catch (error: any) {
+    console.error('Get jobs error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
 
   app.get('/api/jobs/:id', authMiddleware, async (req: AuthRequest, res) => {
     try {
@@ -657,6 +662,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
+
+  // ==================== ENHANCED PROFILE ROUTES ====================
+
+// Get provider profile (for loading service categories)
+app.get('/api/provider/profile', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    if (req.user!.role !== 'provider') {
+      return res.status(403).json({ message: 'Only providers can access this' });
+    }
+
+    const provider = await storage.getProvider(req.user!.id);
+    
+    if (!provider) {
+      return res.status(404).json({ message: 'Provider profile not found' });
+    }
+
+    res.json(provider);
+  } catch (error: any) {
+    console.error('Get provider profile error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update provider service categories
+app.patch('/api/provider/categories', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    if (req.user!.role !== 'provider') {
+      return res.status(403).json({ message: 'Only providers can update categories' });
+    }
+
+    const { serviceCategories } = req.body;
+
+    if (!Array.isArray(serviceCategories)) {
+      return res.status(400).json({ message: 'Service categories must be an array' });
+    }
+
+    const updated = await storage.updateProvider(req.user!.id, {
+      serviceCategories,
+    });
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Provider not found' });
+    }
+
+    res.json(updated);
+  } catch (error: any) {
+    console.error('Update categories error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
 
   // ==================== CATEGORY ROUTES ====================
 
