@@ -60,14 +60,7 @@ export default function Landing() {
     },
   ];
 
-  const categories = [
-    { name: 'Plumbing', icon: Wrench, color: 'orange' },
-    { name: 'Electrical', icon: Zap, color: 'lime' },
-    { name: 'Carpentry', icon: Hammer, color: 'orange' },
-    { name: 'Painting', icon: Paintbrush, color: 'lime' },
-    { name: 'Cleaning', icon: Sparkles, color: 'orange' },
-    { name: 'Gardening', icon: Leaf, color: 'lime' },
-  ];
+ 
 
   const stats = [
     { number: '10,000+', label: 'Happy Customers', icon: Users },
@@ -284,51 +277,7 @@ export default function Landing() {
         </div>
       </section>
 
-
-
-
-
-
-
-
       
-      {/* Categories Section */}
-      <section className="py-20 bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-300">
-              Popular Services
-            </Badge>
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-orange-600 to-lime-600 bg-clip-text text-transparent">
-                Browse by Category
-              </span>
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Discover professional services tailored to your needs
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {categories.map((category, index) => (
-              <Card 
-                key={category.name}
-                className={`group cursor-pointer border-2 hover:border-${category.color}-500 transition-all duration-300 hover:shadow-2xl transform hover:scale-105 hover:-rotate-2`}
-              >
-                <CardContent className="flex flex-col items-center justify-center p-8 gap-4">
-                  <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${category.color === 'orange' ? 'from-orange-400 to-orange-600' : 'from-lime-400 to-lime-600'} flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300`}>
-                    <category.icon className="h-10 w-10 text-white" />
-                  </div>
-                  <p className="font-bold text-lg text-center group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
-                    {category.name}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Features Section with Modern Cards */}
       <section className="py-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-white via-orange-50/30 to-lime-50/30 dark:from-gray-900 dark:via-orange-950/30 dark:to-lime-950/30"></div>
