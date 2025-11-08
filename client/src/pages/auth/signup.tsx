@@ -528,42 +528,61 @@ export default function Signup() {
     setAccountType(newType);
   };
 
-  const onSubmit = async (data: SignupData) => {
-    setIsLoading(true);
-    try {
-      const payload = {
-        ...data,
-        role: accountType === 'organization' ? 'supplier' : (data as IndividualSignupForm).role,
-      };
+ const onSubmit = async (data: SignupData) => {
+  setIsLoading(true);
+  try {
+    // 🔧 FIX: Clean up the payload based on account type
+    let payload: any = {
+      ...data,
+      role: accountType === 'organization' ? 'supplier' : (data as IndividualSignupForm).role,
+    };
 
-      const response = await apiRequest('POST', '/api/auth/signup', payload);
-      const result = await response.json();
+    // 🔧 FIX: Remove primaryCity if it's empty or if user is a requester
+    if (accountType === 'individual') {
+      const individualData = data as IndividualSignupForm;
       
-      localStorage.setItem('token', result.token);
-      localStorage.setItem('user', JSON.stringify(result.user));
-      setUser(result.user);
-
-      toast({
-        title: 'Account created!',
-        description: `Welcome to JobTradeSasa${result.user.role === 'supplier' ? ', ' + (data as SupplierSignupForm).companyName : ''}.`,
-      });
-
-      setLocation(result.user.role === 'provider' ? '/dashboard' : '/jobs');
-    } catch (error: any) {
-      let message = error.message || 'An unknown error occurred.';
-      if (message.startsWith('400:')) {
-        message = message.substring(message.indexOf(':') + 1).trim();
+      // Remove primaryCity for requesters OR if it's empty
+      if (individualData.role === 'requester' || !individualData.primaryCity) {
+        delete payload.primaryCity;
       }
-
-      toast({
-        title: 'Signup failed',
-        description: message,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
     }
-  };
+
+    console.log('Sending signup payload:', { 
+      role: payload.role, 
+      hasCity: !!payload.primaryCity,
+      keys: Object.keys(payload) 
+    });
+
+    const response = await apiRequest('POST', '/api/auth/signup', payload);
+    const result = await response.json();
+    
+    localStorage.setItem('token', result.token);
+    localStorage.setItem('user', JSON.stringify(result.user));
+    setUser(result.user);
+
+    toast({
+      title: 'Account created!',
+      description: `Welcome to JobTradeSasa${result.user.role === 'supplier' ? ', ' + (data as SupplierSignupForm).companyName : ''}.`,
+    });
+
+    setLocation(result.user.role === 'provider' ? '/dashboard' : '/jobs');
+  } catch (error: any) {
+    let message = error.message || 'An unknown error occurred.';
+    if (message.startsWith('400:')) {
+      message = message.substring(message.indexOf(':') + 1).trim();
+    }
+
+    console.error('Signup error:', { message, error }); // 🔧 Better error logging
+
+    toast({
+      title: 'Signup failed',
+      description: message,
+      variant: 'destructive',
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
