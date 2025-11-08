@@ -354,20 +354,10 @@ export const individualSignupSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
   role: z.enum(['requester', 'provider']),
-  // 🆕 City selection for providers
-  primaryCity: z.enum(botswanaCities).optional(),
+  primaryCity: z.string().optional(), // 🔧 Changed from z.enum() to z.string()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
-}).refine((data) => {
-  // If provider, city is required
-  if (data.role === 'provider') {
-    return !!data.primaryCity;
-  }
-  return true;
-}, {
-  message: "City is required for service providers",
-  path: ['primaryCity'],
 });
 
 // Supplier signup schema (WITH physical address)
