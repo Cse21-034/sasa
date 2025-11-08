@@ -77,11 +77,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== AUTH ROUTES ====================
   
-app.post('/api/auth/signup', async (req, res) => {
+ app.post('/api/auth/signup', async (req, res) => {
   try {
+    console.log('Signup request body:', {
+      role: req.body.role,
+      hasCity: !!req.body.primaryCity,
+      email: req.body.email,
+      keys: Object.keys(req.body)
+    });
+
+    // 🔧 FIX: Validate the request body
     const rawValidatedData = createUserRequestSchema.parse(req.body);
     const { password, confirmPassword, primaryCity, ...userData } = rawValidatedData as any;
     
+    console.log('After validation:', {
+      role: userData.role,
+      primaryCity: primaryCity,
+      isProvider: userData.role === 'provider'
+    });
+
     if (password !== confirmPassword) {
       return res.status(400).json({ message: "Passwords do not match." });
     }
@@ -118,6 +132,7 @@ app.post('/api/auth/signup', async (req, res) => {
         industryType,
       };
       
+      // Remove supplier fields from userData
       Object.keys(userData).forEach(key => {
         if (!(key in baseUserData)) {
           delete (userData as any)[key];
@@ -125,35 +140,56 @@ app.post('/api/auth/signup', async (req, res) => {
       });
     }
 
+    // 🔧 FIX: Create user first
+    console.log('Creating user with role:', userData.role);
     const user = await storage.createUser({
       ...userData,
       passwordHash,
     });
+    console.log('User created:', user.id, user.role);
 
-    // 🔧 FIX 1: Only create provider profile if role is 'provider' AND primaryCity exists
-    if (user.role === 'provider') {
-      if (!primaryCity) {
-        // If no city provided, delete the user and return error
-        await storage.deleteUser(user.id);
-        return res.status(400).json({ 
-          message: 'City is required for service providers. Please select your service area.' 
+    // 🔧 FIX: Handle role-specific profiles AFTER user creation
+    try {
+      if (user.role === 'provider') {
+        // Providers MUST have a city
+        if (!primaryCity) {
+          console.error('Provider signup missing city');
+          await storage.deleteUser(user.id);
+          return res.status(400).json({ 
+            message: 'City selection is required for service providers. Please select your service area.' 
+          });
+        }
+        
+        console.log('Creating provider profile with city:', primaryCity);
+        await storage.createProvider({
+          userId: user.id,
+          serviceCategories: [],
+          primaryCity,
+          approvedServiceAreas: [primaryCity],
+          serviceAreaRadiusMeters: 10000,
         });
+        console.log('Provider profile created');
+        
+      } else if (user.role === 'supplier' && supplierData) {
+        console.log('Creating supplier profile');
+        await storage.createSupplier({
+          userId: user.id,
+          ...supplierData,
+        });
+        console.log('Supplier profile created');
+        
+      } else if (user.role === 'requester') {
+        // 🔧 FIX: Requesters don't need any additional profile
+        console.log('Requester - no additional profile needed');
       }
-      
-      await storage.createProvider({
-        userId: user.id,
-        serviceCategories: [],
-        primaryCity,
-        approvedServiceAreas: [primaryCity],
-        serviceAreaRadiusMeters: 10000,
-      });
-    } else if (user.role === 'supplier' && supplierData) {
-      await storage.createSupplier({
-        userId: user.id,
-        ...supplierData,
+    } catch (profileError: any) {
+      // If profile creation fails, delete the user and return error
+      console.error('Profile creation failed:', profileError);
+      await storage.deleteUser(user.id);
+      return res.status(500).json({ 
+        message: 'Failed to create user profile: ' + profileError.message 
       });
     }
-    // 🔧 FIX: Requesters don't need any additional profile - just the user record
 
     const token = generateToken({
       id: user.id,
@@ -162,16 +198,27 @@ app.post('/api/auth/signup', async (req, res) => {
     });
 
     const { passwordHash: _, ...userWithoutPassword } = user;
+    
+    console.log('Signup successful for:', user.email, user.role);
     res.json({ user: userWithoutPassword, token });
+    
   } catch (error: any) {
+    console.error('Signup error:', error);
+    
     if (error instanceof ZodError) {
+      console.error('Validation errors:', error.issues);
       return res.status(400).json({ 
         message: 'Validation failed', 
-        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+        errors: error.issues.map(i => ({ 
+          field: i.path.join('.'), 
+          message: i.message 
+        }))
       });
     }
-    console.error('Signup error:', error);
-    res.status(400).json({ message: error.message || 'Signup failed' });
+    
+    res.status(400).json({ 
+      message: error.message || 'Signup failed. Please try again.' 
+    });
   }
 });
   
