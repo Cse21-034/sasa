@@ -77,98 +77,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== AUTH ROUTES ====================
   
-  app.post('/api/auth/signup', async (req, res) => {
-    try {
-      const rawValidatedData = createUserRequestSchema.parse(req.body);
-      const { password, confirmPassword, primaryCity, ...userData } = rawValidatedData as any;
-      
-      if (password !== confirmPassword) {
-        return res.status(400).json({ message: "Passwords do not match." });
-      }
-
-      const existingUser = await storage.getUserByEmail(userData.email);
-      if (existingUser) {
-        return res.status(400).json({ message: 'User already exists' });
-      }
-
-      const passwordHash = await bcrypt.hash(password, 10);
-      
-      const isSupplier = userData.role === 'supplier';
-      let supplierData: any = null;
-      
-      if (isSupplier) {
-        const {
-          companyName,
-          physicalAddress,
-          contactPerson,
-          contactPosition,
-          companyEmail,
-          companyPhone,
-          industryType,
-          ...baseUserData
-        } = userData as any;
-        
-        supplierData = {
-          companyName,
-          physicalAddress,
-          contactPerson,
-          contactPosition,
-          companyEmail,
-          companyPhone,
-          industryType,
-        };
-        
-        Object.keys(userData).forEach(key => {
-          if (!(key in baseUserData)) {
-            delete (userData as any)[key];
-          }
-        });
-      }
-
-      const user = await storage.createUser({
-        ...userData,
-        passwordHash,
-      });
-
-      // Create role-specific profile
-      if (user.role === 'provider') {
-        if (!primaryCity) {
-          return res.status(400).json({ message: 'City is required for service providers' });
-        }
-        
-        await storage.createProvider({
-          userId: user.id,
-          serviceCategories: [],
-          primaryCity,
-          approvedServiceAreas: [primaryCity], // Initially just their primary city
-          serviceAreaRadiusMeters: 10000,
-        });
-      } else if (user.role === 'supplier' && supplierData) {
-        await storage.createSupplier({
-          userId: user.id,
-          ...supplierData,
-        });
-      }
-
-      const token = generateToken({
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      });
-
-      const { passwordHash: _, ...userWithoutPassword } = user;
-      res.json({ user: userWithoutPassword, token });
-    } catch (error: any) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ 
-          message: 'Validation failed', 
-          errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
-        });
-      }
-      console.error('Signup error:', error);
-      res.status(400).json({ message: error.message || 'Signup failed' });
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const rawValidatedData = createUserRequestSchema.parse(req.body);
+    const { password, confirmPassword, primaryCity, ...userData } = rawValidatedData as any;
+    
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: "Passwords do not match." });
     }
-  });
+
+    const existingUser = await storage.getUserByEmail(userData.email);
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    const isSupplier = userData.role === 'supplier';
+    let supplierData: any = null;
+    
+    if (isSupplier) {
+      const {
+        companyName,
+        physicalAddress,
+        contactPerson,
+        contactPosition,
+        companyEmail,
+        companyPhone,
+        industryType,
+        ...baseUserData
+      } = userData as any;
+      
+      supplierData = {
+        companyName,
+        physicalAddress,
+        contactPerson,
+        contactPosition,
+        companyEmail,
+        companyPhone,
+        industryType,
+      };
+      
+      Object.keys(userData).forEach(key => {
+        if (!(key in baseUserData)) {
+          delete (userData as any)[key];
+        }
+      });
+    }
+
+    const user = await storage.createUser({
+      ...userData,
+      passwordHash,
+    });
+
+    // 🔧 FIX 1: Only create provider profile if role is 'provider' AND primaryCity exists
+    if (user.role === 'provider') {
+      if (!primaryCity) {
+        // If no city provided, delete the user and return error
+        await storage.deleteUser(user.id);
+        return res.status(400).json({ 
+          message: 'City is required for service providers. Please select your service area.' 
+        });
+      }
+      
+      await storage.createProvider({
+        userId: user.id,
+        serviceCategories: [],
+        primaryCity,
+        approvedServiceAreas: [primaryCity],
+        serviceAreaRadiusMeters: 10000,
+      });
+    } else if (user.role === 'supplier' && supplierData) {
+      await storage.createSupplier({
+        userId: user.id,
+        ...supplierData,
+      });
+    }
+    // 🔧 FIX: Requesters don't need any additional profile - just the user record
+
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    const { passwordHash: _, ...userWithoutPassword } = user;
+    res.json({ user: userWithoutPassword, token });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+      });
+    }
+    console.error('Signup error:', error);
+    res.status(400).json({ message: error.message || 'Signup failed' });
+  }
+});
+  
 
   app.post('/api/auth/login', async (req, res) => {
     try {
@@ -640,28 +646,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== PROFILE ROUTES ====================
 
-  app.patch('/api/profile', authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const validatedData = updateProfileSchema.parse(req.body);
-      const updated = await storage.updateUser(req.user!.id, validatedData);
+ app.patch('/api/profile', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const validatedData = updateProfileSchema.parse(req.body);
+    
+    // Log what we're trying to update (for debugging)
+    console.log('Updating profile for user:', req.user!.id);
+    console.log('Update data keys:', Object.keys(validatedData));
+    console.log('Has profilePhotoUrl:', !!validatedData.profilePhotoUrl);
+    
+    const updated = await storage.updateUser(req.user!.id, validatedData);
 
-      if (!updated) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      const { passwordHash: _, ...userWithoutPassword } = updated;
-      res.json(userWithoutPassword);
-    } catch (error: any) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ 
-          message: 'Validation failed', 
-          errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
-        });
-      }
-      console.error('Update profile error:', error);
-      res.status(500).json({ message: error.message });
+    if (!updated) {
+      return res.status(404).json({ message: 'User not found' });
     }
-  });
+
+    const { passwordHash: _, ...userWithoutPassword } = updated;
+    
+    // Return the updated user
+    res.json(userWithoutPassword);
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+      });
+    }
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
 
   // ==================== ENHANCED PROFILE ROUTES ====================
 
