@@ -65,13 +65,14 @@ export default function Landing() {
     {
       title: 'Location-Based Matching',
       description: 'Find service providers near you with real-time distance tracking',
-      // Using solid color for hover effect
+      // Using solid color for hover effect (Secondary/Warm Tan)
       hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
       image: 'https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?w=400&auto=format&fit=crop&q=80',
     },
     {
       title: 'Verified Providers',
       description: 'All providers are verified with certificates and ID documentation',
+      // Using solid color for hover effect (Primary/Emerald Green)
       hoverBg: 'bg-primary/10 dark:bg-primary/20',
       image: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=400&auto=format&fit=crop&q=80',
     },
@@ -136,14 +137,14 @@ export default function Landing() {
               <img src="https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400&auto=format&fit=crop&q=80" alt="Painter at work" className="w-full h-full object-cover" />
             </div>
           </div>
-          {/* REMOVED GRADIENT: Using solid background/sidebar colors with high opacity */}
+          {/* Overlay using new Soft Beige/Navy colors */}
           <div className="absolute inset-0 bg-background/95 dark:bg-background/95"></div>
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-5xl mx-auto text-center">
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              {/* REMOVED GRADIENT: Using Primary/Secondary Text */}
+              {/* Text Secondary (Warm Tan) / Primary (Emerald Green) */}
               <span className="text-secondary dark:text-primary">
                 Connect with Trusted
               </span>
@@ -161,6 +162,7 @@ export default function Landing() {
                   <Link href="/jobs">
                     <Button 
                       size="lg" 
+                      // Solid Secondary (Warm Tan)
                       className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-secondary hover:bg-secondary/90 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                     >
                       Browse Services
@@ -171,7 +173,7 @@ export default function Landing() {
                     <Button 
                       variant="outline" 
                       size="lg" 
-                      // Border/Text: Primary (Green)
+                      // Border/Text: Primary (Emerald Green)
                       className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-2 border-primary text-primary hover:bg-primary/10 dark:hover:bg-primary/20 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                     >
                       Post a Request
@@ -183,7 +185,7 @@ export default function Landing() {
                   <Link href="/signup">
                     <Button 
                       size="lg" 
-                      // REMOVED GRADIENT: Solid Secondary (Orange)
+                      // Solid Secondary (Warm Tan)
                       className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-secondary hover:bg-secondary/90 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                     >
                       Get Started Free
@@ -194,7 +196,7 @@ export default function Landing() {
                     <Button 
                       variant="outline" 
                       size="lg" 
-                      // Border/Text: Primary (Green)
+                      // Border/Text: Primary (Emerald Green)
                       className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-2 border-primary text-primary hover:bg-primary/10 dark:hover:bg-primary/20 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                     >
                       Login
@@ -208,7 +210,6 @@ export default function Landing() {
               {categories.slice(0, 4).map((category) => (
                 <div key={category.name} className="relative group overflow-hidden rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300">
                   <img src={category.image} alt={category.name} className="w-full h-40 object-cover" />
-                  {/* Using solid black/white overlay */}
                   <div className="absolute inset-0 bg-black/50 flex items-end p-4 group-hover:bg-black/70 transition-colors">
                     <p className="text-white font-bold text-sm">{category.name}</p>
                   </div>
@@ -219,8 +220,9 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Stats Section - REMOVED GRADIENT */}
+      {/* Stats Section - Solid Primary (Emerald Green) */}
       <section className="py-16 sm:py-20 bg-primary relative overflow-hidden">
+        {/* Grid pattern adapted to Primary color */}
         <div className="absolute inset-0 bg-grid-primary/[0.1] bg-[size:20px_20px]"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
@@ -238,18 +240,18 @@ export default function Landing() {
       </section>
 
       {/* Special Offers Section - CARD FIX INCLUDED */}
-      <section className="py-16 sm:py-20 bg-sidebar"> {/* Using sidebar color for section separation */}
+      <section className="py-16 sm:py-20 bg-sidebar"> {/* Uses soft Sand/Beige sidebar color */}
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
             <Badge 
-              // Using secondary/orange for offer badge
+              // Using secondary/Warm Tan for offer badge
               className="mb-4 bg-secondary/10 text-secondary dark:bg-secondary/20"
             >
               <Tag className="h-3 w-3 mr-1" />
               Limited Time Offers
             </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              {/* Using Primary/Secondary Text */}
+              {/* Text Secondary (Warm Tan) */}
               <span className="text-secondary dark:text-secondary">Special Offers</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
@@ -268,13 +270,13 @@ export default function Landing() {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex gap-2">
                       {offer.badge === 'NEW' && (
-                        // Solid Secondary (Orange)
+                        // Solid Secondary (Warm Tan)
                         <Badge className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
                           🚨 {offer.badge}
                         </Badge>
                       )}
                       {offer.badge === 'ALL SERVICES' && (
-                        // Solid Primary (Green)
+                        // Solid Primary (Emerald Green)
                         <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground">
                           {offer.badge}
                         </Badge>
@@ -311,7 +313,7 @@ export default function Landing() {
                   </div>
 
                   <Button 
-                    // REMOVED GRADIENT: Solid Secondary (Orange)
+                    // Solid Secondary (Warm Tan)
                     className="w-full mt-4 bg-secondary hover:bg-secondary/90 text-secondary-foreground"
                   >
                     Book Now
@@ -328,13 +330,13 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
             <Badge 
-              // Using primary/green for category badge
+              // Using primary/Emerald Green for category badge
               className="mb-4 bg-primary/10 text-primary dark:bg-primary/20"
             >
               Popular Services
             </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              {/* Using Primary/Secondary Text */}
+              {/* Text Primary (Emerald Green) */}
               <span className="text-primary dark:text-primary">Browse by Category</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
@@ -346,7 +348,7 @@ export default function Landing() {
             {categories.map((category) => (
               <Card 
                 key={category.name} 
-                // Border/Text: Primary (Green)
+                // Hover border: Primary (Emerald Green)
                 className="group cursor-pointer border-2 border-card-border bg-card hover:border-primary transition-all duration-300 hover:shadow-2xl transform hover:scale-105 overflow-hidden"
               >
                 <CardContent className="p-0">
@@ -370,14 +372,14 @@ export default function Landing() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-12 sm:mb-16">
             <Badge 
-              // Using primary/green for feature badge
+              // Using primary/Emerald Green for feature badge
               className="mb-4 bg-primary/10 text-primary dark:bg-primary/20"
             >
               Why Choose Us
             </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              {/* Using Primary/Secondary Text */}
-              <span className="text-primary dark:text-secondary">Everything You Need</span>
+              {/* Text Secondary (Warm Tan) */}
+              <span className="text-secondary dark:text-secondary">Everything You Need</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
               We provide the best platform to connect you with verified professionals
@@ -387,13 +389,13 @@ export default function Landing() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {features.map((feature, index) => (
               <Card key={feature.title} className="group relative overflow-hidden border-2 border-card-border bg-card hover:border-transparent transition-all duration-500 hover:shadow-2xl transform hover:-translate-y-2">
-                {/* REMOVED GRADIENT: Using solid hover background */}
                 <div className={`absolute inset-0 ${feature.hoverBg} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
                 <CardContent className="p-6 sm:p-8 relative z-10">
                   <div className="relative w-full h-40 sm:h-48 rounded-xl overflow-hidden mb-4 sm:mb-6 shadow-lg">
                     <img src={feature.image} alt={feature.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
                     <div className="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors"></div>
                   </div>
+                  {/* Hover text: Secondary (Warm Tan) */}
                   <h3 className="text-xl sm:text-2xl font-bold mb-3 group-hover:text-secondary transition-colors">
                     {feature.title}
                   </h3>
@@ -405,11 +407,11 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA Section - REMOVED GRADIENT */}
+      {/* CTA Section - Solid Secondary (Warm Tan) / Primary (Emerald Green) */}
       <section className="py-20 sm:py-24 relative overflow-hidden">
         <div className="absolute inset-0">
           <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1600&auto=format&fit=crop&q=80" alt="Team collaboration" className="w-full h-full object-cover" />
-          {/* Using solid Primary/Secondary Overlay */}
+          {/* Overlay using Secondary/Primary color with high opacity */}
           <div className="absolute inset-0 bg-secondary/90 dark:bg-primary/90"></div>
         </div>
         
@@ -428,7 +430,7 @@ export default function Landing() {
               <Link href="/signup">
                 <Button 
                   size="lg" 
-                  // White button with Secondary (Orange) text
+                  // White button with Secondary (Warm Tan) text
                   className="w-full sm:w-auto bg-white text-secondary hover:bg-gray-100 px-8 sm:px-10 py-5 sm:py-6 text-base sm:text-lg font-bold shadow-2xl transform hover:scale-105 transition-all duration-300"
                 >
                   I Need Services
@@ -439,7 +441,7 @@ export default function Landing() {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  // Outline button with White border and Primary (Green) hover
+                  // Outline button with White border and Primary (Emerald Green) hover
                   className="w-full sm:w-auto border-2 border-white text-white hover:bg-white/10 px-8 sm:px-10 py-5 sm:py-6 text-base sm:text-lg font-bold shadow-2xl transform hover:scale-105 transition-all duration-300"
                 >
                   I'm a Service Provider
@@ -451,23 +453,23 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer - REMOVED GRADIENT */}
+      {/* Footer - Solid Secondary (Warm Tan) / Primary (Emerald Green) */}
       <footer className="border-t border-border py-8 sm:py-12 bg-sidebar">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              {/* Solid Primary (Green) */}
+              {/* Solid Primary (Emerald Green) */}
               <div className="w-10 h-10 rounded-full bg-primary"></div>
-              {/* Text: Secondary (Orange) */}
+              {/* Text: Secondary (Warm Tan) */}
               <span className="text-lg sm:text-xl font-bold text-secondary dark:text-primary">JobTradeSasa</span>
             </div>
             <p className="text-muted-foreground text-sm sm:text-base text-center">&copy; 2025 JobTradeSasa. All rights reserved.</p>
             <div className="flex gap-3 sm:gap-4 flex-wrap justify-center">
-              {/* Orange/Secondary Badge */}
+              {/* Secondary (Warm Tan) Badge */}
               <Badge variant="outline" className="border-secondary text-secondary hover:bg-secondary/5">Terms</Badge>
-              {/* Green/Primary Badge */}
+              {/* Primary (Emerald Green) Badge */}
               <Badge variant="outline" className="border-primary text-primary hover:bg-primary/5">Privacy</Badge>
-              {/* Orange/Secondary Badge */}
+              {/* Secondary (Warm Tan) Badge */}
               <Badge variant="outline" className="border-secondary text-secondary hover:bg-secondary/5">Contact</Badge>
             </div>
           </div>
