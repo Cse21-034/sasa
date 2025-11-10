@@ -19,7 +19,7 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card) / <alpha-value>)",
           foreground: "hsl(var(--card-foreground) / <alpha-value>)",
-          border: "var(--card-border)", // Use border HSL from index.css
+          border: "var(--card-border)",
         },
         popover: {
           DEFAULT: "hsl(var(--popover) / <alpha-value>)",
@@ -89,9 +89,6 @@ export default {
           busy: "rgb(239 68 68)",
           offline: "rgb(156 163 175)",
         },
-        // --- CUSTOM SHADES REMOVED: Rely on Primary/Secondary HSL now ---
-        // Any utility that still uses `text-orange-600` will fall back to Tailwind defaults or be updated in TSX files.
-        // We will ensure the TSX files use the new primary/secondary names.
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
@@ -147,7 +144,6 @@ export default {
           "0%, 100%": { transform: "translateY(0px)" },
           "50%": { transform: "translateY(-20px)" },
         },
-        // UPDATED to use HSL(--primary)
         "pulse-glow": {
           "0%, 100%": { boxShadow: "0 0 20px hsla(var(--primary), 0.4)" },
           "50%": { boxShadow: "0 0 40px hsla(var(--primary), 0.8)" },
@@ -169,14 +165,12 @@ export default {
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
       },
       backgroundImage: {
-        // Removed hardcoded gradient colors here
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
       boxShadow: {
         'inner-sm': 'inset 0 1px 2px 0 rgba(0, 0, 0, 0.05)',
         'inner-md': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
-        // UPDATED glow to use HSL(--primary) and HSL(--secondary)
         'glow-primary': '0 0 20px hsla(var(--primary), 0.3)',
         'glow-secondary': '0 0 20px hsla(var(--secondary), 0.3)',
       },
