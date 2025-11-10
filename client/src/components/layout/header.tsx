@@ -156,7 +156,7 @@ export function Header() {
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Post a Job
-                    <Sparkles className="h-3 w-3 ml-2" />
+                     {/* <Sparkles className="h-3 w-3 ml-2" /> */}
                   </Button>
                 </Link>
               )}
