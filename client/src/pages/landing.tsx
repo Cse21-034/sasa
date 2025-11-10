@@ -21,7 +21,7 @@ export default function Landing() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Special offers data (matching the image style)
+  // Special offers data
   const specialOffers = [
     {
       title: 'First-Time Customer Discount',
@@ -65,37 +65,38 @@ export default function Landing() {
     {
       title: 'Location-Based Matching',
       description: 'Find service providers near you with real-time distance tracking',
-      gradient: 'from-orange-500 to-orange-600',
+      // Using solid color for hover effect
+      hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
       image: 'https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?w=400&auto=format&fit=crop&q=80',
     },
     {
       title: 'Verified Providers',
       description: 'All providers are verified with certificates and ID documentation',
-      gradient: 'from-green-500 to-green-600',
+      hoverBg: 'bg-primary/10 dark:bg-primary/20',
       image: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=400&auto=format&fit=crop&q=80',
     },
     {
       title: 'Real-Time Chat',
       description: 'Communicate directly with providers through instant messaging',
-      gradient: 'from-orange-500 to-green-500',
+      hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
       image: 'https://images.unsplash.com/photo-1577563908411-5077b6dc7624?w=400&auto=format&fit=crop&q=80',
     },
     {
       title: 'Ratings & Reviews',
       description: 'Make informed decisions based on community feedback',
-      gradient: 'from-green-500 to-green-600',
+      hoverBg: 'bg-primary/10 dark:bg-primary/20',
       image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&auto=format&fit=crop&q=80',
     },
     {
       title: 'Fast Response',
       description: 'Get connected with available providers within minutes',
-      gradient: 'from-orange-600 to-orange-700',
+      hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
       image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&auto=format&fit=crop&q=80',
     },
     {
       title: 'Quality Assurance',
       description: 'Premium service standards guaranteed by our platform',
-      gradient: 'from-green-600 to-green-700',
+      hoverBg: 'bg-primary/10 dark:bg-primary/20',
       image: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&auto=format&fit=crop&q=80',
     },
   ];
@@ -135,20 +136,22 @@ export default function Landing() {
               <img src="https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400&auto=format&fit=crop&q=80" alt="Painter at work" className="w-full h-full object-cover" />
             </div>
           </div>
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-50/95 via-white/95 to-green-50/95 dark:from-orange-950/95 dark:via-gray-900/95 dark:to-green-950/95"></div>
+          {/* REMOVED GRADIENT: Using solid background/sidebar colors with high opacity */}
+          <div className="absolute inset-0 bg-background/95 dark:bg-background/95"></div>
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-5xl mx-auto text-center">
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-green-600 bg-clip-text text-transparent">
+              {/* REMOVED GRADIENT: Using Primary/Secondary Text */}
+              <span className="text-secondary dark:text-primary">
                 Connect with Trusted
               </span>
               <br />
-              <span className="text-gray-900 dark:text-white">Local Service Providers</span>
+              <span className="text-foreground">Local Service Providers</span>
             </h1>
 
-            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed px-4">
+            <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed px-4">
               Find skilled professionals for all your service needs. From plumbers to electricians, carpenters to cleaners - all verified and rated by the community.
             </p>
 
@@ -156,13 +159,21 @@ export default function Landing() {
               {isAuthenticated ? (
                 <>
                   <Link href="/jobs">
-                    <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
+                    <Button 
+                      size="lg" 
+                      className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-secondary hover:bg-secondary/90 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                    >
                       Browse Services
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
                   <Link href="/post-job">
-                    <Button variant="outline" size="lg" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-2 border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <Button 
+                      variant="outline" 
+                      size="lg" 
+                      // Border/Text: Primary (Green)
+                      className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-2 border-primary text-primary hover:bg-primary/10 dark:hover:bg-primary/20 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                    >
                       Post a Request
                     </Button>
                   </Link>
@@ -170,13 +181,22 @@ export default function Landing() {
               ) : (
                 <>
                   <Link href="/signup">
-                    <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
+                    <Button 
+                      size="lg" 
+                      // REMOVED GRADIENT: Solid Secondary (Orange)
+                      className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-secondary hover:bg-secondary/90 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                    >
                       Get Started Free
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
                   <Link href="/login">
-                    <Button variant="outline" size="lg" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-2 border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <Button 
+                      variant="outline" 
+                      size="lg" 
+                      // Border/Text: Primary (Green)
+                      className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-2 border-primary text-primary hover:bg-primary/10 dark:hover:bg-primary/20 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                    >
                       Login
                     </Button>
                   </Link>
@@ -188,7 +208,8 @@ export default function Landing() {
               {categories.slice(0, 4).map((category) => (
                 <div key={category.name} className="relative group overflow-hidden rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300">
                   <img src={category.image} alt={category.name} className="w-full h-40 object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-4">
+                  {/* Using solid black/white overlay */}
+                  <div className="absolute inset-0 bg-black/50 flex items-end p-4 group-hover:bg-black/70 transition-colors">
                     <p className="text-white font-bold text-sm">{category.name}</p>
                   </div>
                 </div>
@@ -198,88 +219,101 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 sm:py-20 bg-gradient-to-r from-orange-500 to-green-500 relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid-white/[0.1] bg-[size:20px_20px]"></div>
+      {/* Stats Section - REMOVED GRADIENT */}
+      <section className="py-16 sm:py-20 bg-primary relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-primary/[0.1] bg-[size:20px_20px]"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center transform hover:scale-110 transition-transform duration-300">
-                <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-lg rounded-full mb-4 overflow-hidden border-4 border-white/30">
+                <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-primary-foreground/20 backdrop-blur-lg rounded-full mb-4 overflow-hidden border-4 border-primary-foreground/30">
                   <img src={stat.image} alt={stat.label} className="w-full h-full object-cover" />
                 </div>
-                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">{stat.number}</div>
-                <div className="text-white/90 font-medium text-sm sm:text-base">{stat.label}</div>
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary-foreground mb-2">{stat.number}</div>
+                <div className="text-primary-foreground/90 font-medium text-sm sm:text-base">{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Special Offers Section */}
-      <section className="py-16 sm:py-20 bg-gray-50 dark:bg-gray-900">
+      {/* Special Offers Section - CARD FIX INCLUDED */}
+      <section className="py-16 sm:py-20 bg-sidebar"> {/* Using sidebar color for section separation */}
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
-            <Badge className="mb-4 bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-300">
+            <Badge 
+              // Using secondary/orange for offer badge
+              className="mb-4 bg-secondary/10 text-secondary dark:bg-secondary/20"
+            >
               <Tag className="h-3 w-3 mr-1" />
               Limited Time Offers
             </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-orange-600 to-green-600 bg-clip-text text-transparent">Special Offers</span>
+              {/* Using Primary/Secondary Text */}
+              <span className="text-secondary dark:text-secondary">Special Offers</span>
             </h2>
-            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto px-4">
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Discover exclusive deals and discounts on our services. Don't miss out on these limited-time offers!
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {specialOffers.map((offer, index) => (
-              <Card key={index} className="group cursor-pointer border-2 hover:border-orange-500 transition-all duration-300 hover:shadow-2xl transform hover:scale-105 overflow-hidden">
+              <Card 
+                key={index} 
+                // **CARD FIX:** Added explicit border and using bg-card
+                className="group cursor-pointer border-card-border border-2 bg-card hover:border-secondary transition-all duration-300 hover:shadow-2xl transform hover:scale-105 overflow-hidden"
+              >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex gap-2">
                       {offer.badge === 'NEW' && (
-                        <Badge variant="destructive" className="bg-orange-500 hover:bg-orange-600">
+                        // Solid Secondary (Orange)
+                        <Badge className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
                           🚨 {offer.badge}
                         </Badge>
                       )}
                       {offer.badge === 'ALL SERVICES' && (
-                        <Badge className="bg-green-500 text-white hover:bg-green-600">
+                        // Solid Primary (Green)
+                        <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground">
                           {offer.badge}
                         </Badge>
                       )}
                     </div>
                   </div>
 
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-orange-600 transition-colors">
+                  <h3 className="text-xl font-bold mb-2 group-hover:text-secondary transition-colors">
                     {offer.title}
                   </h3>
 
                   <div className="flex items-center gap-2 mb-4">
-                    <Gift className="h-8 w-8 text-orange-500" />
-                    <span className="text-3xl font-bold text-orange-600">{offer.discount}</span>
+                    <Gift className="h-8 w-8 text-secondary" />
+                    <span className="text-3xl font-bold text-secondary">{offer.discount}</span>
                   </div>
 
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{offer.description}</p>
+                  <p className="text-sm text-muted-foreground mb-4">{offer.description}</p>
 
-                  <div className="flex items-center gap-2 mb-4 text-sm text-gray-500">
+                  <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     <span>Valid until {offer.validUntil}</span>
                   </div>
 
-                  <div className="border-t pt-4">
-                    <p className="text-xs font-semibold mb-2 text-gray-700 dark:text-gray-300">Terms & Conditions:</p>
-                    <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                  <div className="border-t border-border pt-4">
+                    <p className="text-xs font-semibold mb-2 text-foreground/90">Terms & Conditions:</p>
+                    <ul className="text-xs text-muted-foreground space-y-1">
                       {offer.terms.map((term, idx) => (
                         <li key={idx} className="flex items-start gap-1">
-                          <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
+                          <CheckCircle className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
                           <span>{term}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
-                  <Button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-green-500 hover:from-orange-600 hover:to-green-600">
+                  <Button 
+                    // REMOVED GRADIENT: Solid Secondary (Orange)
+                    className="w-full mt-4 bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+                  >
                     Book Now
                   </Button>
                 </CardContent>
@@ -290,25 +324,35 @@ export default function Landing() {
       </section>
 
       {/* Categories Section */}
-      <section className="py-16 sm:py-20 bg-white dark:bg-gray-900">
+      <section className="py-16 sm:py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
-            <Badge className="mb-4 bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300">Popular Services</Badge>
+            <Badge 
+              // Using primary/green for category badge
+              className="mb-4 bg-primary/10 text-primary dark:bg-primary/20"
+            >
+              Popular Services
+            </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-green-600 to-orange-600 bg-clip-text text-transparent">Browse by Category</span>
+              {/* Using Primary/Secondary Text */}
+              <span className="text-primary dark:text-primary">Browse by Category</span>
             </h2>
-            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto px-4">
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Discover professional services tailored to your needs
             </p>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
             {categories.map((category) => (
-              <Card key={category.name} className="group cursor-pointer border-2 hover:border-green-500 transition-all duration-300 hover:shadow-2xl transform hover:scale-105 overflow-hidden">
+              <Card 
+                key={category.name} 
+                // Border/Text: Primary (Green)
+                className="group cursor-pointer border-2 border-card-border bg-card hover:border-primary transition-all duration-300 hover:shadow-2xl transform hover:scale-105 overflow-hidden"
+              >
                 <CardContent className="p-0">
                   <div className="relative h-32 sm:h-40 overflow-hidden">
                     <img src={category.image} alt={category.name} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+                    <div className="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors"></div>
                     <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
                       <p className="font-bold text-base sm:text-lg text-white text-center drop-shadow-lg">{category.name}</p>
                     </div>
@@ -321,32 +365,39 @@ export default function Landing() {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 sm:py-20 relative overflow-hidden bg-gray-50 dark:bg-gray-900">
-        <div className="absolute inset-0 bg-gradient-to-b from-white via-orange-50/30 to-green-50/30 dark:from-gray-900 dark:via-orange-950/30 dark:to-green-950/30"></div>
+      <section className="py-16 sm:py-20 relative overflow-hidden bg-sidebar">
+        <div className="absolute inset-0 bg-transparent"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-12 sm:mb-16">
-            <Badge className="mb-4 bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300">Why Choose Us</Badge>
+            <Badge 
+              // Using primary/green for feature badge
+              className="mb-4 bg-primary/10 text-primary dark:bg-primary/20"
+            >
+              Why Choose Us
+            </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-green-600 to-orange-600 bg-clip-text text-transparent">Everything You Need</span>
+              {/* Using Primary/Secondary Text */}
+              <span className="text-primary dark:text-secondary">Everything You Need</span>
             </h2>
-            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto px-4">
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
               We provide the best platform to connect you with verified professionals
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {features.map((feature, index) => (
-              <Card key={feature.title} className="group relative overflow-hidden border-2 hover:border-transparent transition-all duration-500 hover:shadow-2xl transform hover:-translate-y-2">
-                <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
+              <Card key={feature.title} className="group relative overflow-hidden border-2 border-card-border bg-card hover:border-transparent transition-all duration-500 hover:shadow-2xl transform hover:-translate-y-2">
+                {/* REMOVED GRADIENT: Using solid hover background */}
+                <div className={`absolute inset-0 ${feature.hoverBg} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
                 <CardContent className="p-6 sm:p-8 relative z-10">
                   <div className="relative w-full h-40 sm:h-48 rounded-xl overflow-hidden mb-4 sm:mb-6 shadow-lg">
                     <img src={feature.image} alt={feature.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                    <div className="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors"></div>
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold mb-3 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-3 group-hover:text-secondary transition-colors">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base">{feature.description}</p>
+                  <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">{feature.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -354,11 +405,12 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA Section - REMOVED GRADIENT */}
       <section className="py-20 sm:py-24 relative overflow-hidden">
         <div className="absolute inset-0">
           <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1600&auto=format&fit=crop&q=80" alt="Team collaboration" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-600/95 via-orange-500/95 to-green-600/95"></div>
+          {/* Using solid Primary/Secondary Overlay */}
+          <div className="absolute inset-0 bg-secondary/90 dark:bg-primary/90"></div>
         </div>
         
         <div className="container mx-auto px-4 text-center relative z-10">
@@ -374,13 +426,22 @@ export default function Landing() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
               <Link href="/signup">
-                <Button size="lg" className="w-full sm:w-auto bg-white text-orange-600 hover:bg-gray-100 px-8 sm:px-10 py-5 sm:py-6 text-base sm:text-lg font-bold shadow-2xl transform hover:scale-105 transition-all duration-300">
+                <Button 
+                  size="lg" 
+                  // White button with Secondary (Orange) text
+                  className="w-full sm:w-auto bg-white text-secondary hover:bg-gray-100 px-8 sm:px-10 py-5 sm:py-6 text-base sm:text-lg font-bold shadow-2xl transform hover:scale-105 transition-all duration-300"
+                >
                   I Need Services
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href="/signup">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto border-2 border-white text-white hover:bg-white/10 px-8 sm:px-10 py-5 sm:py-6 text-base sm:text-lg font-bold shadow-2xl transform hover:scale-105 transition-all duration-300">
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  // Outline button with White border and Primary (Green) hover
+                  className="w-full sm:w-auto border-2 border-white text-white hover:bg-white/10 px-8 sm:px-10 py-5 sm:py-6 text-base sm:text-lg font-bold shadow-2xl transform hover:scale-105 transition-all duration-300"
+                >
                   I'm a Service Provider
                   <Wrench className="ml-2 h-5 w-5" />
                 </Button>
@@ -390,19 +451,24 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t-2 border-orange-200 dark:border-orange-800 py-8 sm:py-12 bg-gradient-to-b from-white to-orange-50/30 dark:from-gray-900 dark:to-orange-950/30">
+      {/* Footer - REMOVED GRADIENT */}
+      <footer className="border-t border-border py-8 sm:py-12 bg-sidebar">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-green-500"></div>
-              <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-green-600 bg-clip-text text-transparent">JobTradeSasa</span>
+              {/* Solid Primary (Green) */}
+              <div className="w-10 h-10 rounded-full bg-primary"></div>
+              {/* Text: Secondary (Orange) */}
+              <span className="text-lg sm:text-xl font-bold text-secondary dark:text-primary">JobTradeSasa</span>
             </div>
-            <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base text-center">&copy; 2025 JobTradeSasa. All rights reserved.</p>
+            <p className="text-muted-foreground text-sm sm:text-base text-center">&copy; 2025 JobTradeSasa. All rights reserved.</p>
             <div className="flex gap-3 sm:gap-4 flex-wrap justify-center">
-              <Badge variant="outline" className="border-orange-500 text-orange-600">Terms</Badge>
-              <Badge variant="outline" className="border-green-500 text-green-600">Privacy</Badge>
-              <Badge variant="outline" className="border-orange-500 text-orange-600">Contact</Badge>
+              {/* Orange/Secondary Badge */}
+              <Badge variant="outline" className="border-secondary text-secondary hover:bg-secondary/5">Terms</Badge>
+              {/* Green/Primary Badge */}
+              <Badge variant="outline" className="border-primary text-primary hover:bg-primary/5">Privacy</Badge>
+              {/* Orange/Secondary Badge */}
+              <Badge variant="outline" className="border-secondary text-secondary hover:bg-secondary/5">Contact</Badge>
             </div>
           </div>
         </div>
@@ -417,10 +483,16 @@ export default function Landing() {
         .animate-blob {
           animation: blob 7s infinite;
         }
-        .bg-grid-white {
+        /* UPDATED grid color to use Primary in light mode, Secondary in dark mode */
+        .bg-grid-primary {
           background-image: 
-            linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            linear-gradient(to right, hsla(var(--primary), 0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, hsla(var(--primary), 0.1) 1px, transparent 1px);
+        }
+        .dark .bg-grid-primary {
+           background-image: 
+            linear-gradient(to right, hsla(var(--secondary), 0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, hsla(var(--secondary), 0.1) 1px, transparent 1px);
         }
       `}</style>
     </div>
