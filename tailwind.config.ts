@@ -1,28 +1,45 @@
 // tailwind.config.ts
 import type { Config } from "tailwindcss";
 
-export default {
+const config: Config = {
   darkMode: ["class"],
-  content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
+  content: [
+    "./client/index.html",
+    "./client/src/**/*.{js,jsx,ts,tsx}",
+  ],
   theme: {
     extend: {
       colors: {
-        primary: "hsl(var(--primary) / <alpha-value>)",
-        accent: "hsl(var(--accent) / <alpha-value>)",
+        background: "hsl(var(--background) / <alpha-value>)",
+        foreground: "hsl(var(--foreground) / <alpha-value>)",
+        border: "hsl(var(--border) / <alpha-value>)",
+        primary: {
+          DEFAULT: "hsl(var(--primary) / <alpha-value>)",
+          foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent) / <alpha-value>)",
+          foreground: "hsl(var(--accent-foreground) / <alpha-value>)",
+        },
         navy: {
-          50: "#eff6ff",
-          100: "#dbeafe",
-          200: "#bfdbfe",
-          300: "#93c5fd",
-          400: "#60a5fa",
-          500: "#3b82f6",
-          600: "#2563eb",
-          700: "#1d4ed8",
-          800: "#1e40af",
-          900: "#1e3a8a",
+          50: "#f0f9ff",
+          100: "#e0f2fe",
+          200: "#bae6fd",
+          300: "#7dd3fc",
+          400: "#38bdf8",
+          500: "#0ea5e9",
+          600: "#0284c7",
+          700: "#0369a1",
+          800: "#0c4a6e",
+          900: "#0c4a6e",
         },
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
-} satisfies Config;
+  plugins: [
+    require("tailwindcss-animate"),
+    require("@tailwindcss/typography"),
+  ],
+};
+
+export default config;
