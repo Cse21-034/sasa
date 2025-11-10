@@ -32,21 +32,21 @@ export function Header() {
     <header 
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
         scrolled 
-          ? 'bg-card/80 backdrop-blur-xl border-b border-border shadow-md' // Using card/border for cleaner look
+          ? 'bg-card/80 backdrop-blur-xl border-b border-border shadow-md' 
           : 'bg-transparent'
       }`}
     >
       <div className="container mx-auto flex h-20 items-center justify-between px-4">
-        {/* Logo Section - REMOVED GRADIENT */}
+        {/* Logo Section - Primary/Secondary Colors */}
         <div className="flex items-center gap-8">
           <Link href="/">
             <div className="flex items-center gap-3 hover-elevate rounded-xl px-3 py-2 cursor-pointer group" data-testid="link-home">
-              {/* Logo icon: Solid Primary (Green) */}
+              {/* Logo icon: Solid Primary (Emerald Green) */}
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300">
                 <Briefcase className="h-6 w-6 text-primary-foreground" />
               </div>
               <div className="flex flex-col">
-                {/* Text: Primary (Green) */}
+                {/* Text: Primary (Emerald Green) */}
                 <span className="text-xl font-bold text-primary dark:text-secondary">
                   JobTradeSasa
                 </span>
@@ -63,6 +63,7 @@ export function Header() {
               <Link href="/jobs">
                 <Button 
                   variant="ghost" 
+                  // Hover: Accent/Secondary (Warm Tan)
                   className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
                   data-testid="link-jobs"
                 >
@@ -75,6 +76,7 @@ export function Header() {
                 <Link href="/dashboard">
                   <Button 
                     variant="ghost"
+                    // Hover: Primary (Emerald Green)
                     className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
                     data-testid="link-dashboard"
                   >
@@ -87,6 +89,7 @@ export function Header() {
               <Link href="/suppliers">
                 <Button 
                   variant="ghost"
+                  // Hover: Accent/Secondary (Warm Tan)
                   className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
                   data-testid="link-suppliers"
                 >
@@ -98,6 +101,7 @@ export function Header() {
               <Link href="/messages">
                 <Button 
                   variant="ghost"
+                  // Hover: Primary (Emerald Green)
                   className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
                   data-testid="link-messages-nav"
                 >
@@ -110,6 +114,7 @@ export function Header() {
                 <Link href="/reports">
                   <Button 
                     variant="ghost"
+                    // Hover: Accent/Secondary (Warm Tan)
                     className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
                     data-testid="link-reports"
                   >
@@ -123,6 +128,7 @@ export function Header() {
                 <Link href="/admin">
                   <Button 
                     variant="ghost"
+                    // Hover: Primary (Emerald Green)
                     className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
                     data-testid="link-admin"
                   >
@@ -144,7 +150,7 @@ export function Header() {
               {user?.role === 'requester' && (
                 <Link href="/post-job">
                   <Button 
-                    // REMOVED GRADIENT - Solid Secondary (Orange)
+                    // Solid Secondary (Warm Tan)
                     className="hidden sm:flex bg-secondary text-secondary-foreground shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:bg-secondary/90"
                     data-testid="button-post-job"
                   >
@@ -158,11 +164,12 @@ export function Header() {
               <Button 
                 variant="ghost" 
                 size="icon"
+                // Hover: Primary (Emerald Green)
                 className="relative hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
                 data-testid="button-notifications"
               >
                 <Bell className="h-5 w-5" />
-                {/* Notification dot: Secondary (Orange) */}
+                {/* Notification dot: Secondary (Warm Tan) */}
                 <span className="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
               </Button>
 
@@ -170,21 +177,21 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    // Ring: Secondary (Orange) for accent
+                    // Ring: Secondary (Warm Tan)
                     className="relative h-10 w-10 rounded-full hover:ring-4 hover:ring-secondary/20 dark:hover:ring-secondary/30 transition-all"
                     data-testid="button-user-menu"
                   >
-                    {/* Avatar ring: Secondary (Orange) */}
+                    {/* Avatar ring: Secondary (Warm Tan) */}
                     <Avatar className="h-10 w-10 ring-2 ring-secondary">
                       <AvatarImage src={user?.profilePhotoUrl || undefined} alt={user?.name} />
-                      {/* Avatar Fallback: Solid Primary (Green) */}
+                      {/* Avatar Fallback: Solid Primary (Emerald Green) */}
                       <AvatarFallback className="bg-primary text-primary-foreground font-bold">
                         {user?.name?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     {user?.isVerified && (
                       <div 
-                        // REMOVED GRADIENT - Solid Primary (Green)
+                        // Solid Primary (Emerald Green)
                         className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-primary flex items-center justify-center border-2 border-background"
                       >
                         <Sparkles className="h-3 w-3 text-primary-foreground" />
@@ -194,7 +201,7 @@ export function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
                   align="end" 
-                  // Border: Secondary (Orange) for accent
+                  // Border: Secondary (Warm Tan)
                   className="w-64 border-2 border-secondary/20 dark:border-secondary/30"
                 >
                   <DropdownMenuLabel>
@@ -202,7 +209,7 @@ export function Header() {
                       <p className="text-base font-bold">{user?.name}</p>
                       <p className="text-xs text-muted-foreground">{user?.email}</p>
                       <Badge 
-                        // REMOVED GRADIENT - Solid Primary (Green)
+                        // Solid Primary (Emerald Green)
                         className="w-fit bg-primary text-primary-foreground border-none"
                       >
                         {user?.role}
@@ -212,7 +219,7 @@ export function Header() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => setLocation('/profile')}
-                    // Hover/Text: Secondary (Orange)
+                    // Hover/Text: Secondary (Warm Tan)
                     className="cursor-pointer hover:bg-secondary/10 dark:hover:bg-secondary/20 hover:text-secondary"
                     data-testid="menu-profile"
                   >
@@ -221,7 +228,7 @@ export function Header() {
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => setLocation('/messages')}
-                    // Hover/Text: Primary (Green)
+                    // Hover/Text: Primary (Emerald Green)
                     className="cursor-pointer hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary"
                     data-testid="menu-messages"
                   >
@@ -245,7 +252,7 @@ export function Header() {
               <Link href="/login">
                 <Button 
                   variant="ghost"
-                  // Hover/Text: Primary (Green)
+                  // Hover/Text: Primary (Emerald Green)
                   className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
                   data-testid="button-login"
                 >
@@ -254,7 +261,7 @@ export function Header() {
               </Link>
               <Link href="/signup">
                 <Button 
-                  // REMOVED GRADIENT - Solid Secondary (Orange)
+                  // Solid Secondary (Warm Tan)
                   className="bg-secondary text-secondary-foreground shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:bg-secondary/90"
                   data-testid="button-signup"
                 >
