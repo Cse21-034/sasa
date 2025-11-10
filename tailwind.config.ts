@@ -6,11 +6,12 @@ export default {
   theme: {
     extend: {
       borderRadius: {
-        lg: ".75rem", /* 12px - More modern */
-        md: ".5rem", /* 8px */
-        sm: ".25rem", /* 4px */
+        lg: "var(--radius)", /* .75rem */
+        md: ".5rem", 
+        sm: ".25rem", 
       },
       colors: {
+        // --- HSL COLORS (DYNAMIC) ---
         background: "hsl(var(--background) / <alpha-value>)",
         foreground: "hsl(var(--foreground) / <alpha-value>)",
         border: "hsl(var(--border) / <alpha-value>)",
@@ -18,12 +19,12 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card) / <alpha-value>)",
           foreground: "hsl(var(--card-foreground) / <alpha-value>)",
-          border: "hsl(var(--card-border) / <alpha-value>)",
+          border: "var(--card-border)", // Use border HSL from index.css
         },
         popover: {
           DEFAULT: "hsl(var(--popover) / <alpha-value>)",
           foreground: "hsl(var(--popover-foreground) / <alpha-value>)",
-          border: "hsl(var(--popover-border) / <alpha-value>)",
+          border: "var(--popover-border)",
         },
         primary: {
           DEFAULT: "hsl(var(--primary) / <alpha-value>)",
@@ -70,7 +71,7 @@ export default {
           ring: "hsl(var(--sidebar-ring) / <alpha-value>)",
           DEFAULT: "hsl(var(--sidebar) / <alpha-value>)",
           foreground: "hsl(var(--sidebar-foreground) / <alpha-value>)",
-          border: "hsl(var(--sidebar-border) / <alpha-value>)",
+          border: "var(--sidebar-border)",
         },
         "sidebar-primary": {
           DEFAULT: "hsl(var(--sidebar-primary) / <alpha-value>)",
@@ -88,31 +89,9 @@ export default {
           busy: "rgb(239 68 68)",
           offline: "rgb(156 163 175)",
         },
-        // Custom orange and lime shades
-        orange: {
-          50: '#fff7ed',
-          100: '#ffedd5',
-          200: '#fed7aa',
-          300: '#fdba74',
-          400: '#fb923c',
-          500: '#f97316', // Primary orange
-          600: '#ea580c',
-          700: '#c2410c',
-          800: '#9a3412',
-          900: '#7c2d12',
-        },
-        lime: {
-          50: '#f7fee7',
-          100: '#ecfccb',
-          200: '#d9f99d',
-          300: '#bef264',
-          400: '#a3e635',
-          500: '#84cc16', // Primary lime
-          600: '#65a30d',
-          700: '#4d7c0f',
-          800: '#3f6212',
-          900: '#365314',
-        },
+        // --- CUSTOM SHADES REMOVED: Rely on Primary/Secondary HSL now ---
+        // Any utility that still uses `text-orange-600` will fall back to Tailwind defaults or be updated in TSX files.
+        // We will ensure the TSX files use the new primary/secondary names.
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
@@ -168,9 +147,10 @@ export default {
           "0%, 100%": { transform: "translateY(0px)" },
           "50%": { transform: "translateY(-20px)" },
         },
+        // UPDATED to use HSL(--primary)
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px rgba(249, 115, 22, 0.4)" },
-          "50%": { boxShadow: "0 0 40px rgba(249, 115, 22, 0.8)" },
+          "0%, 100%": { boxShadow: "0 0 20px hsla(var(--primary), 0.4)" },
+          "50%": { boxShadow: "0 0 40px hsla(var(--primary), 0.8)" },
         },
       },
       animation: {
@@ -189,14 +169,16 @@ export default {
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
       },
       backgroundImage: {
+        // Removed hardcoded gradient colors here
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
       boxShadow: {
         'inner-sm': 'inset 0 1px 2px 0 rgba(0, 0, 0, 0.05)',
         'inner-md': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
-        'glow-orange': '0 0 20px rgba(249, 115, 22, 0.3)',
-        'glow-lime': '0 0 20px rgba(132, 204, 22, 0.3)',
+        // UPDATED glow to use HSL(--primary) and HSL(--secondary)
+        'glow-primary': '0 0 20px hsla(var(--primary), 0.3)',
+        'glow-secondary': '0 0 20px hsla(var(--secondary), 0.3)',
       },
     },
   },
