@@ -65,7 +65,7 @@ export default function Landing() {
     {
       title: 'Location-Based Matching',
       description: 'Find service providers near you with real-time distance tracking',
-      // Using solid color for hover effect (Secondary/Sky Blue)
+      // Using solid color for hover effect (Secondary/Emerald Green)
       hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
       image: 'https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?w=400&auto=format&fit=crop&q=80',
     },
@@ -144,8 +144,8 @@ export default function Landing() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-5xl mx-auto text-center">
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              {/* Text Secondary (Sky Blue) / Primary (Emerald Green) */}
-              <span className="text-secondary dark:text-primary">
+              {/* Text Primary (Emerald Green) */}
+              <span className="text-primary">
                 Connect with Trusted
               </span>
               <br />
@@ -162,7 +162,7 @@ export default function Landing() {
                   <Link href="/jobs">
                     <Button 
                       size="lg" 
-                      // Solid Secondary (Sky Blue)
+                      // Solid Secondary (Emerald Green)
                       className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-secondary hover:bg-secondary/90 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                     >
                       Browse Services
@@ -185,7 +185,7 @@ export default function Landing() {
                   <Link href="/signup">
                     <Button 
                       size="lg" 
-                      // Solid Secondary (Sky Blue)
+                      // Solid Secondary (Emerald Green)
                       className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-secondary hover:bg-secondary/90 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                     >
                       Get Started Free
@@ -244,15 +244,15 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
             <Badge 
-              // Using secondary/Sky Blue for offer badge
+              // Using secondary/Emerald Green for offer badge
               className="mb-4 bg-secondary/10 text-secondary dark:bg-secondary/20"
             >
               <Tag className="h-3 w-3 mr-1" />
               Limited Time Offers
             </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              {/* Text Secondary (Sky Blue) */}
-              <span className="text-secondary dark:text-secondary">Special Offers</span>
+              {/* Text Secondary (Emerald Green) */}
+              <span className="text-secondary">Special Offers</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Discover exclusive deals and discounts on our services. Don't miss out on these limited-time offers.
@@ -263,14 +263,14 @@ export default function Landing() {
             {specialOffers.map((offer, index) => (
               <Card 
                 key={index} 
-                // Hover border: Secondary (Sky Blue)
+                // Hover border: Secondary (Emerald Green)
                 className="group cursor-pointer border-card-border border-2 bg-card hover:border-secondary transition-all duration-300 hover:shadow-2xl transform hover:scale-105 overflow-hidden"
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex gap-2">
                       {offer.badge === 'NEW' && (
-                        // Solid Secondary (Sky Blue)
+                        // Solid Secondary (Emerald Green)
                         <Badge className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
                           🚨 {offer.badge}
                         </Badge>
@@ -314,7 +314,7 @@ export default function Landing() {
                   </div>
 
                   <Button 
-                    // Solid Secondary (Sky Blue)
+                    // Solid Secondary (Emerald Green)
                     className="w-full mt-4 bg-secondary hover:bg-secondary/90 text-secondary-foreground"
                   >
                     Book Now
@@ -338,7 +338,7 @@ export default function Landing() {
             </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
               {/* Text Primary (Emerald Green) */}
-              <span className="text-primary dark:text-primary">Browse by Category</span>
+              <span className="text-primary">Browse by Category</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Discover professional services tailored to your needs
@@ -379,8 +379,8 @@ export default function Landing() {
               Why Choose Us
             </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              {/* Text Secondary (Sky Blue) */}
-              <span className="text-secondary dark:text-secondary">Everything You Need</span>
+              {/* Text Secondary (Emerald Green) */}
+              <span className="text-secondary">Everything You Need</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
               We provide the best platform to connect you with verified professionals
@@ -396,7 +396,7 @@ export default function Landing() {
                     <img src={feature.image} alt={feature.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
                     <div className="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors"></div>
                   </div>
-                  {/* Hover text: Secondary (Sky Blue) */}
+                  {/* Hover text: Secondary (Emerald Green) */}
                   <h3 className="text-xl sm:text-2xl font-bold mb-3 group-hover:text-secondary transition-colors">
                     {feature.title}
                   </h3>
@@ -408,7 +408,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA Section - Solid Secondary (Sky Blue) / Primary (Emerald Green) */}
+      {/* CTA Section - Solid Secondary (Emerald Green) / Primary (Emerald Green) */}
       <section className="py-20 sm:py-24 relative overflow-hidden">
         <div className="absolute inset-0">
           <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1600&auto=format&fit=crop&q=80" alt="Team collaboration" className="w-full h-full object-cover" />
@@ -431,7 +431,7 @@ export default function Landing() {
               <Link href="/signup">
                 <Button 
                   size="lg" 
-                  // White button with Secondary (Sky Blue) text
+                  // White button with Secondary (Emerald Green) text
                   className="w-full sm:w-auto bg-white text-secondary hover:bg-gray-100 px-8 sm:px-10 py-5 sm:py-6 text-base sm:text-lg font-bold shadow-2xl transform hover:scale-105 transition-all duration-300"
                 >
                   I Need Services
@@ -454,23 +454,23 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer - Solid Secondary (Sky Blue) / Primary (Emerald Green) */}
+      {/* Footer - Solid Secondary (Emerald Green) / Primary (Emerald Green) */}
       <footer className="border-t border-border py-8 sm:py-12 bg-sidebar">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
               {/* Solid Primary (Emerald Green) */}
               <div className="w-10 h-10 rounded-full bg-primary"></div>
-              {/* Text: Secondary (Sky Blue) */}
-              <span className="text-lg sm:text-xl font-bold text-secondary dark:text-primary">JobTradeSasa</span>
+              {/* Text: Primary (Emerald Green) */}
+              <span className="text-lg sm:text-xl font-bold text-primary">JobTradeSasa</span>
             </div>
             <p className="text-muted-foreground text-sm sm:text-base text-center">&copy; 2025 JobTradeSasa. All rights reserved.</p>
             <div className="flex gap-3 sm:gap-4 flex-wrap justify-center">
-              {/* Secondary (Sky Blue) Badge */}
+              {/* Secondary (Emerald Green) Badge */}
               <Badge variant="outline" className="border-secondary text-secondary hover:bg-secondary/5">Terms</Badge>
               {/* Primary (Emerald Green) Badge */}
               <Badge variant="outline" className="border-primary text-primary hover:bg-primary/5">Privacy</Badge>
-              {/* Secondary (Sky Blue) Badge */}
+              {/* Secondary (Emerald Green) Badge */}
               <Badge variant="outline" className="border-secondary text-secondary hover:bg-secondary/5">Contact</Badge>
             </div>
           </div>
@@ -486,14 +486,14 @@ export default function Landing() {
         .animate-blob {
           animation: blob 7s infinite;
         }
-        /* UPDATED grid color to use Primary in light mode, Secondary in dark mode */
+        /* UPDATED grid color to use Primary in light mode, Secondary (which is now Primary) in dark mode */
         .bg-grid-primary {
           background-image: 
             linear-gradient(to right, hsla(var(--primary), 0.1) 1px, transparent 1px),
             linear-gradient(to bottom, hsla(var(--primary), 0.1) 1px, transparent 1px);
         }
         .dark .bg-grid-primary {
-           /* Using the new Secondary (Sky Blue) in dark mode for the grid pattern */
+           /* Using the new Secondary (Emerald Green) in dark mode for the grid pattern */
            background-image: 
             linear-gradient(to right, hsla(var(--secondary), 0.1) 1px, transparent 1px),
             linear-gradient(to bottom, hsla(var(--secondary), 0.1) 1px, transparent 1px);
