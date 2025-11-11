@@ -18,11 +18,14 @@ import {
   insertJobReportSchema,
   insertServiceAreaMigrationSchema,
   updateProviderServiceAreaSchema,
-  insertVerificationSubmissionSchema, // 🆕 Added
-  updateVerificationStatusSchema, // 🆕 Added
+  insertVerificationSubmissionSchema, 
+  updateVerificationStatusSchema, 
+  updateUserStatusSchema, // 🆕 Added
 } from "@shared/schema";
 import { ZodError } from 'zod'; 
 import { NextFunction, Response } from "express"; 
+import { eq } from "drizzle-orm";
+import { jobReports } from "@shared/schema"; // Import jobReports table for resolution
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(cors({
@@ -86,6 +89,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return next();
     }
     
+    // Check the user status - if blocked, deny access
+    if (req.user!.status !== 'active') {
+        return res.status(403).json({
+            message: 'Access denied. Your account is currently blocked or deactivated.',
+            code: 'ACCOUNT_BLOCKED' 
+        });
+    }
+
     // Check the isVerified flag from the token payload
     if (!req.user!.isVerified) {
       return res.status(403).json({
@@ -212,13 +223,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
 
-    // 🆕 Set unverified status in token
+    // 🆕 Set unverified/active status in token
     const token = generateToken({
       id: user.id,
       email: user.email,
       role: user.role,
       isVerified: user.isVerified,
       isIdentityVerified: user.isIdentityVerified,
+      status: user.status, // 🆕 Added status
     });
 
     const { passwordHash: _, ...userWithoutPassword } = user;
@@ -264,14 +276,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isValid) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
+      
+      // 🆕 Check user status on login
+      if (user.status !== 'active') {
+         // Return 403 Forbidden if blocked or deactivated
+         return res.status(403).json({ message: `Your account is currently ${user.status}. Please contact support.` });
+      }
 
-      // 🆕 Update token with current verification status
+      // 🆕 Update token with current verification/status
       const token = generateToken({
         id: user.id,
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
         isIdentityVerified: user.isIdentityVerified,
+        status: user.status, // 🆕 Added status
       });
 
       const { passwordHash: _, ...userWithoutPassword } = user;
@@ -1113,7 +1132,109 @@ app.get('/api/verification/status', authMiddleware, async (req: AuthRequest, res
 });
 
 
-// ==================== ADMIN VERIFICATION ROUTES (NEW) ====================
+// ==================== ADMIN MANAGEMENT ROUTES (NEW) ====================
+
+// 🆕 GET /api/admin/users - List all users
+app.get('/api/admin/users', authMiddleware, async (req: AuthRequest, res) => {
+    if (req.user!.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    try {
+      const { role, status, search } = req.query;
+      const usersList = await storage.getUsers({ 
+        role: role as string, 
+        status: status as string, 
+        search: search as string 
+      });
+      res.json(usersList);
+    } catch (error: any) {
+      console.error('Get users error:', error);
+      res.status(500).json({ message: error.message || 'Failed to list users' });
+    }
+});
+
+// 🆕 PATCH /api/admin/users/:id/update-status - Block/Deactivate User
+app.patch('/api/admin/users/:id/update-status', authMiddleware, async (req: AuthRequest, res) => {
+    if (req.user!.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    try {
+      const validatedData = updateUserStatusSchema.parse(req.body);
+      const updatedUser = await storage.updateUserStatus(req.params.id, validatedData.status);
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+      
+      const { passwordHash: _, ...userWithoutPassword } = updatedUser;
+
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+        });
+      }
+      console.error('Update user status error:', error);
+      res.status(500).json({ message: error.message || 'Failed to update user status' });
+    }
+});
+
+// 🆕 GET /api/admin/reports - List all job reports
+app.get('/api/admin/reports', authMiddleware, async (req: AuthRequest, res) => {
+    if (req.user!.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    try {
+      const reports = await storage.getJobReports({ status: req.query.status as 'resolved' | 'unresolved' });
+      res.json(reports);
+    } catch (error: any) {
+      console.error('Get reports error:', error);
+      res.status(500).json({ message: error.message || 'Failed to list reports' });
+    }
+});
+
+// 🆕 PATCH /api/admin/reports/:id/resolve - Resolve a report
+app.patch('/api/admin/reports/:id/resolve', authMiddleware, async (req: AuthRequest, res) => {
+    if (req.user!.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    try {
+      const updated = await storage.resolveJobReport(req.params.id);
+
+      if (!updated) {
+         return res.status(404).json({ message: 'Report not found.' });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error('Resolve report error:', error);
+      res.status(500).json({ message: error.message || 'Failed to resolve report' });
+    }
+});
+
+
+// 🆕 GET /api/admin/analytics - Get platform-wide analytics
+app.get('/api/admin/analytics', authMiddleware, async (req: AuthRequest, res) => {
+    if (req.user!.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    try {
+      const analytics = await storage.getAdminJobAnalytics();
+      res.json(analytics);
+    } catch (error: any) {
+      console.error('Get analytics error:', error);
+      res.status(500).json({ message: error.message || 'Failed to get analytics' });
+    }
+});
+
+// ==================== ADMIN VERIFICATION ROUTES (EXISTING, KEPT FOR COMPLETENESS) ====================
 
 // 🆕 GET /api/admin/verification/pending - List pending submissions
 app.get('/api/admin/verification/pending', authMiddleware, async (req: AuthRequest, res) => {
@@ -1171,5 +1292,7 @@ app.patch('/api/admin/verification/:id/update-status', authMiddleware, async (re
     res.status(500).json({ message: error.message || 'Failed to update verification status' });
   }
 });
+
+
   return httpServer;
 }
