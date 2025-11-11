@@ -6,6 +6,7 @@ interface ExtendedUser extends User {
   isVerified: boolean;
   isIdentityVerified: boolean;
   status: 'active' | 'blocked' | 'deactivated';
+  lastLogin?: Date | string | null; // 🆕 Added lastLogin
 }
 
 interface AuthContextType {
@@ -24,13 +25,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
-        // 🆕 Ensure parsed user has the new fields, defaulting to false/active if undefined (e.g., from old storage)
+        // 🆕 Ensure parsed user has the new fields, defaulting to false/active if undefined
         const parsedUser = JSON.parse(storedUser);
         setUser({ 
           ...parsedUser,
           isVerified: parsedUser.isVerified ?? false, 
           isIdentityVerified: parsedUser.isIdentityVerified ?? false,
-          status: parsedUser.status ?? 'active', // 🆕 Added status
+          status: parsedUser.status ?? 'active',
+          lastLogin: parsedUser.lastLogin ?? null, // 🆕 Added lastLogin
         });
       } catch (error) {
         localStorage.removeItem('user');
