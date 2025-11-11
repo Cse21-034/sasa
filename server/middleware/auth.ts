@@ -8,6 +8,8 @@ export interface AuthRequest extends Request {
     id: string;
     email: string;
     role: string;
+    isVerified: boolean; // 🆕 Added
+    isIdentityVerified: boolean; // 🆕 Added
   };
 }
 
@@ -29,6 +31,14 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   }
 }
 
+// Update `generateToken` to include verification status
 export function generateToken(payload: any): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+  const tokenPayload = {
+      id: payload.id,
+      email: payload.email,
+      role: payload.role,
+      isVerified: payload.isVerified || false, // Ensure defaults
+      isIdentityVerified: payload.isIdentityVerified || false, // Ensure defaults
+  };
+  return jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
 }
