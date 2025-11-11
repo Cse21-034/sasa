@@ -34,7 +34,7 @@ import {
   type InsertVerificationSubmission,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, desc, asc, inArray, count, sum, gte } from "drizzle-orm"; 
+import { eq, and, sql, desc, asc, inArray } from "drizzle-orm";
 import { InferSelectModel } from 'drizzle-orm'; 
 
 type JobWithRelations = Job & {
@@ -59,13 +59,9 @@ type RatingWithFromUser = Rating & {
   fromUser: User;
 };
 
+// 🆕 Extended Submission Type for Admin UI (Local definition for IStorage)
 interface SubmissionWithUser extends VerificationSubmission {
   user: User;
-}
-
-interface JobReportWithRelations extends JobReport {
-    job: Job;
-    reporter: User;
 }
 
 export interface IStorage {
@@ -75,8 +71,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, data: Partial<User>): Promise<User | undefined>;
   deleteUser(id: string): Promise<void>;
-  updateUserBlockStatus(userId: string, isBlocked: boolean): Promise<User | undefined>; 
-  
+
   // Providers
   getProvider(userId: string): Promise<Provider | undefined>;
   createProvider(provider: InsertProvider & { userId: string }): Promise<Provider>;
@@ -128,17 +123,18 @@ export interface IStorage {
   createRating(rating: InsertRating & { fromUserId: string }): Promise<Rating>;
   getProviderRatings(providerId: string): Promise<RatingWithFromUser[]>;
 
+  // Job Feedback
+  createJobFeedback(feedback: InsertJobFeedback & { providerId: string }): Promise<JobFeedback>;
+  getJobFeedback(jobId: string): Promise<JobFeedback[]>;
+
   // Job Reports
   createJobReport(report: InsertJobReport & { reporterId: string }): Promise<JobReport>;
   getJobReports(jobId: string): Promise<JobReport[]>;
-  getPendingJobReports(): Promise<JobReportWithRelations[]>;
-  resolveJobReport(reportId: string): Promise<JobReport | undefined>;
 
   // Analytics
   getRequesterStats(requesterId: string): Promise<any>;
   getProviderStats(providerId: string): Promise<any>;
-  getAdminStats(): Promise<any>; 
-  
+
   // Categories
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
@@ -146,7 +142,7 @@ export interface IStorage {
   // Verification Submissions
   createVerificationSubmission(submission: InsertVerificationSubmission & { userId: string }): Promise<VerificationSubmission>;
   getVerificationSubmission(userId: string, type: 'identity' | 'document'): Promise<VerificationSubmission | undefined>;
-  getPendingVerificationSubmissions(): Promise<SubmissionWithUser[]>;
+  getPendingVerificationSubmissions(): Promise<SubmissionWithUser[]>; // 🆕 Updated return type
   updateVerificationSubmissionStatus(
     id: string, 
     status: 'approved' | 'rejected', 
@@ -184,15 +180,6 @@ export class DatabaseStorage implements IStorage {
   async deleteUser(id: string): Promise<void> {
     await db.delete(users).where(eq(users.id, id));
   }
-
-  async updateUserBlockStatus(userId: string, isBlocked: boolean): Promise<User | undefined> {
-    const [updated] = await db
-        .update(users)
-        .set({ isBlocked, updatedAt: new Date() })
-        .where(eq(users.id, userId))
-        .returning();
-    return updated || undefined;
-  }
   
   // Verification Submissions
   async createVerificationSubmission(submission: InsertVerificationSubmission & { userId: string }): Promise<VerificationSubmission> {
@@ -212,6 +199,7 @@ export class DatabaseStorage implements IStorage {
     return submission || undefined;
   }
 
+  // 🆕 FIXED: Join the users table to include profilePhotoUrl
   async getPendingVerificationSubmissions(): Promise<SubmissionWithUser[]> {
     const results = await db
       .select({
@@ -223,9 +211,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(verificationSubmissions.status, 'pending'))
       .orderBy(desc(verificationSubmissions.createdAt));
 
+    // Map the combined result into the desired structure
     return results.map(r => ({
         ...r.submission,
-        user: r.user!,
+        user: r.user!, // r.user should never be null here if data integrity is maintained
     }));
   }
 
@@ -251,17 +240,21 @@ export class DatabaseStorage implements IStorage {
     // Logic for user update based on verification type
     if (status === 'approved') {
       if (submission.type === 'identity') {
+        // Phase 1 check passed
         await this.updateUser(submission.userId, { isIdentityVerified: true });
         
         const user = await this.getUser(submission.userId);
         
+        // AUTO-VERIFY REQUIESTER FOR FULL ACCESS (Phase 2 complete)
         if (user?.role === 'requester') {
              await this.updateUser(submission.userId, { isVerified: true });
         }
       } else if (submission.type === 'document') {
+        // Phase 2 check passed for providers/suppliers
         await this.updateUser(submission.userId, { isVerified: true });
       }
     }
+    // If rejected, remove verification status
     else if (status === 'rejected') {
         if (submission.type === 'identity') {
             await this.updateUser(submission.userId, { isIdentityVerified: false, isVerified: false });
@@ -336,11 +329,11 @@ export class DatabaseStorage implements IStorage {
       return results.filter(r => 
         r.approvedServiceAreas && 
         (r.approvedServiceAreas as string[]).includes(params.city!)
-      ).map((r) => ({ ...r, user: r.user! })) as ProviderSearchResult[];
+      ).map((r) => ({ ...r, user: r.user })) as ProviderSearchResult[];
     }
 
     const results = await query;
-    return results.map((r) => ({ ...r, user: r.user! })) as ProviderSearchResult[];
+    return results.map((r) => ({ ...r, user: r.user })) as ProviderSearchResult[];
   }
 
   // Suppliers
@@ -374,7 +367,7 @@ export class DatabaseStorage implements IStorage {
 
     return results.map(r => ({
       ...r.supplier,
-      user: r.user!,
+      user: r.user,
     })) as SupplierWithUser[];
   }
 
@@ -408,6 +401,7 @@ export class DatabaseStorage implements IStorage {
 
     if (!migration) return undefined;
 
+    // Add city to provider's approved service areas
     const provider = await this.getProvider(migration.providerId);
     if (provider) {
       const currentAreas = (provider.approvedServiceAreas as string[]) || [];
@@ -421,6 +415,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // Update migration status
     const [updated] = await db
       .update(serviceAreaMigrations)
       .set({
@@ -489,9 +484,9 @@ export class DatabaseStorage implements IStorage {
 
     return {
       ...jobSelect.job,
-      requester: jobSelect.requester!,
+      requester: jobSelect.requester,
       provider,
-      category: jobSelect.category!,
+      category: jobSelect.category,
     };
   }
 
@@ -524,8 +519,8 @@ export class DatabaseStorage implements IStorage {
 
     return results.map((r) => ({
       ...r.job,
-      requester: r.requester!,
-      category: r.category!,
+      requester: r.requester,
+      category: r.category,
     })) as JobWithRelations[];
   }
 
@@ -541,13 +536,13 @@ export class DatabaseStorage implements IStorage {
       .from(jobs)
       .leftJoin(users, eq(jobs.requesterId, users.id))
       .leftJoin(categories, eq(jobs.categoryId, categories.id))
-      .where(inArray(jobs.city, cities))
+      .where(inArray(jobs.city, cities)) // ⬅️ FIX: Changed from sql`${jobs.city} = ANY(${cities})` to inArray
       .orderBy(desc(jobs.createdAt));
 
     return results.map((r) => ({
       ...r.job,
-      requester: r.requester!,
-      category: r.category!,
+      requester: r.requester,
+      category: r.category,
     })) as JobWithRelations[];
   }
   
@@ -606,7 +601,7 @@ export class DatabaseStorage implements IStorage {
 
     return results.map((r) => ({
       ...r.message,
-      sender: r.sender!,
+      sender: r.sender,
     }));
   }
 
@@ -616,16 +611,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getConversations(userId: string): Promise<any[]> {
-    // Simplified implementation for chat window display
     const userJobs = await db
       .select({
         job: jobs,
+        requester: users,
       })
       .from(jobs)
+      .leftJoin(users, eq(jobs.requesterId, users.id))
       .where(sql`${jobs.requesterId} = ${userId} OR ${jobs.providerId} = ${userId}`);
 
     const conversations = [];
-    for (const { job } of userJobs) {
+    for (const { job, requester } of userJobs) {
       const [lastMessage] = await db
         .select()
         .from(messages)
@@ -684,7 +680,7 @@ export class DatabaseStorage implements IStorage {
 
     return results.map((r) => ({
       ...r.rating,
-      fromUser: r.fromUser!,
+      fromUser: r.fromUser,
     }));
   }
 
@@ -707,36 +703,6 @@ export class DatabaseStorage implements IStorage {
   async getJobReports(jobId: string): Promise<JobReport[]> {
     return await db.select().from(jobReports).where(eq(jobReports.jobId, jobId));
   }
-
-  async getPendingJobReports(): Promise<JobReportWithRelations[]> {
-    const results = await db
-        .select({
-            report: jobReports,
-            job: jobs,
-            reporter: users,
-        })
-        .from(jobReports)
-        .leftJoin(jobs, eq(jobReports.jobId, jobs.id))
-        .leftJoin(users, eq(jobReports.reporterId, users.id))
-        .where(eq(jobReports.resolved, false))
-        .orderBy(desc(jobReports.createdAt));
-
-    return results.map(r => ({
-        ...r.report,
-        job: r.job!,
-        reporter: r.reporter!,
-    }));
-  }
-
-  async resolveJobReport(reportId: string): Promise<JobReport | undefined> {
-    const [updated] = await db
-        .update(jobReports)
-        .set({ resolved: true })
-        .where(eq(jobReports.id, reportId))
-        .returning();
-    return updated || undefined;
-  }
-  
 
   // Analytics
   async getRequesterStats(requesterId: string): Promise<any> {
@@ -785,44 +751,6 @@ export class DatabaseStorage implements IStorage {
       completedJobs,
       averageRating: avgRating.toFixed(1),
       avgResponseTime: 12,
-    };
-  }
-
-  async getAdminStats(): Promise<any> {
-    const totalUsersResult = await db.select({ count: count() }).from(users);
-    const totalJobsResult = await db.select({ count: count() }).from(jobs);
-    const completedJobsResult = await db.select({ count: count() }).from(jobs).where(eq(jobs.status, 'completed'));
-    
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-
-    const monthlyJobsResult = await db.select({ count: count() }).from(jobs).where(gte(jobs.createdAt, oneMonthAgo));
-
-    const totalUsers = totalUsersResult[0].count;
-    const totalJobs = totalJobsResult[0].count;
-    const completedJobs = completedJobsResult[0].count;
-    const monthlyJobs = monthlyJobsResult[0].count;
-    
-    // Get pending verifications count (needed for quick actions panel)
-    const pendingVerificationsResult = await db.select({ count: count() }).from(verificationSubmissions).where(eq(verificationSubmissions.status, 'pending'));
-    const pendingVerifications = pendingVerificationsResult[0].count;
-
-    const recentReports = await this.getPendingJobReports();
-
-    const recentJobs = await db
-      .select()
-      .from(jobs)
-      .orderBy(desc(jobs.createdAt))
-      .limit(5);
-
-    return {
-      totalUsers,
-      totalJobs,
-      completedJobs,
-      monthlyJobs,
-      pendingVerifications, 
-      recentReports: recentReports,
-      recentJobs,
     };
   }
 
