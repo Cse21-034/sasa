@@ -39,7 +39,7 @@
   --primary-foreground: 0 0% 100%;
 
   /* Secondary Sky Blue/Cyan (NEW ACCENT) */
-  --secondary: 200 80% 50%; /* Vibrant Sky Blue */
+  --secondary: 170 60% 30%; /* Vibrant Sky Blue */
   --secondary-foreground: 0 0% 100%; /* White text on blue accent */
 
   /* Sidebar/Accent - Using primary/secondary colors */
