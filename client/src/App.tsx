@@ -24,7 +24,14 @@ import Reports from "@/pages/reports";
 import Suppliers from "@/pages/suppliers";
 import NotFound from "@/pages/not-found";
 import VerificationPage from "@/pages/verification";
-import AdminVerification from "@/pages/admin/verification"; // 🆕 NEW ADMIN PAGE
+
+// 🆕 New Admin Imports
+import AdminDashboardHub from "@/pages/admin/index"; 
+import AdminVerification from "@/pages/admin/verification";
+import AdminUsers from "@/pages/admin/users";
+import AdminReports from "@/pages/admin/reports";
+import AdminAnalytics from "@/pages/admin/analytics";
+
 
 function ProtectedRoute({ component: Component, path, ...rest }: any) {
   const { isAuthenticated, user } = useAuth();
@@ -44,7 +51,6 @@ function ProtectedRoute({ component: Component, path, ...rest }: any) {
   return <Component {...rest} />;
 }
 
-// 🆕 NEW ADMIN ROUTE HELPER
 function AdminRoute({ component: Component, ...rest }: any) {
     const { isAuthenticated, user } = useAuth();
     if (!isAuthenticated || user?.role !== 'admin') {
@@ -54,30 +60,11 @@ function AdminRoute({ component: Component, ...rest }: any) {
     return <Component {...rest} />;
 }
 
+
 function PublicRoute({ component: Component, ...rest }: any) {
   const { isAuthenticated } = useAuth();
   
   return !isAuthenticated ? <Component {...rest} /> : <Redirect to="/jobs" />;
-}
-
-// 🆕 DUMMY ADMIN COMPONENT
-function AdminDashboard() {
-  const [, setLocation] = useLocation();
-  return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-          <h1 className="text-3xl font-bold mb-6">Admin Panel</h1>
-          <p className="mb-4">Welcome, Admin. Select a task below:</p>
-          <div className="space-y-4 flex flex-col w-64">
-              <Button 
-                  variant="outline"
-                  onClick={() => setLocation('/admin/verification')}
-              >
-                  Review Pending Verification Submissions
-              </Button>
-              <p className="text-muted-foreground text-sm">Other admin tools go here...</p>
-          </div>
-      </div>
-  );
 }
 
 
@@ -104,10 +91,19 @@ function Router() {
           
           {/* Admin Routes */}
           <Route path="/admin">
-            {() => <AdminRoute component={AdminDashboard} />}
+            {() => <AdminRoute component={AdminDashboardHub} />} 
           </Route>
           <Route path="/admin/verification">
             {() => <AdminRoute component={AdminVerification} />}
+          </Route>
+          <Route path="/admin/users">
+            {() => <AdminRoute component={AdminUsers} />} 
+          </Route>
+          <Route path="/admin/reports">
+            {() => <AdminRoute component={AdminReports} />} 
+          </Route>
+          <Route path="/admin/analytics">
+            {() => <AdminRoute component={AdminAnalytics} />} 
           </Route>
           
           {/* Protected Routes */}
