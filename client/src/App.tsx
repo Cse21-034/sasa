@@ -22,11 +22,24 @@ import Profile from "@/pages/profile";
 import Reports from "@/pages/reports";
 import Suppliers from "@/pages/suppliers";
 import NotFound from "@/pages/not-found";
+import VerificationPage from "@/pages/verification"; // 🆕 Added
 
-function ProtectedRoute({ component: Component, ...rest }: any) {
-  const { isAuthenticated } = useAuth();
+function ProtectedRoute({ component: Component, path, ...rest }: any) {
+  const { isAuthenticated, user } = useAuth();
   
-  return isAuthenticated ? <Component {...rest} /> : <Redirect to="/login" />;
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
+
+  // 🆕 Verification Gate: If authenticated but not fully verified (and not admin), redirect to verification page.
+  if (user && user.role !== 'admin' && !user.isVerified) {
+    // Allow access to Profile/Verification page for verification steps
+    if (path !== '/profile' && path !== '/verification') {
+        return <Redirect to="/verification" />;
+    }
+  }
+
+  return <Component {...rest} />;
 }
 
 function PublicRoute({ component: Component, ...rest }: any) {
@@ -50,29 +63,36 @@ function Router() {
           <Route path="/signup">
             {() => <PublicRoute component={Signup} />}
           </Route>
-          <Route path="/jobs" component={BrowseJobs} />
-          <Route path="/jobs/:id" component={JobDetail} />
+
+          {/* 🆕 Verification Route - Must be accessible when authenticated but not verified */}
+          <Route path="/verification">
+            {() => <ProtectedRoute component={VerificationPage} path="/verification" />}
+          </Route>
+          
+          {/* 🆕 Added path prop to all ProtectedRoutes for check above */}
+          <Route path="/jobs" >{() => <ProtectedRoute component={BrowseJobs} path="/jobs" />}</Route>
+          <Route path="/jobs/:id" >{() => <ProtectedRoute component={JobDetail} path="/jobs/:id" />}</Route>
           <Route path="/post-job">
-            {() => <ProtectedRoute component={PostJob} />}
+            {() => <ProtectedRoute component={PostJob} path="/post-job" />}
           </Route>
           <Route path="/dashboard">
-            {() => <ProtectedRoute component={ProviderDashboard} />}
+            {() => <ProtectedRoute component={ProviderDashboard} path="/dashboard" />}
           </Route>
           <Route path="/messages">
-            {() => <ProtectedRoute component={Messages} />}
+            {() => <ProtectedRoute component={Messages} path="/messages" />}
           </Route>
           <Route path="/messages/:jobId">
-            {() => <ProtectedRoute component={Chat} />}
+            {() => <ProtectedRoute component={Chat} path="/messages/:jobId" />}
           </Route>
           <Route path="/profile">
-            {() => <ProtectedRoute component={Profile} />}
+            {() => <ProtectedRoute component={Profile} path="/profile" />}
           </Route>
           <Route path="/reports">
-            {() => <ProtectedRoute component={Reports} />}
+            {() => <ProtectedRoute component={Reports} path="/reports" />}
           </Route>
-          <Route path="/suppliers" component={Suppliers} /> {/* 👈 ADDED ROUTE HERE */}
+          <Route path="/suppliers" component={Suppliers} /> 
           <Route path="/my-jobs">
-            {() => <ProtectedRoute component={BrowseJobs} />}
+            {() => <ProtectedRoute component={BrowseJobs} path="/my-jobs" />}
           </Route>
           <Route component={NotFound} />
         </Switch>
