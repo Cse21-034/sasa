@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { 
   UserCheck, Users, FileText, TrendingUp, AlertCircle, Briefcase, Loader2, ArrowRight, 
-  LayoutDashboard // 🚨 FIX: Added missing import
+  LayoutDashboard, // Added previously
+  CheckCircle2 // 🚨 FIX: Added missing icon
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -94,7 +95,7 @@ export default function AdminDashboardHub() {
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
-            <LayoutDashboard className="h-7 w-7 text-primary" /> {/* Uses LayoutDashboard */}
+            <LayoutDashboard className="h-7 w-7 text-primary" />
             Admin Panel
         </h1>
         <p className="text-muted-foreground">Platform administration and moderation tools</p>
