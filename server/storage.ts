@@ -156,7 +156,7 @@ export interface IStorage {
   // Verification Submissions
   createVerificationSubmission(submission: InsertVerificationSubmission & { userId: string }): Promise<VerificationSubmission>;
   getVerificationSubmission(userId: string, type: 'identity' | 'document'): Promise<VerificationSubmission | undefined>;
-  getPendingVerificationSubmissions(): Promise<SubmissionWithUser[]>; // 🆕 Updated return type
+  getPendingVerificationSubmissions(): Promise<SubmissionWithUser[]>; 
   updateVerificationSubmissionStatus(
     id: string, 
     status: 'approved' | 'rejected', 
