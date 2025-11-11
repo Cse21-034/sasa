@@ -1,9 +1,15 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { User } from '@shared/schema';
 
+// 🆕 Extend User type to include verification flags
+interface ExtendedUser extends User {
+  isVerified: boolean;
+  isIdentityVerified: boolean;
+}
+
 interface AuthContextType {
-  user: User | null;
-  setUser: (user: User | null) => void;
+  user: ExtendedUser | null;
+  setUser: (user: ExtendedUser | null) => void;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -11,13 +17,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<ExtendedUser | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        // 🆕 Ensure parsed user has the new fields, defaulting to false if undefined (e.g., from old storage)
+        const parsedUser = JSON.parse(storedUser);
+        setUser({ 
+          ...parsedUser,
+          isVerified: parsedUser.isVerified ?? false, 
+          isIdentityVerified: parsedUser.isIdentityVerified ?? false
+        });
       } catch (error) {
         localStorage.removeItem('user');
       }
