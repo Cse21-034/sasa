@@ -64,6 +64,13 @@ interface SubmissionWithUser extends VerificationSubmission {
   user: User;
 }
 
+// 🆕 Extended Job Report Type
+interface JobReportWithRelations extends JobReport {
+    reporter: User;
+    jobTitle: string;
+    jobStatus: Job['status'];
+}
+
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
@@ -71,6 +78,13 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, data: Partial<User>): Promise<User | undefined>;
   deleteUser(id: string): Promise<void>;
+  
+  // 🆕 Admin Management
+  getUsers(params: { role?: string; status?: string; search?: string }): Promise<User[]>;
+  updateUserStatus(id: string, status: 'active' | 'blocked' | 'deactivated'): Promise<User | undefined>;
+  getJobReports(params: { status?: 'resolved' | 'unresolved' }): Promise<JobReportWithRelations[]>;
+  resolveJobReport(reportId: string): Promise<JobReport | undefined>;
+  getAdminJobAnalytics(): Promise<any>;
 
   // Providers
   getProvider(userId: string): Promise<Provider | undefined>;
@@ -181,6 +195,119 @@ export class DatabaseStorage implements IStorage {
     await db.delete(users).where(eq(users.id, id));
   }
   
+  // 🆕 ADMIN MANAGEMENT METHODS
+
+  // 🆕 Admin: Get All Users with Filters
+  async getUsers(params: { role?: string; status?: string; search?: string }): Promise<User[]> {
+      const conditions = [];
+
+      if (params.role) conditions.push(eq(users.role, params.role as User['role']));
+      if (params.status) conditions.push(eq(users.status, params.status as User['status']));
+      if (params.search) {
+          // Case-insensitive search on name or email
+          conditions.push(sql`${users.name} ILIKE ${'%' + params.search + '%'} OR ${users.email} ILIKE ${'%' + params.search + '%'}`);
+      }
+
+      const results = await db
+        .select()
+        .from(users)
+        .where(conditions.length ? and(...conditions) : undefined)
+        .orderBy(asc(users.name));
+
+      return results;
+  }
+
+  // 🆕 Admin: Update User Status (Block/Deactivate/Activate)
+  async updateUserStatus(id: string, status: 'active' | 'blocked' | 'deactivated'): Promise<User | undefined> {
+      const [updated] = await db
+        .update(users)
+        .set({ status, updatedAt: new Date() })
+        .where(eq(users.id, id))
+        .returning();
+      return updated || undefined;
+  }
+
+  // 🆕 Admin: Get Job Reports (Joined with job/reporter info)
+  async getJobReports(params: { status?: 'resolved' | 'unresolved' }): Promise<JobReportWithRelations[]> {
+      const conditions = [];
+
+      if (params.status === 'resolved') conditions.push(eq(jobReports.resolved, true));
+      if (params.status === 'unresolved') conditions.push(eq(jobReports.resolved, false));
+
+      const results = await db
+          .select({
+              report: jobReports,
+              reporter: users,
+              job: jobs,
+          })
+          .from(jobReports)
+          .leftJoin(users, eq(jobReports.reporterId, users.id))
+          .leftJoin(jobs, eq(jobReports.jobId, jobs.id))
+          .where(conditions.length ? and(...conditions) : undefined)
+          .orderBy(desc(jobReports.createdAt));
+
+      return results.map(r => ({
+          ...r.report,
+          reporter: r.reporter!,
+          jobTitle: r.job!.title, // Assumed job exists
+          jobStatus: r.job!.status, // Assumed job exists
+      }));
+  }
+  
+  // 🆕 Admin: Resolve Job Report
+  async resolveJobReport(reportId: string): Promise<JobReport | undefined> {
+      const [updated] = await db
+        .update(jobReports)
+        .set({ resolved: true })
+        .where(eq(jobReports.id, reportId))
+        .returning();
+      return updated || undefined;
+  }
+
+  // 🆕 Admin: Get Platform-wide Job Analytics
+  async getAdminJobAnalytics(): Promise<any> {
+      // 1. Total & Completed Jobs
+      const totalJobsResult = await db.select({ count: sql<number>`count(*)` }).from(jobs);
+      const totalJobs = totalJobsResult[0].count;
+
+      const completedJobsResult = await db.select({ count: sql<number>`count(*)` }).from(jobs).where(eq(jobs.status, 'completed'));
+      const completedJobs = completedJobsResult[0].count;
+
+      // 2. Jobs by Status Distribution
+      const jobsByStatus = await db
+          .select({ status: jobs.status, count: sql<number>`count(*)` })
+          .from(jobs)
+          .groupBy(jobs.status);
+
+      // 3. Top Providers (Simplified: ordered by completed_jobs_count in providers table)
+      const allProviders = await db
+        .select({
+            id: users.id,
+            name: users.name,
+            completedJobsCount: providers.completedJobsCount,
+            ratingAverage: providers.ratingAverage,
+        })
+        .from(providers)
+        .leftJoin(users, eq(providers.userId, users.id))
+        .where(sql`${users.role} = 'provider'`)
+        .orderBy(desc(providers.completedJobsCount))
+        .limit(5);
+
+      const topProviders = allProviders.map(p => ({
+            id: p.id,
+            name: p.name,
+            completedJobs: p.completedJobsCount,
+            rating: p.ratingAverage,
+      }));
+
+      return {
+          totalJobs,
+          completedJobs,
+          jobsByStatus: jobsByStatus.map(r => ({ status: r.status, count: r.count })),
+          topProviders,
+      };
+  }
+
   // Verification Submissions
   async createVerificationSubmission(submission: InsertVerificationSubmission & { userId: string }): Promise<VerificationSubmission> {
     // Overwrite existing pending/rejected submission of the same type for simplicity
