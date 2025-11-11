@@ -20,12 +20,11 @@ import {
   updateProviderServiceAreaSchema,
   insertVerificationSubmissionSchema, 
   updateVerificationStatusSchema, 
-  updateUserStatusSchema, // 🆕 Added
+  updateUserStatusSchema, 
 } from "@shared/schema";
 import { ZodError } from 'zod'; 
 import { NextFunction, Response } from "express"; 
 import { eq } from "drizzle-orm";
-import { jobReports } from "@shared/schema"; // Import jobReports table for resolution
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(cors({
@@ -230,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       role: user.role,
       isVerified: user.isVerified,
       isIdentityVerified: user.isIdentityVerified,
-      status: user.status, // 🆕 Added status
+      status: user.status, 
     });
 
     const { passwordHash: _, ...userWithoutPassword } = user;
@@ -282,18 +281,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
          // Return 403 Forbidden if blocked or deactivated
          return res.status(403).json({ message: `Your account is currently ${user.status}. Please contact support.` });
       }
+      
+      // 🆕 NEW: Update last login time
+      const updatedUser = await storage.updateUser(user.id, { lastLogin: new Date() });
+      const userToUse = updatedUser || user;
+
 
       // 🆕 Update token with current verification/status
       const token = generateToken({
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        isVerified: user.isVerified,
-        isIdentityVerified: user.isIdentityVerified,
-        status: user.status, // 🆕 Added status
+        id: userToUse.id,
+        email: userToUse.email,
+        role: userToUse.role,
+        isVerified: userToUse.isVerified,
+        isIdentityVerified: userToUse.isIdentityVerified,
+        status: userToUse.status, 
       });
 
-      const { passwordHash: _, ...userWithoutPassword } = user;
+      const { passwordHash: _, ...userWithoutPassword } = userToUse;
       res.json({ user: userWithoutPassword, token });
     } catch (error: any) {
       console.error('Login error:', error);
