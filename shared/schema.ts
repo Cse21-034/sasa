@@ -28,8 +28,13 @@ export const jobStatusEnum = pgEnum("job_status", [
   "cancelled"
 ]);
 
-// 🆕 Migration status enum
+// Migration status enum
 export const migrationStatusEnum = pgEnum("migration_status", ["pending", "approved", "rejected"]);
+
+// 🆕 Verification Enums (NEW)
+export const verificationTypeEnum = pgEnum("verification_type", ["identity", "document"]);
+export const verificationStatusEnum = pgEnum("verification_status", ["pending", "approved", "rejected"]);
+
 
 // Users table
 export const users = pgTable("users", {
@@ -42,6 +47,7 @@ export const users = pgTable("users", {
   profilePhotoUrl: text("profile_photo_url"),
   bio: text("bio"),
   isVerified: boolean("is_verified").default(false).notNull(),
+  isIdentityVerified: boolean("is_identity_verified").default(false).notNull(), // 🆕 New field for Phase 1
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -72,17 +78,17 @@ export const categories = pgTable("categories", {
   icon: text("icon"),
 });
 
-// 🆕 Providers extended profile with service areas
+// Providers extended profile with service areas
 export const providers = pgTable("providers", {
   userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
   companyName: text("company_name"),
   serviceCategories: jsonb("service_categories").notNull().$type<number[]>(),
   basePriceInfo: jsonb("base_price_info").$type<Record<string, any>>(),
   serviceAreaRadiusMeters: integer("service_area_radius_meters").default(10000).notNull(),
-  // 🆕 Primary service city/area
+  // Primary service city/area
   primaryCity: text("primary_city").notNull(),
   primaryRegion: text("primary_region"),
-  // 🆕 Approved service areas (array of cities)
+  // Approved service areas (array of cities)
   approvedServiceAreas: jsonb("approved_service_areas").default([]).$type<string[]>(),
   averageResponseTimeSeconds: integer("average_response_time_seconds"),
   ratingAverage: numeric("rating_average", { precision: 3, scale: 2 }).default("0"),
@@ -93,7 +99,7 @@ export const providers = pgTable("providers", {
   longitude: numeric("longitude", { precision: 10, scale: 7 }),
 });
 
-// 🆕 Service Area Migration Requests table
+// Service Area Migration Requests table
 export const serviceAreaMigrations = pgTable("service_area_migrations", {
   id: uuid("id").primaryKey().defaultRandom(),
   providerId: uuid("provider_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -105,34 +111,6 @@ export const serviceAreaMigrations = pgTable("service_area_migrations", {
   reviewedAt: timestamp("reviewed_at"),
   reviewNotes: text("review_notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-// 🆕 Jobs table with city/region fields
-export const jobs = pgTable("jobs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  requesterId: uuid("requester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  providerId: uuid("provider_id").references(() => users.id, { onDelete: "set null" }),
-  categoryId: integer("category_id").notNull().references(() => categories.id),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  photos: jsonb("photos").$type<string[]>().default([]),
-  latitude: text("latitude").notNull(),
-  longitude: text("longitude").notNull(),
-  address: text("address"),
-  // 🆕 City and region for filtering
-  city: text("city").notNull(),
-  region: text("region"),
-  urgency: urgencyEnum("urgency").default("normal").notNull(),
-  preferredTime: timestamp("preferred_time"),
-  status: jobStatusEnum("status").default("open").notNull(),
-  budgetMin: numeric("budget_min", { precision: 10, scale: 2 }),
-  budgetMax: numeric("budget_max", { precision: 10, scale: 2 }),
-  providerCharge: numeric("provider_charge", { precision: 10, scale: 2 }),
-  amountPaid: numeric("amount_paid", { precision: 10, scale: 2 }),
-  priceAgreed: numeric("price_agreed", { precision: 10, scale: 2 }),
-  pricePaid: numeric("price_paid", { precision: 10, scale: 2 }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Messages table for chat
@@ -187,6 +165,47 @@ export const promotions = pgTable("promotions", {
   media: jsonb("media").$type<string[]>(),
 });
 
+// 🆕 Verification Submissions table (NEW)
+export const verificationSubmissions = pgTable("verification_submissions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  type: verificationTypeEnum("type").notNull(), // 'identity' or 'document'
+  documents: jsonb("documents").$type<{ name: string; url: string }[]>().default([]).notNull(), // Base64 strings are stored here
+  status: verificationStatusEnum("status").default("pending").notNull(),
+  rejectionReason: text("rejection_reason"),
+  reviewedBy: uuid("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Jobs table (defined later due to referencing other tables)
+export const jobs = pgTable("jobs", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    requesterId: uuid("requester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    providerId: uuid("provider_id").references(() => users.id, { onDelete: "set null" }),
+    categoryId: integer("category_id").notNull().references(() => categories.id),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    photos: jsonb("photos").$type<string[]>().default([]),
+    latitude: text("latitude").notNull(),
+    longitude: text("longitude").notNull(),
+    address: text("address"),
+    // City and region for filtering
+    city: text("city").notNull(),
+    region: text("region"),
+    urgency: urgencyEnum("urgency").default("normal").notNull(),
+    preferredTime: timestamp("preferred_time"),
+    status: jobStatusEnum("status").default("open").notNull(),
+    budgetMin: numeric("budget_min", { precision: 10, scale: 2 }),
+    budgetMax: numeric("budget_max", { precision: 10, scale: 2 }),
+    providerCharge: numeric("provider_charge", { precision: 10, scale: 2 }),
+    amountPaid: numeric("amount_paid", { precision: 10, scale: 2 }),
+    priceAgreed: numeric("price_agreed", { precision: 10, scale: 2 }),
+    pricePaid: numeric("price_paid", { precision: 10, scale: 2 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  });
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   providerProfile: one(providers, {
@@ -205,6 +224,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   jobFeedback: many(jobFeedback),
   jobReports: many(jobReports),
   migrationRequests: many(serviceAreaMigrations),
+  verificationSubmissions: many(verificationSubmissions), // 🆕 Added
 }));
 
 export const suppliersRelations = relations(suppliers, ({ one }) => ({
@@ -312,9 +332,22 @@ export const jobReportsRelations = relations(jobReports, ({ one }) => ({
   }),
 }));
 
+// 🆕 Verification Submissions Relations (NEW)
+export const verificationSubmissionsRelations = relations(verificationSubmissions, ({ one }) => ({
+  user: one(users, {
+    fields: [verificationSubmissions.userId],
+    references: [users.id],
+  }),
+  reviewer: one(users, {
+    fields: [verificationSubmissions.reviewedBy],
+    references: [users.id],
+  }),
+}));
+
+
 // ============ SCHEMAS ============
 
-// 🆕 Cities list for Botswana
+// Cities list for Botswana
 export const botswanaCities = [
   "Gaborone",
   "Francistown",
@@ -343,10 +376,11 @@ export const baseUserSchema = createInsertSchema(users).omit({
   createdAt: true,
   updatedAt: true,
   isVerified: true,
+  isIdentityVerified: true,
   passwordHash: true,
 });
 
-// 🆕 Updated individual signup schema (NO physical address)
+// Updated individual signup schema (NO physical address)
 export const individualSignupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
@@ -354,7 +388,7 @@ export const individualSignupSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
   role: z.enum(['requester', 'provider']),
-  primaryCity: z.string().optional(), // 🔧 Changed from z.enum() to z.string()
+  primaryCity: z.string().optional(), // Changed from z.enum() to z.string()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
@@ -391,9 +425,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
   updatedAt: true,
   isVerified: true,
+  isIdentityVerified: true,
+  passwordHash: true,
 });
 
-// 🆕 Provider Schema with city
+// Provider Schema with city
 export const insertProviderSchema = z.object({
   companyName: z.string().optional(),
   serviceCategories: z.array(z.number()),
@@ -412,7 +448,7 @@ export const insertSupplierSchema = createInsertSchema(suppliers).omit({
   userId: true,
 });
 
-// 🆕 Job Schema with city
+// Job Schema with city
 export const insertJobSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
@@ -432,7 +468,7 @@ export const insertJobSchema = z.object({
   budgetMax: z.string().optional(),
 });
 
-// 🆕 Service Area Migration Schema
+// Service Area Migration Schema
 export const insertServiceAreaMigrationSchema = z.object({
   requestedCity: z.enum(botswanaCities),
   requestedRegion: z.string().optional(),
@@ -490,7 +526,7 @@ export const updateProfileSchema = z.object({
   profilePhotoUrl: z.string().optional(), 
 });
 
-// 🆕 Update Provider Service Area Schema
+// Update Provider Service Area Schema
 export const updateProviderServiceAreaSchema = z.object({
   primaryCity: z.enum(botswanaCities),
   primaryRegion: z.string().optional(),
@@ -500,6 +536,22 @@ export const updateProviderServiceAreaSchema = z.object({
 export const updateJobStatusSchema = z.object({
   status: z.enum(["open", "offered", "accepted", "enroute", "onsite", "completed", "cancelled"]),
 });
+
+// 🆕 Schema for Verification Submissions (NEW)
+export const insertVerificationSubmissionSchema = z.object({
+  type: z.enum(['identity', 'document']),
+  documents: z.array(z.object({
+    name: z.string().max(255, "File name is too long"),
+    url: z.string().min(10, "Document URL/Base64 is required"),
+  })).min(1, "At least one document/photo is required."),
+});
+
+// 🆕 Schema for Admin Approval/Rejection (NEW)
+export const updateVerificationStatusSchema = z.object({
+  status: z.enum(['approved', 'rejected']),
+  rejectionReason: z.string().optional(),
+});
+
 
 // ============ TYPES ============
 
@@ -541,3 +593,6 @@ export type UpdateProviderServiceArea = z.infer<typeof updateProviderServiceArea
 export type UpdateJobStatus = z.infer<typeof updateJobStatusSchema>;
 export type SetProviderCharge = z.infer<typeof setProviderChargeSchema>;
 export type ConfirmPayment = z.infer<typeof confirmPaymentSchema>;
+
+export type VerificationSubmission = typeof verificationSubmissions.$inferSelect; // 🆕 Added
+export type InsertVerificationSubmission = z.infer<typeof insertVerificationSubmissionSchema>; // 🆕 Added
