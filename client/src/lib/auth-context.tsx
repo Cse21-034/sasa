@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { User } from '@shared/schema';
 
-// 🆕 Extend User type to include verification flags
+// 🆕 Update User type definition in local file to include isBlocked
 interface ExtendedUser extends User {
   isVerified: boolean;
   isIdentityVerified: boolean;
+  isBlocked: boolean; // 🆕 Added
 }
 
 interface AuthContextType {
@@ -23,12 +24,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
-        // 🆕 Ensure parsed user has the new fields, defaulting to false if undefined (e.g., from old storage)
+        // Ensure parsed user has the new fields, defaulting to false if undefined (e.g., from old storage)
         const parsedUser = JSON.parse(storedUser);
         setUser({ 
           ...parsedUser,
           isVerified: parsedUser.isVerified ?? false, 
-          isIdentityVerified: parsedUser.isIdentityVerified ?? false
+          isIdentityVerified: parsedUser.isIdentityVerified ?? false,
+          isBlocked: parsedUser.isBlocked ?? false, // 🆕 Added
         });
       } catch (error) {
         localStorage.removeItem('user');
