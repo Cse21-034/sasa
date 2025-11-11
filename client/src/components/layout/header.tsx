@@ -46,7 +46,7 @@ export function Header() {
                 <Briefcase className="h-6 w-6 text-primary-foreground" />
               </div>
               <div className="flex flex-col">
-                {/* Text: Primary (Emerald Green) */}
+                {/* Text: Primary (Emerald Green) / Secondary (Sky Blue) */}
                 <span className="text-xl font-bold text-primary dark:text-secondary">
                   JobTradeSasa
                 </span>
@@ -63,7 +63,7 @@ export function Header() {
               <Link href="/jobs">
                 <Button 
                   variant="ghost" 
-                  // Hover: Accent/Secondary (Warm Tan)
+                  // Hover: Accent/Secondary (Sky Blue)
                   className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
                   data-testid="link-jobs"
                 >
@@ -89,7 +89,7 @@ export function Header() {
               <Link href="/suppliers">
                 <Button 
                   variant="ghost"
-                  // Hover: Accent/Secondary (Warm Tan)
+                  // Hover: Accent/Secondary (Sky Blue)
                   className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
                   data-testid="link-suppliers"
                 >
@@ -114,7 +114,7 @@ export function Header() {
                 <Link href="/reports">
                   <Button 
                     variant="ghost"
-                    // Hover: Accent/Secondary (Warm Tan)
+                    // Hover: Accent/Secondary (Sky Blue)
                     className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
                     data-testid="link-reports"
                   >
@@ -150,13 +150,13 @@ export function Header() {
               {user?.role === 'requester' && (
                 <Link href="/post-job">
                   <Button 
-                    // Solid Secondary (Warm Tan)
+                    // Solid Secondary (Sky Blue)
                     className="hidden sm:flex bg-secondary text-secondary-foreground shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:bg-secondary/90"
                     data-testid="button-post-job"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Post a Job
-                     {/* <Sparkles className="h-3 w-3 ml-2" /> */}
+                    <Sparkles className="h-3 w-3 ml-2" />
                   </Button>
                 </Link>
               )}
@@ -169,7 +169,7 @@ export function Header() {
                 data-testid="button-notifications"
               >
                 <Bell className="h-5 w-5" />
-                {/* Notification dot: Secondary (Warm Tan) */}
+                {/* Notification dot: Secondary (Sky Blue) */}
                 <span className="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
               </Button>
 
@@ -177,11 +177,11 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    // Ring: Secondary (Warm Tan)
+                    // Ring: Secondary (Sky Blue)
                     className="relative h-10 w-10 rounded-full hover:ring-4 hover:ring-secondary/20 dark:hover:ring-secondary/30 transition-all"
                     data-testid="button-user-menu"
                   >
-                    {/* Avatar ring: Secondary (Warm Tan) */}
+                    {/* Avatar ring: Secondary (Sky Blue) */}
                     <Avatar className="h-10 w-10 ring-2 ring-secondary">
                       <AvatarImage src={user?.profilePhotoUrl || undefined} alt={user?.name} />
                       {/* Avatar Fallback: Solid Primary (Emerald Green) */}
@@ -201,7 +201,7 @@ export function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
                   align="end" 
-                  // Border: Secondary (Warm Tan)
+                  // Border: Secondary (Sky Blue)
                   className="w-64 border-2 border-secondary/20 dark:border-secondary/30"
                 >
                   <DropdownMenuLabel>
@@ -219,7 +219,7 @@ export function Header() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => setLocation('/profile')}
-                    // Hover/Text: Secondary (Warm Tan)
+                    // Hover/Text: Secondary (Sky Blue)
                     className="cursor-pointer hover:bg-secondary/10 dark:hover:bg-secondary/20 hover:text-secondary"
                     data-testid="menu-profile"
                   >
@@ -261,7 +261,7 @@ export function Header() {
               </Link>
               <Link href="/signup">
                 <Button 
-                  // Solid Secondary (Warm Tan)
+                  // Solid Secondary (Sky Blue)
                   className="bg-secondary text-secondary-foreground shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:bg-secondary/90"
                   data-testid="button-signup"
                 >
