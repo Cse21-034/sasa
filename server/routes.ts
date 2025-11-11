@@ -18,8 +18,11 @@ import {
   insertJobReportSchema,
   insertServiceAreaMigrationSchema,
   updateProviderServiceAreaSchema,
+  insertVerificationSubmissionSchema, // 🆕 Added
+  updateVerificationStatusSchema, // 🆕 Added
 } from "@shared/schema";
 import { ZodError } from 'zod'; 
+import { NextFunction, Response } from "express"; 
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(cors({
@@ -74,6 +77,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
   });
+
+  // ==================== AUTH MIDDLEWARE ENFORCEMENT (NEW) ====================
+  // A wrapper middleware to enforce full verification before accessing core features
+  const verifyAccess = (req: AuthRequest, res: Response, next: NextFunction) => {
+    // Admins always have access
+    if (req.user!.role === 'admin') {
+      return next();
+    }
+    
+    // Check the isVerified flag from the token payload
+    if (!req.user!.isVerified) {
+      return res.status(403).json({
+        message: 'Access denied. Account is not fully verified. Please complete verification steps.',
+        code: 'NOT_VERIFIED' 
+      });
+    }
+    next();
+  };
 
   // ==================== AUTH ROUTES ====================
   
@@ -191,10 +212,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
 
+    // 🆕 Set unverified status in token
     const token = generateToken({
       id: user.id,
       email: user.email,
       role: user.role,
+      isVerified: user.isVerified,
+      isIdentityVerified: user.isIdentityVerified,
     });
 
     const { passwordHash: _, ...userWithoutPassword } = user;
@@ -241,10 +265,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
+      // 🆕 Update token with current verification status
       const token = generateToken({
         id: user.id,
         email: user.email,
         role: user.role,
+        isVerified: user.isVerified,
+        isIdentityVerified: user.isIdentityVerified,
       });
 
       const { passwordHash: _, ...userWithoutPassword } = user;
@@ -255,10 +282,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== JOB ROUTES ====================
+  // ==================== JOB ROUTES - PROTECTED BY verifyAccess ====================
 
-  // 🆕 UPDATED: Get jobs with city-based filtering for providers
-  app.get('/api/jobs', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
   try {
     const { category, status, sort } = req.query;
     
@@ -337,7 +364,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 });
 
-  app.get('/api/jobs/:id', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.get('/api/jobs/:id', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       const job = await storage.getJob(req.params.id);
       if (!job) {
@@ -374,7 +402,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/jobs', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.post('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'requester') {
         return res.status(403).json({ message: 'Only requesters can post jobs' });
@@ -399,7 +428,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/jobs/:id', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.patch('/api/jobs/:id', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       const validatedData = updateJobStatusSchema.parse(req.body);
       const job = await storage.updateJob(req.params.id, validatedData);
@@ -421,8 +451,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 🆕 UPDATED: Accept job with city validation
-  app.post('/api/jobs/:id/accept', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.post('/api/jobs/:id/accept', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'provider') {
         return res.status(403).json({ message: 'Only providers can accept jobs' });
@@ -459,10 +489,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== SERVICE AREA MIGRATION ROUTES ====================
+  // ==================== SERVICE AREA MIGRATION ROUTES - PROTECTED BY verifyAccess ====================
 
-  // 🆕 Request migration to new service area
-  app.post('/api/provider/migration-request', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.post('/api/provider/migration-request', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'provider') {
         return res.status(403).json({ message: 'Only providers can request migrations' });
@@ -496,8 +526,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get provider's migration requests
-  app.get('/api/provider/migrations', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.get('/api/provider/migrations', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'provider') {
         return res.status(403).json({ message: 'Only providers can view migrations' });
@@ -511,7 +541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin: Get pending migrations
+  // Admin: Get pending migrations (No verifyAccess needed, but checks for admin role)
   app.get('/api/admin/migrations/pending', authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'admin') {
@@ -526,7 +556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin: Approve migration
+  // Admin: Approve migration (No verifyAccess needed, but checks for admin role)
   app.post('/api/admin/migrations/:id/approve', authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'admin') {
@@ -547,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin: Reject migration
+  // Admin: Reject migration (No verifyAccess needed, but checks for admin role)
   app.post('/api/admin/migrations/:id/reject', authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'admin') {
@@ -568,8 +598,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 🆕 Update provider's primary service area
-  app.patch('/api/provider/service-area', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.patch('/api/provider/service-area', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'provider') {
         return res.status(403).json({ message: 'Only providers can update service area' });
@@ -599,9 +629,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== PROVIDER ROUTES ====================
+  // ==================== PROVIDER ROUTES - PROTECTED BY verifyAccess ====================
 
-  app.get('/api/providers', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.get('/api/providers', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       const { categoryId, city, latitude, longitude, radius } = req.query;
       const params: any = {};
@@ -619,7 +650,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/provider/stats', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.get('/api/provider/stats', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'provider') {
         return res.status(403).json({ message: 'Only providers can access stats' });
@@ -633,7 +665,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/provider/recent-jobs', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.get('/api/provider/recent-jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'provider') {
         return res.status(403).json({ message: 'Only providers can access this' });
@@ -648,9 +681,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== MESSAGE ROUTES ====================
+  // ==================== MESSAGE ROUTES - PROTECTED BY verifyAccess ====================
 
-  app.get('/api/messages/conversations', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.get('/api/messages/conversations', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       const conversations = await storage.getConversations(req.user!.id);
       res.json(conversations);
@@ -660,7 +694,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/messages/:jobId', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.get('/api/messages/:jobId', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       const messages = await storage.getMessages(req.params.jobId);
       res.json(messages);
@@ -670,7 +705,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/messages', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.post('/api/messages', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertMessageSchema.parse(req.body);
       const message = await storage.createMessage({
@@ -691,7 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== PROFILE ROUTES ====================
+  // ==================== PROFILE ROUTES (Not Protected as verification starts here) ====================
 
  app.patch('/api/profile', authMiddleware, async (req: AuthRequest, res) => {
   try {
@@ -710,8 +746,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const { passwordHash: _, ...userWithoutPassword } = updated;
     
-    // Return the updated user
-    res.json(userWithoutPassword);
+    // Return the updated user (must send a new token to keep status fresh)
+    res.json({ 
+      ...userWithoutPassword,
+      token: generateToken(userWithoutPassword)
+    });
   } catch (error: any) {
     if (error instanceof ZodError) {
       return res.status(400).json({ 
@@ -724,10 +763,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 });
 
-  // ==================== ENHANCED PROFILE ROUTES ====================
+  // ==================== ENHANCED PROFILE ROUTES - PROTECTED BY verifyAccess ====================
 
-// Get provider profile (for loading service categories)
-app.get('/api/provider/profile', authMiddleware, async (req: AuthRequest, res) => {
+// 🆕 Added verifyAccess
+app.get('/api/provider/profile', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
   try {
     if (req.user!.role !== 'provider') {
       return res.status(403).json({ message: 'Only providers can access this' });
@@ -746,8 +785,8 @@ app.get('/api/provider/profile', authMiddleware, async (req: AuthRequest, res) =
   }
 });
 
-// Update provider service categories
-app.patch('/api/provider/categories', authMiddleware, async (req: AuthRequest, res) => {
+// 🆕 Added verifyAccess
+app.patch('/api/provider/categories', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
   try {
     if (req.user!.role !== 'provider') {
       return res.status(403).json({ message: 'Only providers can update categories' });
@@ -786,9 +825,10 @@ app.patch('/api/provider/categories', authMiddleware, async (req: AuthRequest, r
     }
   });
 
-  // ==================== RATING ROUTES ====================
+  // ==================== RATING ROUTES - PROTECTED BY verifyAccess ====================
 
-  app.post('/api/ratings', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.post('/api/ratings', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertRatingSchema.parse(req.body);
       const rating = await storage.createRating({
@@ -809,7 +849,8 @@ app.patch('/api/provider/categories', authMiddleware, async (req: AuthRequest, r
     }
   });
 
-  app.get('/api/ratings/:providerId', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.get('/api/ratings/:providerId', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       const ratings = await storage.getProviderRatings(req.params.providerId);
       res.json(ratings);
@@ -819,9 +860,10 @@ app.patch('/api/provider/categories', authMiddleware, async (req: AuthRequest, r
     }
   });
 
-  // ==================== SUPPLIER ROUTES ====================
+  // ==================== SUPPLIER ROUTES - PROTECTED BY verifyAccess ====================
 
-  app.get('/api/suppliers', async (req, res) => {
+  // 🆕 Added verifyAccess (for getting Supplier list - important for requesters)
+  app.get('/api/suppliers', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       const suppliers = await storage.getSuppliers();
       res.json(suppliers);
@@ -831,9 +873,10 @@ app.patch('/api/provider/categories', authMiddleware, async (req: AuthRequest, r
     }
   });
 
-  // ==================== JOB PAYMENT ROUTES ====================
+  // ==================== JOB PAYMENT ROUTES - PROTECTED BY verifyAccess ====================
 
-  app.post('/api/jobs/:id/set-charge', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.post('/api/jobs/:id/set-charge', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'provider') {
         return res.status(403).json({ message: 'Only providers can set charges' });
@@ -859,7 +902,8 @@ app.patch('/api/provider/categories', authMiddleware, async (req: AuthRequest, r
     }
   });
 
-  app.post('/api/jobs/:id/confirm-payment', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.post('/api/jobs/:id/confirm-payment', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'requester') {
         return res.status(403).json({ message: 'Only requesters can confirm payment' });
@@ -885,9 +929,10 @@ app.patch('/api/provider/categories', authMiddleware, async (req: AuthRequest, r
     }
   });
 
-  // ==================== JOB FEEDBACK ROUTES ====================
+  // ==================== JOB FEEDBACK ROUTES - PROTECTED BY verifyAccess ====================
 
-  app.post('/api/jobs/:id/feedback', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.post('/api/jobs/:id/feedback', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       if (req.user!.role !== 'provider') {
         return res.status(403).json({ message: 'Only providers can submit feedback' });
@@ -912,7 +957,8 @@ app.patch('/api/provider/categories', authMiddleware, async (req: AuthRequest, r
     }
   });
 
-  app.get('/api/jobs/:id/feedback', authMiddleware, async (req: AuthRequest, res) => {
+  // 🆕 Added verifyAccess
+  app.get('/api/jobs/:id/feedback', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       const feedback = await storage.getJobFeedback(req.params.id);
       res.json(feedback);
@@ -922,12 +968,11 @@ app.patch('/api/provider/categories', authMiddleware, async (req: AuthRequest, r
     }
   });
 
-  // ==================== JOB REPORT ROUTES ====================
-// ==================== JOB REPORT ROUTES (ADD THESE) ====================
+  // ==================== JOB REPORT ROUTES - PROTECTED BY verifyAccess ====================
 
-app.post('/api/jobs/:id/report', authMiddleware, async (req: AuthRequest, res) => {
+// 🆕 Added verifyAccess
+app.post('/api/jobs/:id/report', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
   try {
-    // FIX: insertJobReportSchema is now imported
     const validatedData = insertJobReportSchema.parse(req.body);
     const report = await storage.createJobReport({
       ...validatedData,
@@ -947,9 +992,10 @@ app.post('/api/jobs/:id/report', authMiddleware, async (req: AuthRequest, res) =
   }
 });
 
-// ==================== ANALYTICS/REPORTS ROUTES (ADD THESE) ====================
+// ==================== ANALYTICS/REPORTS ROUTES - PROTECTED BY verifyAccess ====================
 
-app.get('/api/reports/requester', authMiddleware, async (req: AuthRequest, res) => {
+// 🆕 Added verifyAccess
+app.get('/api/reports/requester', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
   try {
     if (req.user!.role !== 'requester') {
       return res.status(403).json({ message: 'Only requesters can access this' });
@@ -963,7 +1009,8 @@ app.get('/api/reports/requester', authMiddleware, async (req: AuthRequest, res) 
   }
 });
 
-app.get('/api/reports/provider', authMiddleware, async (req: AuthRequest, res) => {
+// 🆕 Added verifyAccess
+app.get('/api/reports/provider', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
   try {
     if (req.user!.role !== 'provider') {
       return res.status(403).json({ message: 'Only providers can access this' });
@@ -974,6 +1021,154 @@ app.get('/api/reports/provider', authMiddleware, async (req: AuthRequest, res) =
   } catch (error: any) {
     console.error('Get provider stats error:', error);
     res.status(500).json({ message: error.message });
+  }
+});
+
+// ==================== VERIFICATION ROUTES (NEW) ====================
+
+// 🆕 POST /api/verification/submit - Submit identity or document verification
+app.post('/api/verification/submit', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    // Note: No verifyAccess is needed here as this is the action to GET verified
+
+    const validatedData = insertVerificationSubmissionSchema.parse(req.body);
+
+    if (validatedData.type === 'identity' && validatedData.documents.length < 2) {
+      return res.status(400).json({ message: 'Identity verification requires ID and Selfie photos.' });
+    }
+    
+    // Check file size (A very rough estimate since we're using base64: 3MB limit for combined payload)
+    const payloadSize = req.rawBody ? Buffer.byteLength(req.rawBody as any, 'utf8') : 0;
+    if (payloadSize > 3 * 1024 * 1024) {
+      return res.status(400).json({ message: 'Total payload size exceeds 3MB limit. Please reduce image quality/size.' });
+    }
+
+    const submission = await storage.createVerificationSubmission({
+      ...validatedData,
+      userId: req.user!.id,
+    });
+    
+    const updatedUser = await storage.getUser(req.user!.id);
+    
+    // AUTO-APPROVE IDENTITY FOR REQUIESTERS:
+    if (submission.type === 'identity' && updatedUser!.role === 'requester') {
+        const approvedSubmission = await storage.updateVerificationSubmissionStatus(
+            submission.id, 
+            'approved', 
+            'system' // System approval
+        );
+        
+        const finalUser = await storage.getUser(req.user!.id); // Get user with final status
+        const { passwordHash: _, ...userWithoutPassword } = finalUser!;
+        
+        // Overwrite token data on the client immediately for seamless flow
+        return res.status(200).json({ 
+          message: 'Identity Verified Automatically. Access Granted.',
+          submission: approvedSubmission,
+          user: userWithoutPassword,
+          token: generateToken(userWithoutPassword) // Resend new token with updated status
+        });
+    }
+
+    res.status(201).json({ 
+      message: `${validatedData.type} submission received. Status is pending.`, 
+      submission 
+    });
+
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+      });
+    }
+    console.error('Verification submission error:', error);
+    res.status(500).json({ message: error.message || 'Submission failed' });
+  }
+});
+
+
+// 🆕 GET /api/verification/status - Get current verification status
+app.get('/api/verification/status', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const identity = await storage.getVerificationSubmission(req.user!.id, 'identity');
+        const document = (req.user!.role === 'provider' || req.user!.role === 'supplier') 
+            ? await storage.getVerificationSubmission(req.user!.id, 'document')
+            : null;
+            
+        // Return latest status from DB, but rely on token for protected access checks
+        const userStatus = await storage.getUser(req.user!.id);
+
+        res.json({
+            isIdentityVerified: userStatus?.isIdentityVerified,
+            isVerified: userStatus?.isVerified,
+            identitySubmission: identity,
+            documentSubmission: document,
+            role: req.user!.role
+        });
+    } catch (error: any) {
+        console.error('Get verification status error:', error);
+        res.status(500).json({ message: error.message || 'Failed to get verification status' });
+    }
+});
+
+
+// ==================== ADMIN VERIFICATION ROUTES (NEW) ====================
+
+// 🆕 GET /api/admin/verification/pending - List pending submissions
+app.get('/api/admin/verification/pending', authMiddleware, async (req: AuthRequest, res) => {
+  if (req.user!.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  
+  try {
+    const pending = await storage.getPendingVerificationSubmissions();
+    res.json(pending);
+  } catch (error: any) {
+    console.error('Get pending verification error:', error);
+    res.status(500).json({ message: error.message || 'Failed to list pending verifications' });
+  }
+});
+
+// 🆕 PATCH /api/admin/verification/:id/update-status - Approve/Reject submission
+app.patch('/api/admin/verification/:id/update-status', authMiddleware, async (req: AuthRequest, res) => {
+  if (req.user!.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+
+  try {
+    const validatedData = updateVerificationStatusSchema.parse(req.body);
+    
+    const updatedSubmission = await storage.updateVerificationSubmissionStatus(
+      req.params.id,
+      validatedData.status,
+      req.user!.id,
+      validatedData.rejectionReason
+    );
+    
+    if (!updatedSubmission) {
+      return res.status(404).json({ message: 'Submission not found.' });
+    }
+    
+    // IMPORTANT: Return the new full user object and token if approved/rejected
+    const finalUser = await storage.getUser(updatedSubmission.userId);
+    const { passwordHash: _, ...userWithoutPassword } = finalUser!;
+
+    res.json({
+        message: `Submission ${updatedSubmission.status}`,
+        submission: updatedSubmission,
+        user: userWithoutPassword,
+        token: generateToken(userWithoutPassword) // Send new token with updated status
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+      });
+    }
+    console.error('Update verification status error:', error);
+    res.status(500).json({ message: error.message || 'Failed to update verification status' });
   }
 });
   return httpServer;
