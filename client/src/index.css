@@ -1,4 +1,4 @@
-/* client/src/index.css - UPDATED FOR NEW PALETTE (BROWN REMOVED, SKY BLUE ADDED) */
+/* client/src/index.css - UPDATED FOR MONOCHROMATIC EMERALD GREEN THEME */
 
 @tailwind base;
 @tailwind components;
@@ -6,7 +6,7 @@
 
 /* Modern HSL Color System
   Primary: Emerald Green (Success, Main Action)
-  Secondary: Sky Blue (New Accent, Links)
+  Secondary: Emerald Green (Same as Primary for Monochromatic look)
   Neutrals: Soft Beige/Sand (Light) and Deep Navy (Dark)
 */
 
@@ -34,18 +34,18 @@
   --sidebar-foreground: 220 20% 10%;
   --sidebar-border: 45 10% 80%;
   
-  /* Primary Emerald Green (KEPT) */
+  /* Primary Emerald Green */
   --primary: 170 60% 30%; 
   --primary-foreground: 0 0% 100%;
 
-  /* Secondary Sky Blue/Cyan (NEW ACCENT) */
-  --secondary: 170 60% 30%; /* Vibrant Sky Blue */
-  --secondary-foreground: 0 0% 100%; /* White text on blue accent */
+  /* Secondary Emerald Green (MATCHES PRIMARY) */
+  --secondary: 170 60% 30%; /* Emerald Green */
+  --secondary-foreground: 0 0% 100%; /* White text */
 
   /* Sidebar/Accent - Using primary/secondary colors */
   --sidebar-primary: 170 60% 30%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 200 80% 50%; /* New Secondary */
+  --sidebar-accent: 170 60% 30%; /* New Secondary (Primary) */
   --sidebar-accent-foreground: 0 0% 100%;
   --sidebar-ring: 170 60% 30%;
 
@@ -58,8 +58,8 @@
   --muted: 45 10% 85%;
   --muted-foreground: 45 10% 45%;
 
-  /* Accent - Sky Blue (Same as Secondary) */
-  --accent: 200 80% 50%; /* New Secondary */
+  /* Accent - Emerald Green (Same as Secondary/Primary) */
+  --accent: 170 60% 30%; /* New Accent (Primary) */
   --accent-foreground: 0 0% 100%;
 
   /* Destructive - Keeping red for warnings */
@@ -70,16 +70,16 @@
   --success: 170 60% 30%;
   --success-foreground: 0 0% 100%;
 
-  /* Warning - Standard Orange/Yellow (Replaced old brown warning) */
+  /* Warning - Standard Orange/Yellow */
   --warning: 40 80% 55%;
   --warning-foreground: 220 20% 10%;
 
   --input: 45 10% 80%;
   --ring: 170 60% 30%;
   
-  /* Chart colors - Updated chart-2 and chart-3 */
+  /* Chart colors - Now chart-1 and chart-2 are the same. chart-3 is the neutral accent. */
   --chart-1: 170 60% 30%;    /* Emerald (Primary) */
-  --chart-2: 200 80% 50%;     /* Sky Blue (Secondary) */
+  --chart-2: 170 60% 30%;    /* Emerald (Secondary is now Primary) */
   --chart-3: 220 20% 40%;    /* Navy Blue/Gray-Blue accent (From base palette) */
   --chart-4: 45 10% 60%;     /* Medium Gray/Sand */
   --chart-5: 45 10% 70%;     /* Light Gray/Sand */
@@ -99,13 +99,13 @@
   --shadow-xl: 0px 15px 30px 0px hsla(0, 0%, 0%, 0.22);
   --shadow-2xl: 0px 25px 50px 0px hsla(0, 0%, 0%, 0.25);
 
-  /* Computed borders - UPDATED secondary/accent borders */
+  /* Computed borders */
   --sidebar-primary-border: hsl(170 60% 25%);
-  --sidebar-accent-border: hsl(200 80% 45%); /* New Secondary border */
+  --sidebar-accent-border: hsl(170 60% 25%); /* New Secondary border (Primary) */
   --primary-border: hsl(170 60% 25%);
-  --secondary-border: hsl(200 80% 45%); /* New Secondary border */
+  --secondary-border: hsl(170 60% 25%); /* New Secondary border (Primary) */
   --muted-border: hsl(45 10% 75%);
-  --accent-border: hsl(200 80% 45%); /* New Secondary border */
+  --accent-border: hsl(170 60% 25%); /* New Secondary border (Primary) */
   --destructive-border: hsl(0 84% 50%);
 }
 
@@ -133,18 +133,18 @@
   --sidebar-foreground: 45 30% 95%;
   --sidebar-border: 220 20% 18%;
 
-  /* Primary Emerald Green (Lighter for visibility on dark) */
+  /* Primary Emerald Green */
   --primary: 170 60% 45%; 
   --primary-foreground: 220 20% 10%;
 
-  /* Secondary Sky Blue/Cyan (NEW ACCENT) */
-  --secondary: 200 80% 65%; /* Brighter Sky Blue */
+  /* Secondary Emerald Green (MATCHES PRIMARY) */
+  --secondary: 170 60% 45%; /* Emerald Green */
   --secondary-foreground: 220 20% 10%;
 
   /* Sidebar/Accent - Using primary/secondary colors */
   --sidebar-primary: 170 60% 45%;
   --sidebar-primary-foreground: 220 20% 10%;
-  --sidebar-accent: 200 80% 65%; /* New Secondary */
+  --sidebar-accent: 170 60% 45%; /* New Secondary (Primary) */
   --sidebar-accent-foreground: 220 20% 10%;
   --sidebar-ring: 170 60% 45%;
 
@@ -157,8 +157,8 @@
   --muted: 220 20% 18%;
   --muted-foreground: 220 10% 70%;
 
-  /* Accent - Sky Blue */
-  --accent: 200 80% 65%; /* New Secondary */
+  /* Accent - Emerald Green */
+  --accent: 170 60% 45%; /* New Accent (Primary) */
   --accent-foreground: 220 20% 10%;
 
   /* Destructive */
@@ -178,7 +178,7 @@
 
   /* Chart colors */
   --chart-1: 170 60% 45%; /* Emerald (Primary) */
-  --chart-2: 200 80% 65%; /* Sky Blue (Secondary) */
+  --chart-2: 170 60% 45%; /* Emerald (Secondary is now Primary) */
   --chart-3: 220 20% 50%; /* Navy Blue/Gray-Blue accent */
   --chart-4: 220 10% 70%;
   --chart-5: 220 10% 80%;
@@ -195,11 +195,11 @@
 
   /* Computed borders */
   --sidebar-primary-border: hsl(170 60% 50%);
-  --sidebar-accent-border: hsl(200 80% 70%); /* New Secondary border */
+  --sidebar-accent-border: hsl(170 60% 50%); /* New Secondary border (Primary) */
   --primary-border: hsl(170 60% 50%);
-  --secondary-border: hsl(200 80% 70%); /* New Secondary border */
+  --secondary-border: hsl(170 60% 50%); /* New Secondary border (Primary) */
   --muted-border: hsl(220 20% 25%);
-  --accent-border: hsl(200 80% 70%); /* New Secondary border */
+  --accent-border: hsl(170 60% 50%); /* New Secondary border (Primary) */
   --destructive-border: hsl(0 84% 68%);
 }
 
@@ -329,7 +329,7 @@
   .hover-elevate:not(.no-default-hover-elevate)::after,
   .active-elevate:not(.no-default-active-elevate)::after,
   .hover-elevate-2:not(.no-default-hover-elevate)::after,
-  .active-elevate-2:not(.no-default-hover-elevate)::after {
+  .active-elevate-2:not(.no-default-active-elevate)::after {
     content: "";
     pointer-events: none;
     position: absolute;
