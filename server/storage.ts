@@ -9,6 +9,7 @@ import {
   jobFeedback,
   jobReports,
   serviceAreaMigrations,
+  verificationSubmissions, // 🆕 Added
   type User, 
   type InsertUser,
   type Provider,
@@ -29,6 +30,8 @@ import {
   type InsertServiceAreaMigration,
   type Category,
   type InsertCategory,
+  type VerificationSubmission, // 🆕 Added
+  type InsertVerificationSubmission, // 🆕 Added
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, desc, asc, inArray } from "drizzle-orm";
@@ -130,6 +133,17 @@ export interface IStorage {
   // Categories
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
+
+  // 🆕 Verification Submissions (New)
+  createVerificationSubmission(submission: InsertVerificationSubmission & { userId: string }): Promise<VerificationSubmission>;
+  getVerificationSubmission(userId: string, type: 'identity' | 'document'): Promise<VerificationSubmission | undefined>;
+  getPendingVerificationSubmissions(): Promise<VerificationSubmission[]>;
+  updateVerificationSubmissionStatus(
+    id: string, 
+    status: 'approved' | 'rejected', 
+    reviewerId: string, 
+    rejectionReason?: string
+  ): Promise<VerificationSubmission | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -160,6 +174,80 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: string): Promise<void> {
     await db.delete(users).where(eq(users.id, id));
+  }
+  
+  // 🆕 Verification Submissions (New Implementations)
+  async createVerificationSubmission(submission: InsertVerificationSubmission & { userId: string }): Promise<VerificationSubmission> {
+    // Overwrite existing pending/rejected submission of the same type for simplicity
+    await db.delete(verificationSubmissions)
+      .where(and(eq(verificationSubmissions.userId, submission.userId), eq(verificationSubmissions.type, submission.type)));
+      
+    const [created] = await db.insert(verificationSubmissions).values(submission).returning();
+    return created;
+  }
+
+  async getVerificationSubmission(userId: string, type: 'identity' | 'document'): Promise<VerificationSubmission | undefined> {
+    const [submission] = await db
+      .select()
+      .from(verificationSubmissions)
+      .where(and(eq(verificationSubmissions.userId, userId), eq(verificationSubmissions.type, type)));
+    return submission || undefined;
+  }
+
+  async getPendingVerificationSubmissions(): Promise<VerificationSubmission[]> {
+    return await db
+      .select()
+      .from(verificationSubmissions)
+      .where(eq(verificationSubmissions.status, 'pending'))
+      .orderBy(desc(verificationSubmissions.createdAt));
+  }
+
+  async updateVerificationSubmissionStatus(
+    id: string, 
+    status: 'approved' | 'rejected', 
+    reviewerId: string,
+    rejectionReason?: string
+  ): Promise<VerificationSubmission | undefined> {
+    const [submission] = await db
+      .update(verificationSubmissions)
+      .set({
+        status: status,
+        reviewedBy: reviewerId,
+        reviewedAt: new Date(),
+        rejectionReason: status === 'rejected' ? rejectionReason : null,
+      })
+      .where(eq(verificationSubmissions.id, id))
+      .returning();
+
+    if (!submission) return undefined;
+    
+    // Logic for user update based on verification type
+    if (status === 'approved') {
+      if (submission.type === 'identity') {
+        // Phase 1 check passed
+        await this.updateUser(submission.userId, { isIdentityVerified: true });
+        
+        const user = await this.getUser(submission.userId);
+        
+        // AUTO-VERIFY REQUIESTER FOR FULL ACCESS (Phase 2 complete)
+        if (user?.role === 'requester') {
+             await this.updateUser(submission.userId, { isVerified: true });
+        }
+      } else if (submission.type === 'document') {
+        // Phase 2 check passed for providers/suppliers
+        await this.updateUser(submission.userId, { isVerified: true });
+      }
+    }
+    // If rejected, remove verification status
+    else if (status === 'rejected') {
+        if (submission.type === 'identity') {
+            await this.updateUser(submission.userId, { isIdentityVerified: false, isVerified: false });
+        } else if (submission.type === 'document') {
+            await this.updateUser(submission.userId, { isVerified: false });
+        }
+    }
+
+    return submission;
   }
 
   // Providers
