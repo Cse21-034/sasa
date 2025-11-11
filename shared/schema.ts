@@ -31,7 +31,7 @@ export const jobStatusEnum = pgEnum("job_status", [
 // Migration status enum
 export const migrationStatusEnum = pgEnum("migration_status", ["pending", "approved", "rejected"]);
 
-// Verification Enums
+// 🆕 Verification Enums (NEW)
 export const verificationTypeEnum = pgEnum("verification_type", ["identity", "document"]);
 export const verificationStatusEnum = pgEnum("verification_status", ["pending", "approved", "rejected"]);
 
@@ -47,8 +47,7 @@ export const users = pgTable("users", {
   profilePhotoUrl: text("profile_photo_url"),
   bio: text("bio"),
   isVerified: boolean("is_verified").default(false).notNull(),
-  isIdentityVerified: boolean("is_identity_verified").default(false).notNull(),
-  isBlocked: boolean("is_blocked").default(false).notNull(), // 🆕 Added isBlocked flag
+  isIdentityVerified: boolean("is_identity_verified").default(false).notNull(), // 🆕 New field for Phase 1
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -166,7 +165,7 @@ export const promotions = pgTable("promotions", {
   media: jsonb("media").$type<string[]>(),
 });
 
-// Verification Submissions table
+// 🆕 Verification Submissions table (NEW)
 export const verificationSubmissions = pgTable("verification_submissions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -225,7 +224,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   jobFeedback: many(jobFeedback),
   jobReports: many(jobReports),
   migrationRequests: many(serviceAreaMigrations),
-  verificationSubmissions: many(verificationSubmissions),
+  verificationSubmissions: many(verificationSubmissions), // 🆕 Added
 }));
 
 export const suppliersRelations = relations(suppliers, ({ one }) => ({
@@ -333,7 +332,7 @@ export const jobReportsRelations = relations(jobReports, ({ one }) => ({
   }),
 }));
 
-// Verification Submissions Relations
+// 🆕 Verification Submissions Relations (NEW)
 export const verificationSubmissionsRelations = relations(verificationSubmissions, ({ one }) => ({
   user: one(users, {
     fields: [verificationSubmissions.userId],
@@ -378,7 +377,6 @@ export const baseUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
   isVerified: true,
   isIdentityVerified: true,
-  isBlocked: true, // 🆕 Added
   passwordHash: true,
 });
 
@@ -428,7 +426,6 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
   isVerified: true,
   isIdentityVerified: true,
-  isBlocked: true, // 🆕 Added
   passwordHash: true,
 });
 
@@ -540,7 +537,7 @@ export const updateJobStatusSchema = z.object({
   status: z.enum(["open", "offered", "accepted", "enroute", "onsite", "completed", "cancelled"]),
 });
 
-// Schema for Verification Submissions 
+// 🆕 Schema for Verification Submissions (NEW)
 export const insertVerificationSubmissionSchema = z.object({
   type: z.enum(['identity', 'document']),
   documents: z.array(z.object({
@@ -549,15 +546,10 @@ export const insertVerificationSubmissionSchema = z.object({
   })).min(1, "At least one document/photo is required."),
 });
 
-// Schema for Admin Approval/Rejection 
+// 🆕 Schema for Admin Approval/Rejection (NEW)
 export const updateVerificationStatusSchema = z.object({
   status: z.enum(['approved', 'rejected']),
   rejectionReason: z.string().optional(),
-});
-
-// 🆕 Schema for Admin User Block/Unblock
-export const updateBlockStatusSchema = z.object({
-    isBlocked: z.boolean(),
 });
 
 
@@ -596,12 +588,11 @@ export type InsertCategory = z.infer<typeof insertCategorySchema>;
 
 export type Promotion = typeof promotions.$inferSelect;
 
-export type VerificationSubmission = typeof verificationSubmissions.$inferSelect;
-export type InsertVerificationSubmission = z.infer<typeof insertVerificationSubmissionSchema>;
-
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type UpdateProviderServiceArea = z.infer<typeof updateProviderServiceAreaSchema>;
 export type UpdateJobStatus = z.infer<typeof updateJobStatusSchema>;
 export type SetProviderCharge = z.infer<typeof setProviderChargeSchema>;
 export type ConfirmPayment = z.infer<typeof confirmPaymentSchema>;
-export type UpdateBlockStatus = z.infer<typeof updateBlockStatusSchema>;
+
+export type VerificationSubmission = typeof verificationSubmissions.$inferSelect; // 🆕 Added
+export type InsertVerificationSubmission = z.infer<typeof insertVerificationSubmissionSchema>; // 🆕 Added
