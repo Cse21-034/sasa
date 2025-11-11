@@ -1,5 +1,3 @@
-// client/src/pages/admin/verification.tsx
-
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Loader2, UserCheck, XCircle, FileText, User, Wrench, Building2, AlertCircle, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,21 +22,23 @@ interface Document {
     name: string;
     url: string; // This is the base64 string
 }
+
+// 🆕 FIX: Update Submission interface to correctly represent the joined data structure from storage.ts
 interface Submission {
-  id: string;
-  userId: string;
-  type: 'identity' | 'document';
-  documents: Document[];
-  status: 'pending' | 'approved' | 'rejected';
-  rejectionReason: string | null;
-  createdAt: string;
-  user: {
-      id: string;
-      name: string;
-      email: string;
-      role: 'requester' | 'provider' | 'supplier';
-      profilePhotoUrl: string;
-  }
+    id: string;
+    userId: string;
+    type: 'identity' | 'document';
+    documents: Document[];
+    status: 'pending' | 'approved' | 'rejected';
+    rejectionReason: string | null;
+    createdAt: string;
+    user: {
+        id: string;
+        name: string;
+        email: string;
+        role: 'requester' | 'provider' | 'supplier' | 'admin';
+        profilePhotoUrl: string | null; // Profile photo can be null
+    }
 }
 
 // --- HOOKS ---
@@ -46,10 +46,9 @@ const usePendingSubmissions = () => {
   return useQuery<Submission[]>({
     queryKey: ['adminPendingVerification'],
     queryFn: async () => {
+      // The backend is now fixed to return the joined user object
       const res = await apiRequest('GET', '/api/admin/verification/pending');
-      const data = await res.json();
-      // Attach user details manually if needed, but endpoint should handle
-      return data;
+      return res.json();
     },
     refetchInterval: 15000, // Refresh every 15 seconds
   });
@@ -63,12 +62,13 @@ const useUpdateSubmissionStatus = () => {
         status, 
         rejectionReason: reason 
       });
+      // The backend returns a new user object and token on success
       return res.json();
     },
     onSuccess: (data) => {
       toast({
         title: `Submission ${data.submission.status} successfully`,
-        description: `User ${data.user.name} is now ${data.user.isVerified ? 'FULLY VERIFIED' : 'PARTIALLY VERIFIED'}.`,
+        description: `User ${data.user.name} is now ${data.user.isVerified ? 'FULLY VERIFIED' : 'PARTIALLY VERIFIED'}. They may need to relogin for full access in all sessions.`,
       });
       // Invalidate query to refresh the pending list
       queryClient.invalidateQueries({ queryKey: ['adminPendingVerification'] });
@@ -102,7 +102,7 @@ const ReviewModal = ({ submission, onClose }: { submission: Submission | null, o
 
   const getTitle = () => {
     if (submission.type === 'identity') return 'Phase 1: Identity Check';
-    return `Phase 2: ${submission.user.role === 'requester' ? 'Requester' : submission.user.role === 'provider' ? 'Artisan' : 'Organization'} Documents`;
+    return `Phase 2: ${submission.user.role === 'provider' ? 'Artisan' : 'Organization'} Documents`;
   }
   
   const getIcon = () => {
@@ -128,13 +128,14 @@ const ReviewModal = ({ submission, onClose }: { submission: Submission | null, o
           <Card className="col-span-2 md:col-span-1 border">
              <CardContent className="p-4 flex items-center gap-4">
                 <Avatar className="h-16 w-16">
-                    <AvatarImage src={submission.user.profilePhotoUrl} />
+                    <AvatarImage src={submission.user.profilePhotoUrl || undefined} />
                     <AvatarFallback>{submission.user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
                     <p className="text-lg font-bold">{submission.user.name}</p>
                     <p className="text-sm text-muted-foreground">{submission.user.email}</p>
                     <Badge variant="secondary" className="mt-1 capitalize">{submission.user.role}</Badge>
+                    <p className="text-xs text-muted-foreground mt-1">User ID: {submission.user.id}</p>
                 </div>
             </CardContent>
           </Card>
@@ -144,7 +145,7 @@ const ReviewModal = ({ submission, onClose }: { submission: Submission | null, o
             <CardHeader className="p-4">
                 <CardTitle className="text-lg flex items-center gap-2">
                     <FileText className="h-4 w-4" />
-                    Submitted Documents
+                    Submitted Documents ({submission.documents.length})
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-4 grid grid-cols-3 gap-3">
@@ -154,12 +155,23 @@ const ReviewModal = ({ submission, onClose }: { submission: Submission | null, o
                   className="group cursor-pointer border rounded-lg overflow-hidden relative shadow-sm"
                   onClick={() => setActiveDocument(doc)}
                 >
-                    <img
-                        src={doc.url} 
-                        alt={doc.name} 
-                        className="w-full h-24 object-cover transition-transform group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    {/* Check if it's a PDF. If so, display a placeholder */}
+                    {doc.name.toLowerCase().endsWith('.pdf') ? (
+                        <div className="w-full h-24 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 p-2">
+                            <FileText className="h-8 w-8 text-destructive" />
+                            <span className="text-xs text-muted-foreground truncate">{doc.name}</span>
+                            <span className="text-xs font-medium text-primary">Click to View</span>
+                        </div>
+                    ) : (
+                        <img
+                            // ⚠️ FIX: The URL here is the Base64 string, so it should render directly
+                            src={doc.url} 
+                            alt={doc.name} 
+                            className="w-full h-24 object-cover transition-transform group-hover:scale-105"
+                        />
+                    )}
+
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-2">
                         <span className="text-white text-xs p-1 bg-black/70 rounded">{doc.name}</span>
                     </div>
                 </div>
@@ -172,7 +184,7 @@ const ReviewModal = ({ submission, onClose }: { submission: Submission | null, o
         <div className="space-y-4">
             <h3 className="text-lg font-semibold">Review Action</h3>
             <Textarea
-                placeholder="Enter rejection reason if declining..."
+                placeholder="Enter rejection reason if declining... (Required for rejection)"
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 className="min-h-[100px]"
@@ -205,16 +217,22 @@ const ReviewModal = ({ submission, onClose }: { submission: Submission | null, o
           </Button>
         </DialogFooter>
 
-        {/* Document Preview Dialog */}
+        {/* Document Preview Dialog (Used for large image/PDF display) */}
         <Dialog open={!!activeDocument} onOpenChange={() => setActiveDocument(null)}>
             <DialogContent className="max-w-4xl p-0">
-                {activeDocument && (
+                {activeDocument && activeDocument.name.toLowerCase().endsWith('.pdf') ? (
+                    <div className="p-6">
+                        <h3 className="font-bold text-lg mb-4">PDF Preview Unavailable</h3>
+                        <p className="text-muted-foreground">PDF files cannot be rendered directly in the preview. Please trust the file name/source or download it separately if needed. Closing preview to avoid rendering issues.</p>
+                        <Button onClick={() => setActiveDocument(null)} className="mt-4">Close</Button>
+                    </div>
+                ) : activeDocument ? (
                     <img 
                         src={activeDocument.url} 
                         alt="Document Preview" 
                         className="w-full h-auto object-contain max-h-[80vh] rounded-lg" 
                     />
-                )}
+                ) : null}
             </DialogContent>
         </Dialog>
       </DialogContent>
@@ -224,6 +242,7 @@ const ReviewModal = ({ submission, onClose }: { submission: Submission | null, o
 
 
 export default function AdminVerification() {
+  // ⚠️ IMPORTANT FIX: Ensure data is handled safely by defaulting to an empty array
   const { data: pendingSubmissions, isLoading, error } = usePendingSubmissions();
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
 
@@ -236,9 +255,11 @@ export default function AdminVerification() {
     );
   }
 
-  const identitySubmissions = pendingSubmissions?.filter(s => s.type === 'identity') || [];
-  const documentSubmissions = pendingSubmissions?.filter(s => s.type === 'document') || [];
-  const totalPending = (pendingSubmissions || []).length;
+  // ⚠️ IMPORTANT FIX: Safely access pendingSubmissions
+  const submissions = pendingSubmissions || [];
+  const identitySubmissions = submissions.filter(s => s.type === 'identity') || [];
+  const documentSubmissions = submissions.filter(s => s.type === 'document') || [];
+  const totalPending = submissions.length;
 
 
   return (
@@ -282,7 +303,7 @@ export default function AdminVerification() {
                             <CardContent className="p-4 flex justify-between items-center">
                                 <div className="flex items-center gap-3">
                                     <Avatar>
-                                        <AvatarImage src={sub.user.profilePhotoUrl} />
+                                        <AvatarImage src={sub.user.profilePhotoUrl || undefined} />
                                         <AvatarFallback>{sub.user.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <div>
@@ -310,7 +331,7 @@ export default function AdminVerification() {
                             <CardContent className="p-4 flex justify-between items-center">
                                 <div className="flex items-center gap-3">
                                     <Avatar>
-                                        <AvatarImage src={sub.user.profilePhotoUrl} />
+                                        <AvatarImage src={sub.user.profilePhotoUrl || undefined} />
                                         <AvatarFallback>{sub.user.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <div>
