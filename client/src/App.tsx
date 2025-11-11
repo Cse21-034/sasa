@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/lib/theme-provider";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { Header } from "@/components/layout/header";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { Button } from "@/components/ui/button";
 
 // Pages
 import Landing from "@/pages/landing";
@@ -22,7 +23,8 @@ import Profile from "@/pages/profile";
 import Reports from "@/pages/reports";
 import Suppliers from "@/pages/suppliers";
 import NotFound from "@/pages/not-found";
-import VerificationPage from "@/pages/verification"; // 🆕 Added
+import VerificationPage from "@/pages/verification";
+import AdminVerification from "@/pages/admin/verification"; // 🆕 NEW ADMIN PAGE
 
 function ProtectedRoute({ component: Component, path, ...rest }: any) {
   const { isAuthenticated, user } = useAuth();
@@ -31,7 +33,7 @@ function ProtectedRoute({ component: Component, path, ...rest }: any) {
     return <Redirect to="/login" />;
   }
 
-  // 🆕 Verification Gate: If authenticated but not fully verified (and not admin), redirect to verification page.
+  // Verification Gate: If authenticated but not fully verified (and not admin), redirect to verification page.
   if (user && user.role !== 'admin' && !user.isVerified) {
     // Allow access to Profile/Verification page for verification steps
     if (path !== '/profile' && path !== '/verification') {
@@ -42,11 +44,42 @@ function ProtectedRoute({ component: Component, path, ...rest }: any) {
   return <Component {...rest} />;
 }
 
+// 🆕 NEW ADMIN ROUTE HELPER
+function AdminRoute({ component: Component, ...rest }: any) {
+    const { isAuthenticated, user } = useAuth();
+    if (!isAuthenticated || user?.role !== 'admin') {
+        // Redirect to 404 or login if not admin
+        return <Redirect to={isAuthenticated ? "/404" : "/login"} />;
+    }
+    return <Component {...rest} />;
+}
+
 function PublicRoute({ component: Component, ...rest }: any) {
   const { isAuthenticated } = useAuth();
   
   return !isAuthenticated ? <Component {...rest} /> : <Redirect to="/jobs" />;
 }
+
+// 🆕 DUMMY ADMIN COMPONENT
+function AdminDashboard() {
+  const [, setLocation] = useLocation();
+  return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <h1 className="text-3xl font-bold mb-6">Admin Panel</h1>
+          <p className="mb-4">Welcome, Admin. Select a task below:</p>
+          <div className="space-y-4 flex flex-col w-64">
+              <Button 
+                  variant="outline"
+                  onClick={() => setLocation('/admin/verification')}
+              >
+                  Review Pending Verification Submissions
+              </Button>
+              <p className="text-muted-foreground text-sm">Other admin tools go here...</p>
+          </div>
+      </div>
+  );
+}
+
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -64,12 +97,20 @@ function Router() {
             {() => <PublicRoute component={Signup} />}
           </Route>
 
-          {/* 🆕 Verification Route - Must be accessible when authenticated but not verified */}
+          {/* Verification Routes */}
           <Route path="/verification">
             {() => <ProtectedRoute component={VerificationPage} path="/verification" />}
           </Route>
           
-          {/* 🆕 Added path prop to all ProtectedRoutes for check above */}
+          {/* Admin Routes */}
+          <Route path="/admin">
+            {() => <AdminRoute component={AdminDashboard} />}
+          </Route>
+          <Route path="/admin/verification">
+            {() => <AdminRoute component={AdminVerification} />}
+          </Route>
+          
+          {/* Protected Routes */}
           <Route path="/jobs" >{() => <ProtectedRoute component={BrowseJobs} path="/jobs" />}</Route>
           <Route path="/jobs/:id" >{() => <ProtectedRoute component={JobDetail} path="/jobs/:id" />}</Route>
           <Route path="/post-job">
@@ -90,10 +131,13 @@ function Router() {
           <Route path="/reports">
             {() => <ProtectedRoute component={Reports} path="/reports" />}
           </Route>
+          
+          {/* Public Routes */}
           <Route path="/suppliers" component={Suppliers} /> 
           <Route path="/my-jobs">
             {() => <ProtectedRoute component={BrowseJobs} path="/my-jobs" />}
           </Route>
+          
           <Route component={NotFound} />
         </Switch>
       </main>
