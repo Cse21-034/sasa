@@ -9,7 +9,7 @@ import {
   jobFeedback,
   jobReports,
   serviceAreaMigrations,
-  verificationSubmissions, // 🆕 Added
+  verificationSubmissions,
   type User, 
   type InsertUser,
   type Provider,
@@ -30,8 +30,8 @@ import {
   type InsertServiceAreaMigration,
   type Category,
   type InsertCategory,
-  type VerificationSubmission, // 🆕 Added
-  type InsertVerificationSubmission, // 🆕 Added
+  type VerificationSubmission,
+  type InsertVerificationSubmission,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, desc, asc, inArray } from "drizzle-orm";
@@ -58,6 +58,11 @@ type MessageWithSender = Message & {
 type RatingWithFromUser = Rating & {
   fromUser: User;
 };
+
+// 🆕 Extended Submission Type for Admin UI (Local definition for IStorage)
+interface SubmissionWithUser extends VerificationSubmission {
+  user: User;
+}
 
 export interface IStorage {
   // Users
@@ -134,10 +139,10 @@ export interface IStorage {
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
 
-  // 🆕 Verification Submissions (New)
+  // Verification Submissions
   createVerificationSubmission(submission: InsertVerificationSubmission & { userId: string }): Promise<VerificationSubmission>;
   getVerificationSubmission(userId: string, type: 'identity' | 'document'): Promise<VerificationSubmission | undefined>;
-  getPendingVerificationSubmissions(): Promise<VerificationSubmission[]>;
+  getPendingVerificationSubmissions(): Promise<SubmissionWithUser[]>; // 🆕 Updated return type
   updateVerificationSubmissionStatus(
     id: string, 
     status: 'approved' | 'rejected', 
@@ -176,7 +181,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(users).where(eq(users.id, id));
   }
   
-  // 🆕 Verification Submissions (New Implementations)
+  // Verification Submissions
   async createVerificationSubmission(submission: InsertVerificationSubmission & { userId: string }): Promise<VerificationSubmission> {
     // Overwrite existing pending/rejected submission of the same type for simplicity
     await db.delete(verificationSubmissions)
@@ -194,12 +199,23 @@ export class DatabaseStorage implements IStorage {
     return submission || undefined;
   }
 
-  async getPendingVerificationSubmissions(): Promise<VerificationSubmission[]> {
-    return await db
-      .select()
+  // 🆕 FIXED: Join the users table to include profilePhotoUrl
+  async getPendingVerificationSubmissions(): Promise<SubmissionWithUser[]> {
+    const results = await db
+      .select({
+        submission: verificationSubmissions,
+        user: users,
+      })
       .from(verificationSubmissions)
+      .leftJoin(users, eq(verificationSubmissions.userId, users.id))
       .where(eq(verificationSubmissions.status, 'pending'))
       .orderBy(desc(verificationSubmissions.createdAt));
+
+    // Map the combined result into the desired structure
+    return results.map(r => ({
+        ...r.submission,
+        user: r.user!, // r.user should never be null here if data integrity is maintained
+    }));
   }
 
   async updateVerificationSubmissionStatus(
