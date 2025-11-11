@@ -27,6 +27,8 @@ export const jobStatusEnum = pgEnum("job_status", [
   "completed", 
   "cancelled"
 ]);
+// 🆕 NEW: User Status Enum
+export const userStatusEnum = pgEnum("user_status", ["active", "blocked", "deactivated"]);
 
 // Migration status enum
 export const migrationStatusEnum = pgEnum("migration_status", ["pending", "approved", "rejected"]);
@@ -47,7 +49,9 @@ export const users = pgTable("users", {
   profilePhotoUrl: text("profile_photo_url"),
   bio: text("bio"),
   isVerified: boolean("is_verified").default(false).notNull(),
-  isIdentityVerified: boolean("is_identity_verified").default(false).notNull(), // 🆕 New field for Phase 1
+  isIdentityVerified: boolean("is_identity_verified").default(false).notNull(), 
+  // 🆕 NEW: User Status
+  status: userStatusEnum("status").default("active").notNull(), 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -378,6 +382,7 @@ export const baseUserSchema = createInsertSchema(users).omit({
   isVerified: true,
   isIdentityVerified: true,
   passwordHash: true,
+  status: true, // 🆕 Omit for base schema
 });
 
 // Updated individual signup schema (NO physical address)
@@ -392,6 +397,14 @@ export const individualSignupSchema = z.object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
+}).refine((data) => {
+  if (data.role === 'provider') {
+    return !!data.primaryCity;
+  }
+  return true;
+}, {
+  message: "City is required for service providers",
+  path: ['primaryCity'],
 });
 
 // Supplier signup schema (WITH physical address)
@@ -427,6 +440,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
   isVerified: true,
   isIdentityVerified: true,
   passwordHash: true,
+  status: true, // 🆕 Omit for internal insert
 });
 
 // Provider Schema with city
@@ -537,6 +551,13 @@ export const updateJobStatusSchema = z.object({
   status: z.enum(["open", "offered", "accepted", "enroute", "onsite", "completed", "cancelled"]),
 });
 
+// 🆕 NEW: Schema for Admin Update User Status
+export const updateUserStatusSchema = z.object({
+  status: z.enum(['active', 'blocked', 'deactivated']),
+  reason: z.string().optional(),
+});
+
+
 // 🆕 Schema for Verification Submissions (NEW)
 export const insertVerificationSubmissionSchema = z.object({
   type: z.enum(['identity', 'document']),
@@ -596,3 +617,4 @@ export type ConfirmPayment = z.infer<typeof confirmPaymentSchema>;
 
 export type VerificationSubmission = typeof verificationSubmissions.$inferSelect; // 🆕 Added
 export type InsertVerificationSubmission = z.infer<typeof insertVerificationSubmissionSchema>; // 🆕 Added
+export type UpdateUserStatus = z.infer<typeof updateUserStatusSchema>; // 🆕 Added
