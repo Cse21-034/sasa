@@ -65,7 +65,7 @@ export default function Landing() {
     {
       title: 'Location-Based Matching',
       description: 'Find service providers near you with real-time distance tracking',
-      // Using solid color for hover effect (Secondary/Warm Tan)
+      // Using solid color for hover effect (Secondary/Sky Blue)
       hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
       image: 'https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?w=400&auto=format&fit=crop&q=80',
     },
@@ -131,7 +131,7 @@ export default function Landing() {
               <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80" alt="Electrician working" className="w-full h-full object-cover" />
             </div>
             <div className="relative overflow-hidden">
-              <img src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=400&auto=format&fit=crop&q=80" alt="Carpenter working" className="w-full h-full object-cover" />
+              <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&auto=format&fit=crop&q=80" alt="Carpenter working" className="w-full h-full object-cover" />
             </div>
             <div className="relative overflow-hidden hidden md:block">
               <img src="https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400&auto=format&fit=crop&q=80" alt="Painter at work" className="w-full h-full object-cover" />
@@ -144,7 +144,7 @@ export default function Landing() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-5xl mx-auto text-center">
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              {/* Text Secondary (Warm Tan) / Primary (Emerald Green) */}
+              {/* Text Secondary (Sky Blue) / Primary (Emerald Green) */}
               <span className="text-secondary dark:text-primary">
                 Connect with Trusted
               </span>
@@ -162,7 +162,7 @@ export default function Landing() {
                   <Link href="/jobs">
                     <Button 
                       size="lg" 
-                      // Solid Secondary (Warm Tan)
+                      // Solid Secondary (Sky Blue)
                       className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-secondary hover:bg-secondary/90 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                     >
                       Browse Services
@@ -185,7 +185,7 @@ export default function Landing() {
                   <Link href="/signup">
                     <Button 
                       size="lg" 
-                      // Solid Secondary (Warm Tan)
+                      // Solid Secondary (Sky Blue)
                       className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-secondary hover:bg-secondary/90 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                     >
                       Get Started Free
@@ -240,22 +240,22 @@ export default function Landing() {
       </section>
 
       {/* Special Offers Section - CARD FIX INCLUDED */}
-      <section className="py-16 sm:py-20 bg-sidebar"> {/* Uses soft Sand/Beige sidebar color */}
+      <section className="py-16 sm:py-20 bg-sidebar">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
             <Badge 
-              // Using secondary/Warm Tan for offer badge
+              // Using secondary/Sky Blue for offer badge
               className="mb-4 bg-secondary/10 text-secondary dark:bg-secondary/20"
             >
               <Tag className="h-3 w-3 mr-1" />
               Limited Time Offers
             </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              {/* Text Secondary (Warm Tan) */}
+              {/* Text Secondary (Sky Blue) */}
               <span className="text-secondary dark:text-secondary">Special Offers</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
-              Discover exclusive deals and discounts on our services. Don't miss out on these limited-time offers!
+              Discover exclusive deals and discounts on our services. Don't miss out on these limited-time offers.
             </p>
           </div>
 
@@ -263,14 +263,14 @@ export default function Landing() {
             {specialOffers.map((offer, index) => (
               <Card 
                 key={index} 
-                // **CARD FIX:** Added explicit border and using bg-card
+                // Hover border: Secondary (Sky Blue)
                 className="group cursor-pointer border-card-border border-2 bg-card hover:border-secondary transition-all duration-300 hover:shadow-2xl transform hover:scale-105 overflow-hidden"
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex gap-2">
                       {offer.badge === 'NEW' && (
-                        // Solid Secondary (Warm Tan)
+                        // Solid Secondary (Sky Blue)
                         <Badge className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
                           🚨 {offer.badge}
                         </Badge>
@@ -305,6 +305,7 @@ export default function Landing() {
                     <ul className="text-xs text-muted-foreground space-y-1">
                       {offer.terms.map((term, idx) => (
                         <li key={idx} className="flex items-start gap-1">
+                          {/* Icon: Primary (Emerald Green) */}
                           <CheckCircle className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
                           <span>{term}</span>
                         </li>
@@ -313,7 +314,7 @@ export default function Landing() {
                   </div>
 
                   <Button 
-                    // Solid Secondary (Warm Tan)
+                    // Solid Secondary (Sky Blue)
                     className="w-full mt-4 bg-secondary hover:bg-secondary/90 text-secondary-foreground"
                   >
                     Book Now
@@ -378,7 +379,7 @@ export default function Landing() {
               Why Choose Us
             </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              {/* Text Secondary (Warm Tan) */}
+              {/* Text Secondary (Sky Blue) */}
               <span className="text-secondary dark:text-secondary">Everything You Need</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
@@ -395,7 +396,7 @@ export default function Landing() {
                     <img src={feature.image} alt={feature.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
                     <div className="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors"></div>
                   </div>
-                  {/* Hover text: Secondary (Warm Tan) */}
+                  {/* Hover text: Secondary (Sky Blue) */}
                   <h3 className="text-xl sm:text-2xl font-bold mb-3 group-hover:text-secondary transition-colors">
                     {feature.title}
                   </h3>
@@ -407,7 +408,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA Section - Solid Secondary (Warm Tan) / Primary (Emerald Green) */}
+      {/* CTA Section - Solid Secondary (Sky Blue) / Primary (Emerald Green) */}
       <section className="py-20 sm:py-24 relative overflow-hidden">
         <div className="absolute inset-0">
           <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1600&auto=format&fit=crop&q=80" alt="Team collaboration" className="w-full h-full object-cover" />
@@ -418,7 +419,7 @@ export default function Landing() {
         <div className="container mx-auto px-4 text-center relative z-10">
           <div className="max-w-4xl mx-auto">
             <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-lg rounded-full mb-6 sm:mb-8 overflow-hidden border-4 border-white/30">
-              <img src="https://images.unsplash.com/photo-1556745753-b2904692b3cd?w=200&auto=format&fit=crop&q=80" alt="Support" className="w-full h-full object-cover" />
+              <img src="https://images.unsplash.com/photo-1556745753b2904692b3cd?w=200&auto=format&fit=crop&q=80" alt="Support" className="w-full h-full object-cover" />
             </div>
             
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 text-white px-4">Ready to Get Started?</h2>
@@ -430,7 +431,7 @@ export default function Landing() {
               <Link href="/signup">
                 <Button 
                   size="lg" 
-                  // White button with Secondary (Warm Tan) text
+                  // White button with Secondary (Sky Blue) text
                   className="w-full sm:w-auto bg-white text-secondary hover:bg-gray-100 px-8 sm:px-10 py-5 sm:py-6 text-base sm:text-lg font-bold shadow-2xl transform hover:scale-105 transition-all duration-300"
                 >
                   I Need Services
@@ -453,23 +454,23 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer - Solid Secondary (Warm Tan) / Primary (Emerald Green) */}
+      {/* Footer - Solid Secondary (Sky Blue) / Primary (Emerald Green) */}
       <footer className="border-t border-border py-8 sm:py-12 bg-sidebar">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
               {/* Solid Primary (Emerald Green) */}
               <div className="w-10 h-10 rounded-full bg-primary"></div>
-              {/* Text: Secondary (Warm Tan) */}
+              {/* Text: Secondary (Sky Blue) */}
               <span className="text-lg sm:text-xl font-bold text-secondary dark:text-primary">JobTradeSasa</span>
             </div>
             <p className="text-muted-foreground text-sm sm:text-base text-center">&copy; 2025 JobTradeSasa. All rights reserved.</p>
             <div className="flex gap-3 sm:gap-4 flex-wrap justify-center">
-              {/* Secondary (Warm Tan) Badge */}
+              {/* Secondary (Sky Blue) Badge */}
               <Badge variant="outline" className="border-secondary text-secondary hover:bg-secondary/5">Terms</Badge>
               {/* Primary (Emerald Green) Badge */}
               <Badge variant="outline" className="border-primary text-primary hover:bg-primary/5">Privacy</Badge>
-              {/* Secondary (Warm Tan) Badge */}
+              {/* Secondary (Sky Blue) Badge */}
               <Badge variant="outline" className="border-secondary text-secondary hover:bg-secondary/5">Contact</Badge>
             </div>
           </div>
@@ -492,6 +493,7 @@ export default function Landing() {
             linear-gradient(to bottom, hsla(var(--primary), 0.1) 1px, transparent 1px);
         }
         .dark .bg-grid-primary {
+           /* Using the new Secondary (Sky Blue) in dark mode for the grid pattern */
            background-image: 
             linear-gradient(to right, hsla(var(--secondary), 0.1) 1px, transparent 1px),
             linear-gradient(to bottom, hsla(var(--secondary), 0.1) 1px, transparent 1px);
