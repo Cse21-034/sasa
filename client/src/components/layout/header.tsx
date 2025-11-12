@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { Menu, Bell, User, Briefcase, MessageSquare, LayoutDashboard, FileText, Plus, Sparkles } from 'lucide-react';
+import { Menu, Bell, User, Briefcase, MessageSquare, LayoutDashboard, FileText, Plus, Sparkles, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -63,7 +63,6 @@ export function Header() {
               <Link href="/jobs">
                 <Button 
                   variant="ghost" 
-                  // Hover: Accent/Secondary (Warm Tan)
                   className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
                   data-testid="link-jobs"
                 >
@@ -71,12 +70,11 @@ export function Header() {
                   {user?.role === 'requester' ? 'My Jobs' : 'Browse Jobs'}
                 </Button>
               </Link>
-              
+
               {user?.role === 'provider' && (
                 <Link href="/dashboard">
                   <Button 
                     variant="ghost"
-                    // Hover: Primary (Emerald Green)
                     className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
                     data-testid="link-dashboard"
                   >
@@ -86,10 +84,22 @@ export function Header() {
                 </Link>
               )}
 
+              {user?.role === 'supplier' && (
+                <Link href="/supplier/dashboard">
+                  <Button
+                    variant="ghost"
+                    className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
+                    data-testid="link-supplier-promotions"
+                  >
+                    <Tag className="h-4 w-4 mr-2" />
+                    Promotions
+                  </Button>
+                </Link>
+              )}
+
               <Link href="/suppliers">
                 <Button 
                   variant="ghost"
-                  // Hover: Accent/Secondary (Warm Tan)
                   className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
                   data-testid="link-suppliers"
                 >
@@ -101,7 +111,6 @@ export function Header() {
               <Link href="/messages">
                 <Button 
                   variant="ghost"
-                  // Hover: Primary (Emerald Green)
                   className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
                   data-testid="link-messages-nav"
                 >
@@ -114,7 +123,6 @@ export function Header() {
                 <Link href="/reports">
                   <Button 
                     variant="ghost"
-                    // Hover: Accent/Secondary (Warm Tan)
                     className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
                     data-testid="link-reports"
                   >
@@ -128,7 +136,6 @@ export function Header() {
                 <Link href="/admin">
                   <Button 
                     variant="ghost"
-                    // Hover: Primary (Emerald Green)
                     className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
                     data-testid="link-admin"
                   >
