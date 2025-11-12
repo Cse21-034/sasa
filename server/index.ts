@@ -12,11 +12,17 @@ declare module 'http' {
   }
 }
 app.use(express.json({
+  limit: "10mb", // 🔥 Increase JSON payload limit
   verify: (req, _res, buf) => {
     req.rawBody = buf;
-  }
+  },
 }));
-app.use(express.urlencoded({ extended: false }));
+
+app.use(express.urlencoded({
+  extended: true,
+  limit: "10mb", // 🔥 Increase URL-encoded payload limit
+}));
+
 
 // ADDED CORS CONFIGURATION
 app.use(cors({
