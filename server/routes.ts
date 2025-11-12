@@ -21,6 +21,8 @@ import {
   insertVerificationSubmissionSchema, 
   updateVerificationStatusSchema, 
   updateUserStatusSchema, 
+  insertSupplierPromotionSchema, 
+  updateSupplierProfileSchema,
 } from "@shared/schema";
 import { ZodError } from 'zod'; 
 import { NextFunction, Response } from "express"; 
