@@ -59,12 +59,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           const job = await storage.getJob(data.payload.jobId);
-          const otherUserId = job.requesterId === userId ? job.providerId : job.requesterId;
+          if (job) {
+            const otherUserId = job.requesterId === userId ? job.providerId : job.requesterId;
 
-          if (otherUserId && clients.has(otherUserId)) {
-            const otherWs = clients.get(otherUserId);
-            if (otherWs && otherWs.readyState === WebSocket.OPEN) {
-              otherWs.send(JSON.stringify({ type: 'message', payload: msg }));
+            if (otherUserId && clients.has(otherUserId)) {
+              const otherWs = clients.get(otherUserId);
+              if (otherWs && otherWs.readyState === WebSocket.OPEN) {
+                otherWs.send(JSON.stringify({ type: 'message', payload: msg }));
+              }
             }
           }
         }
@@ -883,6 +885,7 @@ app.patch('/api/provider/categories', authMiddleware, verifyAccess, async (req: 
     }
   });
 
+
   // ==================== SUPPLIER ROUTES - PROTECTED BY verifyAccess ====================
 
   // 🆕 Added verifyAccess (for getting Supplier list - important for requesters)
@@ -892,6 +895,20 @@ app.patch('/api/provider/categories', authMiddleware, verifyAccess, async (req: 
       res.json(suppliers);
     } catch (error: any) {
       console.error('Get suppliers error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // 🆕 NEW: Get single supplier details by ID
+  app.get('/api/suppliers/:id/details', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      const supplier = await storage.getSupplier(req.params.id);
+      if (!supplier) {
+        return res.status(404).json({ message: 'Supplier not found' });
+      }
+      res.json(supplier);
+    } catch (error: any) {
+      console.error('Get supplier detail error:', error);
       res.status(500).json({ message: error.message });
     }
   });
