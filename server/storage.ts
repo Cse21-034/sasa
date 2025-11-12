@@ -105,6 +105,21 @@ export interface IStorage {
   updateSupplier(userId: string, data: Partial<Supplier>): Promise<Supplier | undefined>;
   getSuppliers(): Promise<SupplierWithUser[]>;
 
+
+// 🆕 Supplier Promotions
+  getSupplierPromotions(supplierId: string): Promise<SupplierPromotion[]>;
+  createSupplierPromotion(promotion: InsertSupplierPromotion & { supplierId: string }): Promise<SupplierPromotion>;
+  updateSupplierPromotion(id: string, data: Partial<InsertSupplierPromotion>): Promise<SupplierPromotion | undefined>;
+  deleteSupplierPromotion(id: string): Promise<void>;
+
+
+
+
+
+
+
+  
+
   // Service Area Migrations
   createServiceAreaMigration(migration: InsertServiceAreaMigration & { providerId: string }): Promise<ServiceAreaMigration>;
   getProviderMigrations(providerId: string): Promise<ServiceAreaMigration[]>;
@@ -498,6 +513,60 @@ export class DatabaseStorage implements IStorage {
     })) as SupplierWithUser[];
   }
 
+
+// 🆕 Supplier Promotions Methods
+  async getSupplierPromotions(supplierId: string): Promise<SupplierPromotion[]> {
+    const results = await db.select().from(supplierPromotions)
+      .where(eq(supplierPromotions.supplierId, supplierId))
+      .orderBy(desc(supplierPromotions.createdAt));
+    
+    // Update isActive status based on current time during retrieval
+    const now = new Date();
+    for (const promo of results) {
+      // 🚨 FIX: Ensure a validUntil exists before comparing. It is marked as notNull in schema.
+      const isActive = promo.validUntil.getTime() > now.getTime();
+      if (promo.isActive !== isActive) {
+        await db.update(supplierPromotions)
+          .set({ isActive, updatedAt: now })
+          .where(eq(supplierPromotions.id, promo.id));
+        promo.isActive = isActive;
+      }
+    }
+    return results as SupplierPromotion[];
+  }
+
+  async createSupplierPromotion(promotion: InsertSupplierPromotion & { supplierId: string }): Promise<SupplierPromotion> {
+    const isActive = new Date(promotion.validUntil).getTime() > new Date().getTime();
+    const [created] = await db.insert(supplierPromotions).values({
+      ...promotion,
+      isActive,
+    }).returning();
+    return created;
+  }
+
+  async updateSupplierPromotion(id: string, data: Partial<InsertSupplierPromotion>): Promise<SupplierPromotion | undefined> {
+    const updateData: any = { ...data, updatedAt: new Date() };
+    if (data.validUntil) {
+      updateData.isActive = new Date(data.validUntil).getTime() > new Date().getTime();
+    }
+    
+    const [updated] = await db
+      .update(supplierPromotions)
+      .set(updateData)
+      .where(eq(supplierPromotions.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteSupplierPromotion(id: string): Promise<void> {
+    await db.delete(supplierPromotions).where(eq(supplierPromotions.id, id));
+  }
+
+
+
+
+
+  
   // Service Area Migrations
   async createServiceAreaMigration(migration: InsertServiceAreaMigration & { providerId: string }): Promise<ServiceAreaMigration> {
     const [created] = await db.insert(serviceAreaMigrations).values(migration).returning();
