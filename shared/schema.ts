@@ -72,6 +72,28 @@ export const suppliers = pgTable("suppliers", {
   specialOffer: text("special_offer"),
   featured: boolean("featured").default(false).notNull(),
   logo: text("logo"),
+    websiteUrl: text("website_url"),
+  facebookUrl: text("facebook_url"),
+  instagramUrl: text("instagram_url"),
+  twitterUrl: text("twitter_url"),
+  whatsappNumber: text("whatsapp_number"),
+  aboutUs: text("about_us"),
+});
+
+// Supplier Promotions table
+export const supplierPromotions = pgTable("supplier_promotions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  supplierId: uuid("supplier_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  discountPercentage: integer("discount_percentage"),
+  validFrom: timestamp("valid_from").notNull(),
+  validUntil: timestamp("valid_until").notNull(),
+  images: jsonb("images").$type<string[]>().default([]),
+  termsAndConditions: text("terms_and_conditions"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Categories table
@@ -237,6 +259,23 @@ export const suppliersRelations = relations(suppliers, ({ one }) => ({
     fields: [suppliers.userId],
     references: [users.id],
   }),
+}));
+
+// Relations
+export const supplierPromotionsRelations = relations(supplierPromotions, ({ one }) => ({
+  supplier: one(users, {
+    fields: [supplierPromotions.supplierId],
+    references: [users.id],
+  }),
+}));
+
+// Add to suppliers relations
+export const suppliersRelationsExtended = relations(suppliers, ({ one, many }) => ({
+  user: one(users, {
+    fields: [suppliers.userId],
+    references: [users.id],
+  }),
+  promotions: many(supplierPromotions),
 }));
 
 export const providersRelations = relations(providers, ({ one }) => ({
@@ -427,6 +466,30 @@ export const supplierSignupSchema = z.object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
+});
+
+export const insertSupplierPromotionSchema = z.object({
+  title: z.string().min(5, "Title must be at least 5 characters"),
+  description: z.string().min(20, "Description must be at least 20 characters"),
+  discountPercentage: z.number().min(0).max(100).optional(),
+  validFrom: z.union([z.string(), z.date()]).transform(val => {
+    return val instanceof Date ? val : new Date(val);
+  }),
+  validUntil: z.union([z.string(), z.date()]).transform(val => {
+    return val instanceof Date ? val : new Date(val);
+  }),
+  images: z.array(z.string()).optional().default([]),
+  termsAndConditions: z.string().optional(),
+});
+
+export const updateSupplierProfileSchema = z.object({
+  websiteUrl: z.string().url().optional().or(z.literal('')),
+  facebookUrl: z.string().url().optional().or(z.literal('')),
+  instagramUrl: z.string().url().optional().or(z.literal('')),
+  twitterUrl: z.string().url().optional().or(z.literal('')),
+  whatsappNumber: z.string().optional(),
+  aboutUs: z.string().optional(),
+  specialOffer: z.string().optional(),
 });
 
 // Schema for signup request from frontend
@@ -621,3 +684,7 @@ export type ConfirmPayment = z.infer<typeof confirmPaymentSchema>;
 export type VerificationSubmission = typeof verificationSubmissions.$inferSelect;
 export type InsertVerificationSubmission = z.infer<typeof insertVerificationSubmissionSchema>;
 export type UpdateUserStatus = z.infer<typeof updateUserStatusSchema>;
+
+export type SupplierPromotion = typeof supplierPromotions.$inferSelect;
+export type InsertSupplierPromotion = z.infer<typeof insertSupplierPromotionSchema>;
+export type UpdateSupplierProfile = z.infer<typeof updateSupplierProfileSchema>;

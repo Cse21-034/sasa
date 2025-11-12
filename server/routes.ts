@@ -1194,10 +1194,22 @@ app.get('/api/admin/reports', authMiddleware, async (req: AuthRequest, res) => {
     }
     
     try {
-      const reports = await storage.getJobReports({ status: req.query.status as 'resolved' | 'unresolved' });
+      const statusParam = req.query.status as string | undefined;
+      let filterStatus: 'resolved' | 'unresolved' | undefined;
+      
+      if (statusParam === 'resolved') {
+        filterStatus = 'resolved';
+      } else if (statusParam === 'unresolved') {
+        filterStatus = 'unresolved';
+      }
+      
+      const reports = await storage.getJobReports({ status: filterStatus });
+      
+      console.log(`Admin fetching reports with status: ${filterStatus || 'all'}, found: ${reports.length}`);
+      
       res.json(reports);
     } catch (error: any) {
-      console.error('Get reports error:', error);
+      console.error('Get admin reports error:', error);
       res.status(500).json({ message: error.message || 'Failed to list reports' });
     }
 });

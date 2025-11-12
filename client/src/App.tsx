@@ -24,6 +24,8 @@ import Reports from "@/pages/reports";
 import Suppliers from "@/pages/suppliers";
 import NotFound from "@/pages/not-found";
 import VerificationPage from "@/pages/verification";
+import SupplierDetail from "@/pages/supplier-detail";
+import SupplierDashboard from "@/pages/supplier/dashboard";
 
 // 🆕 New Admin Imports
 import AdminDashboardHub from "@/pages/admin/index"; 
@@ -132,6 +134,17 @@ function Router() {
           <Route path="/suppliers" component={Suppliers} /> 
           <Route path="/my-jobs">
             {() => <ProtectedRoute component={BrowseJobs} path="/my-jobs" />}
+          </Route>
+
+          {/* Supplier Routes */}
+          <Route path="/suppliers" component={Suppliers} /> 
+          <Route path="/suppliers/:id">
+            <SupplierDetail />
+          </Route>
+          
+          {/* Supplier Dashboard - Protected */}
+          <Route path="/supplier/dashboard">
+            {() => <ProtectedRoute component={SupplierDashboard} path="/supplier/dashboard" />}
           </Route>
           
           <Route component={NotFound} />

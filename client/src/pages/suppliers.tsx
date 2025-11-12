@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, MapPin, Phone, Mail, Building2, Star, TrendingUp, Tag } from 'lucide-react';
+import { Search, MapPin, Phone, Mail, Building2, Star, TrendingUp, Tag, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiRequest } from '@/lib/queryClient';
+import { Link } from 'wouter';
 
 export default function Suppliers() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -173,9 +174,12 @@ export default function Suppliers() {
                       </p>
                     </div>
 
-                    <Button className="w-full mt-4" variant="outline">
-                      View Details
-                    </Button>
+                    <Link href={`/suppliers/${supplier.userId}`}>
+                      <Button className="w-full mt-4" variant="default">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        View Details
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
               ))}
@@ -252,9 +256,12 @@ export default function Suppliers() {
                       </p>
                     </div>
 
-                    <Button className="w-full mt-4" variant="outline">
-                      View Details
-                    </Button>
+                    <Link href={`/suppliers/${supplier.userId}`}>
+                      <Button className="w-full mt-4" variant="outline">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        View Details
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
               ))}

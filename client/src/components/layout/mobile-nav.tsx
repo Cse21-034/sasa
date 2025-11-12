@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { Home, Briefcase, MessageSquare, User, LayoutDashboard, FileText, Building2 } from 'lucide-react';
+import { Home, Briefcase, MessageSquare, User, LayoutDashboard, FileText, Building2, Tag } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 export function MobileNav() {
@@ -7,6 +7,14 @@ export function MobileNav() {
   const { user, isAuthenticated } = useAuth();
 
   if (!isAuthenticated) return null;
+
+  // Supplier navigation items
+  const supplierItems = [
+    { href: '/suppliers', icon: Building2, label: 'Browse', testId: 'nav-suppliers-browse' },
+    { href: '/supplier/dashboard', icon: Tag, label: 'Promotions', testId: 'nav-supplier-dashboard' },
+    { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
+    { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
+  ];
 
   const requesterItems = [
     { href: '/jobs', icon: Briefcase, label: 'My Jobs', testId: 'nav-jobs' },
@@ -22,7 +30,13 @@ export function MobileNav() {
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
 
-  const navItems = user?.role === 'provider' ? providerItems : requesterItems;
+  // Choose nav items based on role
+  let navItems = requesterItems;
+  if (user?.role === 'provider') {
+    navItems = providerItems;
+  } else if (user?.role === 'supplier') {
+    navItems = supplierItems;
+  }
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
