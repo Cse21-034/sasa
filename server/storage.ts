@@ -247,30 +247,30 @@ export class DatabaseStorage implements IStorage {
 
   // 🆕 Admin: Get Job Reports (Joined with job/reporter info)
   async getJobReports(params: { status?: 'resolved' | 'unresolved' }): Promise<JobReportWithRelations[]> {
-      const conditions = [];
+    const conditions = [];
+    
+    if (params.status === 'resolved') {
+        conditions.push(eq(jobReports.resolved, true));
+    } else if (params.status === 'unresolved') {
+        conditions.push(eq(jobReports.resolved, false));
+    }
+    
+    // Return all reports with joined data
+    const results = await db
+        .select({ report: jobReports, reporter: users, job: jobs })
+        .from(jobReports)
+        .leftJoin(users, eq(jobReports.reporterId, users.id))
+        .leftJoin(jobs, eq(jobReports.jobId, jobs.id))
+        .where(conditions.length ? and(...conditions) : undefined)
+        .orderBy(desc(jobReports.createdAt));
 
-      if (params.status === 'resolved') conditions.push(eq(jobReports.resolved, true));
-      if (params.status === 'unresolved') conditions.push(eq(jobReports.resolved, false));
-
-      const results = await db
-          .select({
-              report: jobReports,
-              reporter: users,
-              job: jobs,
-          })
-          .from(jobReports)
-          .leftJoin(users, eq(jobReports.reporterId, users.id))
-          .leftJoin(jobs, eq(jobReports.jobId, jobs.id))
-          .where(conditions.length ? and(...conditions) : undefined)
-          .orderBy(desc(jobReports.createdAt));
-
-      return results.map(r => ({
-          ...r.report,
-          reporter: r.reporter!,
-          jobTitle: r.job!.title, // Assumed job exists
-          jobStatus: r.job!.status, // Assumed job exists
-      }));
-  }
+    return results.map(r => ({
+        ...r.report,
+        reporter: r.reporter!,
+        jobTitle: r.job?.title || 'Unknown Job',
+        jobStatus: r.job?.status || 'unknown' as Job['status'],
+    }));
+}
   
   // 🆕 Admin: Resolve Job Report
   async resolveJobReport(reportId: string): Promise<JobReport | undefined> {
