@@ -913,6 +913,97 @@ app.patch('/api/provider/categories', authMiddleware, verifyAccess, async (req: 
     }
   });
 
+
+
+  // ==================== SUPPLIER PROMOTIONS ROUTES - PROTECTED BY verifyAccess (NEW) ====================
+
+// GET /api/supplier/promotions (Used by client/src/pages/supplier/dashboard.tsx)
+app.get('/api/supplier/promotions', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+  try {
+    if (req.user!.role !== 'supplier') {
+      return res.status(403).json({ message: 'Only suppliers can view their promotions' });
+    }
+
+    const promotions = await storage.getSupplierPromotions(req.user!.id);
+    res.json(promotions);
+  } catch (error: any) {
+    console.error('Get supplier promotions error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST /api/supplier/promotions (Used by client/src/pages/supplier/dashboard.tsx)
+// 🚨 THIS FIXES THE "unexpected token '<'" ERROR
+app.post('/api/supplier/promotions', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+  try {
+    if (req.user!.role !== 'supplier') {
+      return res.status(403).json({ message: 'Only suppliers can create promotions' });
+    }
+
+    const validatedData = insertSupplierPromotionSchema.parse(req.body);
+    const promotion = await storage.createSupplierPromotion({
+      ...(validatedData as any),
+      supplierId: req.user!.id,
+    });
+
+    res.status(201).json(promotion);
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+      });
+    }
+    console.error('Create supplier promotion error:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// PATCH /api/supplier/promotions/:id
+app.patch('/api/supplier/promotions/:id', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+  try {
+    if (req.user!.role !== 'supplier') {
+      return res.status(403).json({ message: 'Only suppliers can update promotions' });
+    }
+    
+    // Note: Using insertSupplierPromotionSchema.partial() to allow partial updates
+    const validatedData = insertSupplierPromotionSchema.partial().parse(req.body);
+    
+    const updated = await storage.updateSupplierPromotion(req.params.id, validatedData);
+    
+    if (!updated) {
+      return res.status(404).json({ message: 'Promotion not found' });
+    }
+
+    res.json(updated);
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+      });
+    }
+    console.error('Update supplier promotion error:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// DELETE /api/supplier/promotions/:id
+app.delete('/api/supplier/promotions/:id', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+  try {
+    if (req.user!.role !== 'supplier') {
+      return res.status(403).json({ message: 'Only suppliers can delete promotions' });
+    }
+    
+    await storage.deleteSupplierPromotion(req.params.id);
+
+    res.status(204).send();
+  } catch (error: any) {
+    console.error('Delete supplier promotion error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+  
   // ==================== JOB PAYMENT ROUTES - PROTECTED BY verifyAccess ====================
 
   // 🆕 Added verifyAccess
