@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/lib/auth-context';
+import { Settings } from 'lucide-react';
 import { Link } from 'wouter';
 import {
   Dialog,
@@ -184,8 +185,18 @@ export default function SupplierDashboard() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Supplier Dashboard</h1>
-        <p className="text-muted-foreground">Manage your promotions and specials</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Supplier Dashboard</h1>
+            <p className="text-muted-foreground">Manage your promotions and specials</p>
+          </div>
+          <Link href="/supplier/settings">
+            <Button variant="outline" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Profile Settings
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card className="mb-6 border-2">

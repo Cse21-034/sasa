@@ -161,7 +161,7 @@ export interface IStorage {
 
   // Job Reports
   createJobReport(report: InsertJobReport & { reporterId: string }): Promise<JobReport>;
-  getJobReports(jobId: string): Promise<JobReport[]>;
+  getJobReportsByJobId(jobId: string): Promise<JobReport[]>;
 
   // Analytics
   getRequesterStats(requesterId: string): Promise<any>;
@@ -483,9 +483,36 @@ export class DatabaseStorage implements IStorage {
 
   // Suppliers
   async getSupplier(userId: string): Promise<Supplier | undefined> {
-    const [supplier] = await db.select().from(suppliers).where(eq(suppliers.userId, userId));
-    return supplier || undefined;
+  const [supplier] = await db.select().from(suppliers).where(eq(suppliers.userId, userId));
+  
+  if (!supplier) return undefined;
+  
+  // Get associated user data
+  const [user] = await db.select().from(users).where(eq(users.id, userId));
+  
+  // Get active promotions for this supplier
+  const promotions = await db.select().from(supplierPromotions)
+    .where(eq(supplierPromotions.supplierId, userId))
+    .orderBy(desc(supplierPromotions.createdAt));
+  
+  // Update isActive status based on current time
+  const now = new Date();
+  for (const promo of promotions) {
+    const isActive = promo.validUntil.getTime() > now.getTime();
+    if (promo.isActive !== isActive) {
+      await db.update(supplierPromotions)
+        .set({ isActive, updatedAt: now })
+        .where(eq(supplierPromotions.id, promo.id));
+      promo.isActive = isActive;
+    }
   }
+  
+  return {
+    ...supplier,
+    user,
+    promotions,
+  } as any;
+}
 
   async createSupplier(supplier: InsertSupplier & { userId: string }): Promise<Supplier> {
     const [created] = await db.insert(suppliers).values(supplier).returning();
@@ -899,7 +926,7 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async getJobReports(jobId: string): Promise<JobReport[]> {
+  async getJobReportsByJobId(jobId: string): Promise<JobReport[]> {
     return await db.select().from(jobReports).where(eq(jobReports.jobId, jobId));
   }
 

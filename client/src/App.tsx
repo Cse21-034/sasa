@@ -26,6 +26,7 @@ import NotFound from "@/pages/not-found";
 import VerificationPage from "@/pages/verification";
 import SupplierDetail from "@/pages/supplier-detail";
 import SupplierDashboard from "@/pages/supplier/dashboard";
+import SupplierSettings from "@/pages/supplier/settings";
 
 // 🆕 New Admin Imports
 import AdminDashboardHub from "@/pages/admin/index"; 
@@ -145,6 +146,9 @@ function Router() {
           {/* Supplier Dashboard - Protected */}
           <Route path="/supplier/dashboard">
             {() => <ProtectedRoute component={SupplierDashboard} path="/supplier/dashboard" />}
+          </Route>
+          <Route path="/supplier/settings">
+            {() => <ProtectedRoute component={SupplierSettings} path="/supplier/settings" />}
           </Route>
           
           <Route component={NotFound} />

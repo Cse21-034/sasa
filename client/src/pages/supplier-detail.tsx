@@ -55,6 +55,28 @@ export default function SupplierDetail() {
     }
   };
 
+  const handleGetQuote = () => {
+    // Try WhatsApp first if available
+    if (supplier.whatsappNumber) {
+      const cleanNumber = supplier.whatsappNumber.replace(/\D/g, '');
+      const message = encodeURIComponent(
+        `Hi ${supplier.companyName}, I'm interested in getting a quote for your services. Can you help?`
+      );
+      window.open(`https://wa.me/${cleanNumber}?text=${message}`, '_blank');
+    } 
+    // Fallback to phone call
+    else if (supplier.companyPhone) {
+      window.open(`tel:${supplier.companyPhone}`, '_blank');
+    }
+    // Fallback to email
+    else if (supplier.companyEmail) {
+      window.open(`mailto:${supplier.companyEmail}?subject=Quote Request`, '_blank');
+    }
+    else {
+      alert('No contact method available. Please contact this supplier directly.');
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* Back Button */}
@@ -77,22 +99,25 @@ export default function SupplierDetail() {
             </Avatar>
 
             <div className="flex-1">
-              <div className="flex items-start justify-between flex-wrap gap-4">
-                <div>
-                  <h1 className="text-3xl font-bold mb-2">{supplier.companyName}</h1>
-                  <Badge variant="outline" className="mb-4">{supplier.industryType}</Badge>
-                </div>
-                <Button className="bg-primary hover:bg-primary/90">
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Click to Get Quote
-                </Button>
-              </div>
-
-              {supplier.aboutUs && (
-                <p className="text-muted-foreground leading-relaxed mb-4">
-                  {supplier.aboutUs}
-                </p>
-              )}
+  <div className="flex items-start justify-between flex-wrap gap-4">
+    <div>
+      <h1 className="text-3xl font-bold mb-2">{supplier.companyName}</h1>
+      <Badge variant="outline" className="mb-4">{supplier.industryType}</Badge>
+    </div>
+    <Button 
+      className="bg-primary hover:bg-primary/90"
+      onClick={handleGetQuote}
+    >
+      <MessageCircle className="h-4 w-4 mr-2" />
+      {supplier.whatsappNumber ? 'WhatsApp Quote' : 'Request Quote'}
+    </Button>
+  </div>
+  
+  {supplier.aboutUs && (
+    <p className="text-muted-foreground leading-relaxed mb-4">
+      {supplier.aboutUs}
+    </p>
+  )}
 
               <div className="grid md:grid-cols-2 gap-3 mt-4">
                 <div className="flex items-center gap-2 text-sm">
@@ -117,6 +142,8 @@ export default function SupplierDetail() {
                 )}
               </div>
             </div>
+
+
           </div>
         </CardContent>
       </Card>
@@ -137,65 +164,57 @@ export default function SupplierDetail() {
 
           {/* Social Media Links */}
           {(supplier.facebookUrl || supplier.instagramUrl || supplier.twitterUrl || supplier.whatsappNumber) && (
-            <Card className="border-2">
-              <CardHeader>
-                <CardTitle className="text-lg">Connect With Us</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {supplier.facebookUrl && (
-                  <a href={supplier.facebookUrl} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" className="w-full justify-start">
-                      {getSocialIcon('facebook')}
-                      <span className="ml-2">Click to Get Quote</span>
-                      <ExternalLink className="h-3 w-3 ml-auto" />
-                    </Button>
-                  </a>
-                )}
-                {supplier.instagramUrl && (
-                  <a href={supplier.instagramUrl} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" className="w-full justify-start">
-                      {getSocialIcon('instagram')}
-                      <span className="ml-2">Click to Get Quote</span>
-                      <ExternalLink className="h-3 w-3 ml-auto" />
-                    </Button>
-                  </a>
-                )}
-                {supplier.twitterUrl && (
-                  <a href={supplier.twitterUrl} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" className="w-full justify-start">
-                      {getSocialIcon('twitter')}
-                      <span className="ml-2">Click to Get Quote</span>
-                      <ExternalLink className="h-3 w-3 ml-auto" />
-                    </Button>
-                  </a>
-                )}
-                {supplier.whatsappNumber && (
-                  <a href={`https://wa.me/${supplier.whatsappNumber.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" className="w-full justify-start">
-                      {getSocialIcon('whatsapp')}
-                      <span className="ml-2">Click to Get Quote</span>
-                      <ExternalLink className="h-3 w-3 ml-auto" />
-                    </Button>
-                  </a>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Special Offer */}
-          {supplier.specialOffer && (
-            <Card className="border-2 border-success/20 bg-success/5">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Tag className="h-5 w-5 text-success" />
-                  Special Offer
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm">{supplier.specialOffer}</p>
-              </CardContent>
-            </Card>
-          )}
+  <Card className="border-2">
+    <CardHeader>
+      <CardTitle className="text-lg">Connect With Us</CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-3">
+      {supplier.whatsappNumber && (
+        <a 
+          href={`https://wa.me/${supplier.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi ${supplier.companyName}, I'm interested in your services.`)}`}
+          target="_blank" 
+          rel="noopener noreferrer"
+        >
+          <Button variant="outline" className="w-full justify-start">
+            {getSocialIcon('whatsapp')}
+            <span className="ml-2">WhatsApp Quote</span>
+            <ExternalLink className="h-3 w-3 ml-auto" />
+          </Button>
+        </a>
+      )}
+      
+      {supplier.facebookUrl && (
+        <a href={supplier.facebookUrl} target="_blank" rel="noopener noreferrer">
+          <Button variant="outline" className="w-full justify-start">
+            {getSocialIcon('facebook')}
+            <span className="ml-2">Facebook</span>
+            <ExternalLink className="h-3 w-3 ml-auto" />
+          </Button>
+        </a>
+      )}
+      
+      {supplier.instagramUrl && (
+        <a href={supplier.instagramUrl} target="_blank" rel="noopener noreferrer">
+          <Button variant="outline" className="w-full justify-start">
+            {getSocialIcon('instagram')}
+            <span className="ml-2">Instagram</span>
+            <ExternalLink className="h-3 w-3 ml-auto" />
+          </Button>
+        </a>
+      )}
+      
+      {supplier.twitterUrl && (
+        <a href={supplier.twitterUrl} target="_blank" rel="noopener noreferrer">
+          <Button variant="outline" className="w-full justify-start">
+            {getSocialIcon('twitter')}
+            <span className="ml-2">Twitter/X</span>
+            <ExternalLink className="h-3 w-3 ml-auto" />
+          </Button>
+        </a>
+      )}
+    </CardContent>
+  </Card>
+)}
         </div>
 
         {/* Main Content - Promotions */}
@@ -252,9 +271,9 @@ export default function SupplierDetail() {
                           </div>
                         )}
 
-                        <Button className="w-full mt-4" variant="default">
+                        <Button className="w-full mt-4" variant="default" onClick={handleGetQuote}>
                           <MessageCircle className="h-4 w-4 mr-2" />
-                          Get This Deal - Click to Quote
+                          {supplier.whatsappNumber ? 'WhatsApp for This Deal' : 'Request This Deal'}
                         </Button>
                       </CardContent>
                     </Card>

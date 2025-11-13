@@ -29,8 +29,13 @@ import { NextFunction, Response } from "express";
 import { eq } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const allowedOrigins = isDevelopment 
+    ? ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173']
+    : [process.env.VERCEL_URL || 'https://sasa-indol.vercel.app'];
+  
   app.use(cors({
-    origin: process.env.VERCEL_URL || 'https://sasa-indol.vercel.app',
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   }));
@@ -908,13 +913,67 @@ app.patch('/api/provider/categories', authMiddleware, verifyAccess, async (req: 
       if (!supplier) {
         return res.status(404).json({ message: 'Supplier not found' });
       }
-      res.json(supplier);
+
+      // Get supplier promotions
+      const promotions = await storage.getSupplierPromotions(req.params.id);
+      
+      res.json({
+        ...supplier,
+        promotions: promotions.filter(p => p.isActive), // Only return active promotions
+      });
     } catch (error: any) {
       console.error('Get supplier detail error:', error);
       res.status(500).json({ message: error.message });
     }
   });
 
+  // GET /api/supplier/profile - Get supplier profile
+  app.get('/api/supplier/profile', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'supplier') {
+        return res.status(403).json({ message: 'Only suppliers can access this' });
+      }
+
+      const supplier = await storage.getSupplier(req.user!.id);
+      
+      if (!supplier) {
+        return res.status(404).json({ message: 'Supplier profile not found' });
+      }
+
+      res.json(supplier);
+    } catch (error: any) {
+      console.error('Get supplier profile error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // PATCH /api/supplier/profile - Update supplier profile
+  app.patch('/api/supplier/profile', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'supplier') {
+        return res.status(403).json({ message: 'Only suppliers can update profile' });
+      }
+
+      const validatedData = updateSupplierProfileSchema.parse(req.body);
+      
+      const updated = await storage.updateSupplier(req.user!.id, validatedData);
+
+      if (!updated) {
+        return res.status(404).json({ message: 'Supplier not found' });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+        });
+      }
+      console.error('Update supplier profile error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
 
 
   // ==================== SUPPLIER PROMOTIONS ROUTES - PROTECTED BY verifyAccess (NEW) ====================

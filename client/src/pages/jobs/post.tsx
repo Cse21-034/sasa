@@ -83,83 +83,113 @@ export default function PostJob() {
 
     setIsGettingLocation(true);
 
-    // Request high accuracy location with timeout
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude, accuracy } = position.coords;
-        
-        // Store coordinates with accuracy
-        setLocationCoords({ lat: latitude, lng: longitude, accuracy });
-        
-        // Set form values with high precision
-        form.setValue('latitude', latitude.toFixed(7));
-        form.setValue('longitude', longitude.toFixed(7));
-        
-        // Reverse geocode to get address
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
-          );
-          const data = await response.json();
+    // Request high accuracy location with multiple attempts
+    let attempts = 0;
+    const maxAttempts = 3;
+    let bestAccuracy = Infinity;
+    let bestPosition: GeolocationPosition | null = null;
+
+    const tryGetLocation = () => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          attempts++;
+          const { latitude, longitude, accuracy } = position.coords;
           
-          if (data.display_name) {
-            form.setValue('address', data.display_name);
+          // Keep the most accurate reading
+          if (accuracy < bestAccuracy) {
+            bestAccuracy = accuracy;
+            bestPosition = position;
           }
-          
-          // Extract city from address
-          if (data.address) {
-            const city = data.address.city || data.address.town || data.address.village;
-            const matchedCity = botswanaCities.find(c => 
-              city?.toLowerCase().includes(c.toLowerCase())
-            );
-            if (matchedCity) {
-              form.setValue('city', matchedCity as any);
+
+          // If accuracy is good enough (≤10m) or we've tried enough times
+          if (accuracy <= 10 || attempts >= maxAttempts) {
+            if (bestPosition) {
+              const { latitude: lat, longitude: lng, accuracy: acc } = bestPosition.coords;
+              
+              // Store coordinates with accuracy
+              setLocationCoords({ lat, lng, accuracy: acc });
+              
+              // Set form values with high precision (7 decimal places ≈ 1.1cm accuracy)
+              form.setValue('latitude', lat.toFixed(7));
+              form.setValue('longitude', lng.toFixed(7));
+              
+              // Reverse geocode to get address
+              try {
+                const response = await fetch(
+                  `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+                );
+                const data = await response.json();
+                
+                if (data.display_name) {
+                  form.setValue('address', data.display_name);
+                }
+                
+                // Extract city from address
+                if (data.address) {
+                  const city = data.address.city || data.address.town || data.address.village;
+                  const matchedCity = botswanaCities.find(c => 
+                    city?.toLowerCase().includes(c.toLowerCase())
+                  );
+                  if (matchedCity) {
+                    form.setValue('city', matchedCity as any);
+                  }
+                }
+
+                toast({
+                  title: acc <= 10 ? '✅ High accuracy achieved' : '⚠️ Best effort accuracy',
+                  description: `Location captured with ${acc.toFixed(1)}m accuracy${acc > 10 ? '. Consider moving to an open area for better precision.' : '.'}`,
+                  variant: acc <= 10 ? 'default' : 'destructive',
+                });
+              } catch (error) {
+                console.error('Reverse geocoding error:', error);
+                toast({
+                  title: 'Location captured',
+                  description: `Accuracy: ${acc.toFixed(1)}m. Please enter your address manually.`,
+                });
+              } finally {
+                setIsGettingLocation(false);
+              }
             }
+          } else {
+            // Try again for better accuracy
+            toast({
+              title: `Attempt ${attempts}/${maxAttempts}`,
+              description: `Current accuracy: ${accuracy.toFixed(1)}m. Trying for better precision...`,
+            });
+            setTimeout(tryGetLocation, 1000); // Wait 1 second between attempts
+          }
+        },
+        (error) => {
+          setIsGettingLocation(false);
+          let errorMessage = 'Unable to get your location.';
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location permission denied. Please enable location access in your browser settings.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information is unavailable. Try moving to an area with better GPS signal.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out. Please try again.';
+              break;
           }
 
           toast({
-            title: 'Location captured',
-            description: `Accuracy: ${accuracy.toFixed(0)} meters`,
+            title: 'Location error',
+            description: errorMessage,
+            variant: 'destructive',
           });
-        } catch (error) {
-          console.error('Reverse geocoding error:', error);
-          toast({
-            title: 'Location captured',
-            description: 'Please enter your address manually.',
-            variant: 'default',
-          });
-        } finally {
-          setIsGettingLocation(false);
+        },
+        {
+          enableHighAccuracy: true,  // Use GPS
+          timeout: 15000,            // 15 seconds per attempt
+          maximumAge: 0              // Don't use cached position
         }
-      },
-      (error) => {
-        setIsGettingLocation(false);
-        let errorMessage = 'Unable to get your location.';
-        
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = 'Location permission denied. Please enable location access in your browser settings.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Location information is unavailable. Please try again.';
-            break;
-          case error.TIMEOUT:
-            errorMessage = 'Location request timed out. Please try again.';
-            break;
-        }
+      );
+    };
 
-        toast({
-          title: 'Location error',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-      },
-      {
-        enableHighAccuracy: true,  // Request GPS-level accuracy
-        timeout: 10000,            // 10 second timeout
-        maximumAge: 0              // Don't use cached position
-      }
-    );
+    tryGetLocation();
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

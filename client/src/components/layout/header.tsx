@@ -57,95 +57,101 @@ export function Header() {
             </div>
           </Link>
 
-          {/* Desktop Navigation - Using primary/secondary for hover/text */}
-          {isAuthenticated && (
-            <nav className="hidden lg:flex items-center gap-2">
-              <Link href="/jobs">
-                <Button 
-                  variant="ghost" 
-                  className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
-                  data-testid="link-jobs"
-                >
-                  <Briefcase className="h-4 w-4 mr-2" />
-                  {user?.role === 'requester' ? 'My Jobs' : 'Browse Jobs'}
-                </Button>
-              </Link>
+{/* Desktop Navigation - Using primary/secondary for hover/text */}
+{isAuthenticated && (
+  <nav className="hidden lg:flex items-center gap-2">
+    {/* Show Jobs/Dashboard ONLY for non-admin users */}
+    {user?.role !== 'admin' && (
+      <>
+        <Link href="/jobs">
+          <Button 
+            variant="ghost" 
+            className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
+            data-testid="link-jobs"
+          >
+            <Briefcase className="h-4 w-4 mr-2" />
+            {user?.role === 'requester' ? 'My Jobs' : 'Browse Jobs'}
+          </Button>
+        </Link>
 
-              {user?.role === 'provider' && (
-                <Link href="/dashboard">
-                  <Button 
-                    variant="ghost"
-                    className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
-                    data-testid="link-dashboard"
-                  >
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </Button>
-                </Link>
-              )}
+        {user?.role === 'provider' && (
+          <Link href="/dashboard">
+            <Button 
+              variant="ghost"
+              className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
+              data-testid="link-dashboard"
+            >
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Dashboard
+            </Button>
+          </Link>
+        )}
 
-              {user?.role === 'supplier' && (
-                <Link href="/supplier/dashboard">
-                  <Button
-                    variant="ghost"
-                    className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
-                    data-testid="link-supplier-promotions"
-                  >
-                    <Tag className="h-4 w-4 mr-2" />
-                    Promotions
-                  </Button>
-                </Link>
-              )}
+        {user?.role === 'supplier' && (
+          <Link href="/supplier/dashboard">
+            <Button
+              variant="ghost"
+              className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
+              data-testid="link-supplier-promotions"
+            >
+              <Tag className="h-4 w-4 mr-2" />
+              Promotions
+            </Button>
+          </Link>
+        )}
 
-              <Link href="/suppliers">
-                <Button 
-                  variant="ghost"
-                  className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
-                  data-testid="link-suppliers"
-                >
-                  <Briefcase className="h-4 w-4 mr-2" />
-                  Suppliers
-                </Button>
-              </Link>
+        <Link href="/suppliers">
+          <Button 
+            variant="ghost"
+            className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
+            data-testid="link-suppliers"
+          >
+            <Briefcase className="h-4 w-4 mr-2" />
+            Suppliers
+          </Button>
+        </Link>
 
-              <Link href="/messages">
-                <Button 
-                  variant="ghost"
-                  className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
-                  data-testid="link-messages-nav"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Messages
-                </Button>
-              </Link>
+        <Link href="/messages">
+          <Button 
+            variant="ghost"
+            className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
+            data-testid="link-messages-nav"
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Messages
+          </Button>
+        </Link>
 
-              {user?.role === 'requester' && (
-                <Link href="/reports">
-                  <Button 
-                    variant="ghost"
-                    className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
-                    data-testid="link-reports"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Reports
-                  </Button>
-                </Link>
-              )}
+        {user?.role === 'requester' && (
+          <Link href="/reports">
+            <Button 
+              variant="ghost"
+              className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
+              data-testid="link-reports"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Reports
+            </Button>
+          </Link>
+        )}
+      </>
+    )}
 
-              {user?.role === 'admin' && (
-                <Link href="/admin">
-                  <Button 
-                    variant="ghost"
-                    className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
-                    data-testid="link-admin"
-                  >
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Admin Panel
-                  </Button>
-                </Link>
-              )}
-            </nav>
-          )}
+    {/* Admin Panel - ONLY for admins */}
+    {user?.role === 'admin' && (
+      <Link href="/admin">
+        <Button 
+          variant="ghost"
+          className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
+          data-testid="link-admin"
+        >
+          <LayoutDashboard className="h-4 w-4 mr-2" />
+          Admin Panel
+        </Button>
+      </Link>
+    )}
+  </nav>
+)}
         </div>
 
         {/* Right Section */}

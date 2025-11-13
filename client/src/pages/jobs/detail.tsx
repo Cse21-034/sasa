@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { formatPula } from '@/lib/utils';
 import type { Job } from '@shared/schema';
 import {
   Dialog,
@@ -435,7 +436,7 @@ export default function JobDetail() {
                   <div>
                     <p className="text-sm font-medium">Budget Range</p>
                     <p className="text-lg font-bold">
-                      ${(job as any).budgetMin} - ${(job as any).budgetMax}
+                      {formatPula((job as any).budgetMin)} - {formatPula((job as any).budgetMax)}
                     </p>
                   </div>
                 </div>
@@ -448,7 +449,7 @@ export default function JobDetail() {
                   <div>
                     <p className="text-sm font-medium">Provider Charge</p>
                     <p className="text-lg font-bold text-primary">
-                      ${(job as any).providerCharge}
+                      {formatPula((job as any).providerCharge)}
                     </p>
                   </div>
                 </div>
@@ -461,7 +462,7 @@ export default function JobDetail() {
                   <div>
                     <p className="text-sm font-medium">Amount Paid</p>
                     <p className="text-lg font-bold text-success">
-                      ${(job as any).amountPaid}
+                      {formatPula((job as any).amountPaid)}
                     </p>
                   </div>
                 </div>
@@ -564,7 +565,7 @@ export default function JobDetail() {
           )}
         </div>
 
-        {/* Provider Charge Input */}
+        {/* Provider Charge Input - Update label and placeholder */}
         {isAssignedProvider && job.status !== 'cancelled' && !(job as any).providerCharge && (
           <Card className="border-2">
             <CardHeader>
@@ -572,17 +573,17 @@ export default function JobDetail() {
                 <DollarSign className="h-5 w-5" />
                 Set Your Charge
               </CardTitle>
-              <CardDescription>Enter the amount you will charge for this service</CardDescription>
+              <CardDescription>Enter the amount you will charge for this service (in Pula)</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="provider-charge">Your Charge ($)</Label>
+                  <Label htmlFor="provider-charge">Your Charge (BWP)</Label>
                   <Input
                     id="provider-charge"
                     type="number"
                     step="0.01"
-                    placeholder="150.00"
+                    placeholder="P 150.00"
                     className="h-12 mt-2"
                     value={providerCharge}
                     onChange={(e) => setProviderCharge(e.target.value)}
@@ -591,7 +592,7 @@ export default function JobDetail() {
                 <Button 
                   className="w-full md:w-auto"
                   disabled={!providerCharge || setChargeMutation.isPending}
-                  onClick={() => setChargeMutation.mutate(providerCharge)} // Calls fixed API route
+                  onClick={() => setChargeMutation.mutate(providerCharge)}
                 >
                   {setChargeMutation.isPending ? 'Saving...' : 'Save Charge'}
                 </Button>
@@ -600,7 +601,7 @@ export default function JobDetail() {
           </Card>
         )}
 
-        {/* Amount Paid Input (Requester) */}
+        {/* Amount Paid Input - Update label and placeholder */}
         {isRequester && job.status === 'completed' && (job as any).providerCharge && !(job as any).amountPaid && (
           <Card className="border-2">
             <CardHeader>
@@ -608,17 +609,17 @@ export default function JobDetail() {
                 <DollarSign className="h-5 w-5" />
                 Confirm Payment
               </CardTitle>
-              <CardDescription>Enter the amount you paid for this service</CardDescription>
+              <CardDescription>Enter the amount you paid for this service (in Pula)</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="amount-paid">Amount Paid ($)</Label>
+                  <Label htmlFor="amount-paid">Amount Paid (BWP)</Label>
                   <Input
                     id="amount-paid"
                     type="number"
                     step="0.01"
-                    placeholder={(job as any).providerCharge || "150.00"}
+                    placeholder={formatPula((job as any).providerCharge || "150.00")}
                     className="h-12 mt-2"
                     value={amountPaid}
                     onChange={(e) => setAmountPaid(e.target.value)}
@@ -627,7 +628,7 @@ export default function JobDetail() {
                 <Button 
                   className="w-full md:w-auto"
                   disabled={!amountPaid || confirmPaymentMutation.isPending}
-                  onClick={() => confirmPaymentMutation.mutate(amountPaid)} // Calls fixed API route
+                  onClick={() => confirmPaymentMutation.mutate(amountPaid)}
                 >
                   {confirmPaymentMutation.isPending ? 'Confirming...' : 'Confirm Payment'}
                 </Button>
