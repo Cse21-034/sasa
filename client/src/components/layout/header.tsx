@@ -14,11 +14,53 @@ import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/lib/auth-context';
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 
 export function Header() {
   const { user, logout, isAuthenticated } = useAuth();
   const [location, setLocation] = useLocation();
   const [scrolled, setScrolled] = useState(false);
+
+  // 🔥 NEW: Query for unread messages count
+  const { data: conversations } = useQuery({
+    queryKey: ['/api/messages/conversations'],
+    enabled: isAuthenticated,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  // 🔥 NEW: Query for pending verifications (admin only)
+  const { data: pendingVerifications } = useQuery({
+    queryKey: ['adminPendingVerification'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/admin/verification/pending');
+      return res.json();
+    },
+    enabled: isAuthenticated && user?.role === 'admin',
+    refetchInterval: 60000, // Refresh every minute
+  });
+
+  // 🔥 NEW: Query for unresolved reports (admin only)
+  const { data: unresolvedReports } = useQuery({
+    queryKey: ['adminUnresolvedReports'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/admin/reports?status=unresolved');
+      return res.json();
+    },
+    enabled: isAuthenticated && user?.role === 'admin',
+    refetchInterval: 60000, // Refresh every minute
+  });
+
+  // 🔥 NEW: Calculate notification counts
+  const unreadMessagesCount = conversations?.filter((c: any) => c.unreadCount > 0).length || 0;
+  const pendingVerificationsCount = pendingVerifications?.length || 0;
+  const unresolvedReportsCount = unresolvedReports?.length || 0;
+  
+  const totalNotifications = isAuthenticated 
+    ? (user?.role === 'admin' 
+        ? pendingVerificationsCount + unresolvedReportsCount + unreadMessagesCount
+        : unreadMessagesCount)
+    : 0;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,16 +79,14 @@ export function Header() {
       }`}
     >
       <div className="container mx-auto flex h-20 items-center justify-between px-4">
-        {/* Logo Section - Primary/Secondary Colors */}
+        {/* Logo Section */}
         <div className="flex items-center gap-8">
           <Link href="/">
             <div className="flex items-center gap-3 hover-elevate rounded-xl px-3 py-2 cursor-pointer group" data-testid="link-home">
-              {/* Logo icon: Solid Primary (Emerald Green) */}
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300">
                 <Briefcase className="h-6 w-6 text-primary-foreground" />
               </div>
               <div className="flex flex-col">
-                {/* Text: Primary (Emerald Green) */}
                 <span className="text-xl font-bold text-primary dark:text-secondary">
                   JobTradeSasa
                 </span>
@@ -57,101 +97,107 @@ export function Header() {
             </div>
           </Link>
 
-{/* Desktop Navigation - Using primary/secondary for hover/text */}
-{isAuthenticated && (
-  <nav className="hidden lg:flex items-center gap-2">
-    {/* Show Jobs/Dashboard ONLY for non-admin users */}
-    {user?.role !== 'admin' && (
-      <>
-        <Link href="/jobs">
-          <Button 
-            variant="ghost" 
-            className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
-            data-testid="link-jobs"
-          >
-            <Briefcase className="h-4 w-4 mr-2" />
-            {user?.role === 'requester' ? 'My Jobs' : 'Browse Jobs'}
-          </Button>
-        </Link>
+          {/* Desktop Navigation */}
+          {isAuthenticated && (
+            <nav className="hidden lg:flex items-center gap-2">
+              {/* Show Jobs/Dashboard ONLY for non-admin users */}
+              {user?.role !== 'admin' && (
+                <>
+                  <Link href="/jobs">
+                    <Button 
+                      variant="ghost" 
+                      className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
+                      data-testid="link-jobs"
+                    >
+                      <Briefcase className="h-4 w-4 mr-2" />
+                      {user?.role === 'requester' ? 'My Jobs' : 'Browse Jobs'}
+                    </Button>
+                  </Link>
 
-        {user?.role === 'provider' && (
-          <Link href="/dashboard">
-            <Button 
-              variant="ghost"
-              className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
-              data-testid="link-dashboard"
-            >
-              <LayoutDashboard className="h-4 w-4 mr-2" />
-              Dashboard
-            </Button>
-          </Link>
-        )}
+                  {user?.role === 'provider' && (
+                    <Link href="/dashboard">
+                      <Button 
+                        variant="ghost"
+                        className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
+                        data-testid="link-dashboard"
+                      >
+                        <LayoutDashboard className="h-4 w-4 mr-2" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                  )}
 
-        {user?.role === 'supplier' && (
-          <Link href="/supplier/dashboard">
-            <Button
-              variant="ghost"
-              className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
-              data-testid="link-supplier-promotions"
-            >
-              <Tag className="h-4 w-4 mr-2" />
-              Promotions
-            </Button>
-          </Link>
-        )}
+                  {user?.role === 'supplier' && (
+                    <Link href="/supplier/dashboard">
+                      <Button
+                        variant="ghost"
+                        className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
+                        data-testid="link-supplier-promotions"
+                      >
+                        <Tag className="h-4 w-4 mr-2" />
+                        Promotions
+                      </Button>
+                    </Link>
+                  )}
 
-        <Link href="/suppliers">
-          <Button 
-            variant="ghost"
-            className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
-            data-testid="link-suppliers"
-          >
-            <Briefcase className="h-4 w-4 mr-2" />
-            Suppliers
-          </Button>
-        </Link>
+                  <Link href="/suppliers">
+                    <Button 
+                      variant="ghost"
+                      className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
+                      data-testid="link-suppliers"
+                    >
+                      <Briefcase className="h-4 w-4 mr-2" />
+                      Suppliers
+                    </Button>
+                  </Link>
 
-        <Link href="/messages">
-          <Button 
-            variant="ghost"
-            className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
-            data-testid="link-messages-nav"
-          >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Messages
-          </Button>
-        </Link>
+                  <Link href="/messages">
+                    <Button 
+                      variant="ghost"
+                      className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors relative"
+                      data-testid="link-messages-nav"
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Messages
+                      {/* 🔥 NEW: Unread messages badge */}
+                      {unreadMessagesCount > 0 && (
+                        <span className="absolute top-0 right-0 w-5 h-5 bg-destructive text-destructive-foreground text-xs flex items-center justify-center rounded-full">
+                          {unreadMessagesCount}
+                        </span>
+                      )}
+                    </Button>
+                  </Link>
 
-        {user?.role === 'requester' && (
-          <Link href="/reports">
-            <Button 
-              variant="ghost"
-              className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
-              data-testid="link-reports"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Reports
-            </Button>
-          </Link>
-        )}
-      </>
-    )}
+                  {user?.role === 'requester' && (
+                    <Link href="/reports">
+                      <Button 
+                        variant="ghost"
+                        className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors"
+                        data-testid="link-reports"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Reports
+                      </Button>
+                    </Link>
+                  )}
+                </>
+              )}
 
-    {/* Admin Panel - ONLY for admins */}
-    {user?.role === 'admin' && (
-      <Link href="/admin">
-        <Button 
-          variant="ghost"
-          className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
-          data-testid="link-admin"
-        >
-          <LayoutDashboard className="h-4 w-4 mr-2" />
-          Admin Panel
-        </Button>
-      </Link>
-    )}
-  </nav>
-)}
+              {/* Admin Panel - ONLY for admins */}
+              {user?.role === 'admin' && (
+                <Link href="/admin">
+                  <Button 
+                    variant="ghost"
+                    className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
+                    data-testid="link-admin"
+                  >
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Admin Panel
+                  </Button>
+                </Link>
+              )}
+            </nav>
+          )}
         </div>
 
         {/* Right Section */}
@@ -163,48 +209,120 @@ export function Header() {
               {user?.role === 'requester' && (
                 <Link href="/post-job">
                   <Button 
-                    // Solid Secondary (Warm Tan)
                     className="hidden sm:flex bg-secondary text-secondary-foreground shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:bg-secondary/90"
                     data-testid="button-post-job"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Post a Job
-                     {/* <Sparkles className="h-3 w-3 ml-2" /> */}
                   </Button>
                 </Link>
               )}
 
-              <Button 
-                variant="ghost" 
-                size="icon"
-                // Hover: Primary (Emerald Green)
-                className="relative hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
-                data-testid="button-notifications"
-              >
-                <Bell className="h-5 w-5" />
-                {/* Notification dot: Secondary (Warm Tan) */}
-                <span className="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
-              </Button>
+              {/* 🔥 NEW: Notification Bell with Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="relative hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
+                    data-testid="button-notifications"
+                  >
+                    <Bell className="h-5 w-5" />
+                    {/* 🔥 NEW: Show notification count */}
+                    {totalNotifications > 0 && (
+                      <span className="absolute top-1 right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs flex items-center justify-center rounded-full animate-pulse">
+                        {totalNotifications}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                  <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  
+                  {/* 🔥 NEW: Admin notifications */}
+                  {user?.role === 'admin' && (
+                    <>
+                      {pendingVerificationsCount > 0 && (
+                        <DropdownMenuItem 
+                          onClick={() => setLocation('/admin/verification')}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 w-full">
+                            <User className="h-4 w-4 text-warning" />
+                            <div className="flex-1">
+                              <p className="font-medium">Pending Verifications</p>
+                              <p className="text-xs text-muted-foreground">
+                                {pendingVerificationsCount} user{pendingVerificationsCount !== 1 ? 's' : ''} awaiting approval
+                              </p>
+                            </div>
+                            <Badge variant="warning">{pendingVerificationsCount}</Badge>
+                          </div>
+                        </DropdownMenuItem>
+                      )}
+                      
+                      {unresolvedReportsCount > 0 && (
+                        <DropdownMenuItem 
+                          onClick={() => setLocation('/admin/reports')}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 w-full">
+                            <FileText className="h-4 w-4 text-destructive" />
+                            <div className="flex-1">
+                              <p className="font-medium">Unresolved Reports</p>
+                              <p className="text-xs text-muted-foreground">
+                                {unresolvedReportsCount} report{unresolvedReportsCount !== 1 ? 's' : ''} need attention
+                              </p>
+                            </div>
+                            <Badge variant="destructive">{unresolvedReportsCount}</Badge>
+                          </div>
+                        </DropdownMenuItem>
+                      )}
+                    </>
+                  )}
+                  
+                  {/* 🔥 NEW: Unread messages notification */}
+                  {unreadMessagesCount > 0 && (
+                    <DropdownMenuItem 
+                      onClick={() => setLocation('/messages')}
+                      className="cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2 w-full">
+                        <MessageSquare className="h-4 w-4 text-primary" />
+                        <div className="flex-1">
+                          <p className="font-medium">New Messages</p>
+                          <p className="text-xs text-muted-foreground">
+                            {unreadMessagesCount} unread conversation{unreadMessagesCount !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                        <Badge>{unreadMessagesCount}</Badge>
+                      </div>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {totalNotifications === 0 && (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No new notifications
+                    </div>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    // Ring: Secondary (Warm Tan)
                     className="relative h-10 w-10 rounded-full hover:ring-4 hover:ring-secondary/20 dark:hover:ring-secondary/30 transition-all"
                     data-testid="button-user-menu"
                   >
-                    {/* Avatar ring: Secondary (Warm Tan) */}
                     <Avatar className="h-10 w-10 ring-2 ring-secondary">
                       <AvatarImage src={user?.profilePhotoUrl || undefined} alt={user?.name} />
-                      {/* Avatar Fallback: Solid Primary (Emerald Green) */}
                       <AvatarFallback className="bg-primary text-primary-foreground font-bold">
                         {user?.name?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     {user?.isVerified && (
                       <div 
-                        // Solid Primary (Emerald Green)
                         className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-primary flex items-center justify-center border-2 border-background"
                       >
                         <Sparkles className="h-3 w-3 text-primary-foreground" />
@@ -214,7 +332,6 @@ export function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
                   align="end" 
-                  // Border: Secondary (Warm Tan)
                   className="w-64 border-2 border-secondary/20 dark:border-secondary/30"
                 >
                   <DropdownMenuLabel>
@@ -222,7 +339,6 @@ export function Header() {
                       <p className="text-base font-bold">{user?.name}</p>
                       <p className="text-xs text-muted-foreground">{user?.email}</p>
                       <Badge 
-                        // Solid Primary (Emerald Green)
                         className="w-fit bg-primary text-primary-foreground border-none"
                       >
                         {user?.role}
@@ -232,7 +348,6 @@ export function Header() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => setLocation('/profile')}
-                    // Hover/Text: Secondary (Warm Tan)
                     className="cursor-pointer hover:bg-secondary/10 dark:hover:bg-secondary/20 hover:text-secondary"
                     data-testid="menu-profile"
                   >
@@ -244,7 +359,6 @@ export function Header() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={() => setLocation('/admin/verification')}
-                        // Hover/Text: Primary (Emerald Green)
                         className="cursor-pointer hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary"
                         data-testid="menu-admin-verification"
                       >
@@ -255,7 +369,6 @@ export function Header() {
                   )}
                   <DropdownMenuItem 
                     onClick={() => setLocation('/messages')}
-                    // Hover/Text: Primary (Emerald Green)
                     className="cursor-pointer hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary"
                     data-testid="menu-messages"
                   >
@@ -265,7 +378,6 @@ export function Header() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={logout}
-                    // Text: Destructive (Red)
                     className="cursor-pointer text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20"
                     data-testid="menu-logout"
                   >
@@ -279,7 +391,6 @@ export function Header() {
               <Link href="/login">
                 <Button 
                   variant="ghost"
-                  // Hover/Text: Primary (Emerald Green)
                   className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
                   data-testid="button-login"
                 >
@@ -288,7 +399,6 @@ export function Header() {
               </Link>
               <Link href="/signup">
                 <Button 
-                  // Solid Secondary (Warm Tan)
                   className="bg-secondary text-secondary-foreground shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:bg-secondary/90"
                   data-testid="button-signup"
                 >
