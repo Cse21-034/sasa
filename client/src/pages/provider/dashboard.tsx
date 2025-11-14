@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/auth-context';
 import { Link } from 'wouter';
+import { formatPula } from '@/lib/utils'; // 🔥 ADDED: Import formatPula
 
 export default function ProviderDashboard() {
   const { user } = useAuth();
@@ -20,7 +21,8 @@ export default function ProviderDashboard() {
   const statCards = [
     {
       title: 'Total Earnings',
-      value: `$${stats?.totalEarnings || 0}`,
+      // 🔥 FIXED: Changed from $ to formatPula
+      value: formatPula(stats?.totalEarnings || 0),
       icon: DollarSign,
       description: 'This month',
       color: 'text-success',
