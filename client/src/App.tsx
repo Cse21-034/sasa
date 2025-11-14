@@ -28,7 +28,7 @@ import SupplierDetail from "@/pages/supplier-detail";
 import SupplierDashboard from "@/pages/supplier/dashboard";
 import SupplierSettings from "@/pages/supplier/settings";
 
-// 🆕 New Admin Imports
+// Admin Imports
 import AdminDashboardHub from "@/pages/admin/index"; 
 import AdminVerification from "@/pages/admin/verification";
 import AdminUsers from "@/pages/admin/users";
@@ -70,16 +70,36 @@ function PublicRoute({ component: Component, ...rest }: any) {
   return !isAuthenticated ? <Component {...rest} /> : <Redirect to="/jobs" />;
 }
 
+// 🔥 ADDED: Smart redirect based on user role
+function SmartRedirect() {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Landing />;
+  }
+  
+  // 🔥 FIXED: Admins go to admin panel, others to jobs
+  if (user.role === 'admin') {
+    return <Redirect to="/admin" />;
+  }
+  
+  return <Redirect to="/jobs" />;
+}
+
 
 function Router() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 pb-16 md:pb-0">
         <Switch>
-          <Route path="/" component={isAuthenticated ? BrowseJobs : Landing} />
+          {/* 🔥 FIXED: Use SmartRedirect for root route */}
+          <Route path="/">
+            <SmartRedirect />
+          </Route>
+          
           <Route path="/login">
             {() => <PublicRoute component={Login} />}
           </Route>
