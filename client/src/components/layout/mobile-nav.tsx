@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { Home, Briefcase, MessageSquare, User, LayoutDashboard, FileText, Building2, Tag } from 'lucide-react';
+import { Home, Briefcase, MessageSquare, User, LayoutDashboard, FileText, Building2, Tag, Users, TrendingUp, UserCheck } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 export function MobileNav() {
@@ -7,6 +7,14 @@ export function MobileNav() {
   const { user, isAuthenticated } = useAuth();
 
   if (!isAuthenticated) return null;
+
+  // 🔥 ADDED: Admin navigation items
+  const adminItems = [
+    { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', testId: 'nav-admin-dashboard' },
+    { href: '/admin/verification', icon: UserCheck, label: 'Verify', testId: 'nav-admin-verification' },
+    { href: '/admin/users', icon: Users, label: 'Users', testId: 'nav-admin-users' },
+    { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
+  ];
 
   // Supplier navigation items
   const supplierItems = [
@@ -30,9 +38,11 @@ export function MobileNav() {
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
 
-  // Choose nav items based on role
+  // 🔥 FIXED: Choose nav items based on role INCLUDING ADMIN
   let navItems = requesterItems;
-  if (user?.role === 'provider') {
+  if (user?.role === 'admin') {
+    navItems = adminItems;
+  } else if (user?.role === 'provider') {
     navItems = providerItems;
   } else if (user?.role === 'supplier') {
     navItems = supplierItems;
