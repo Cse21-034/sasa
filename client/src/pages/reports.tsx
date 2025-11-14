@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest } from '@/lib/queryClient';
 import { Link } from 'wouter';
+import { formatPula } from '@/lib/utils'; // 🔥 ADDED: Import formatPula
 
 export default function Reports() {
   const { user } = useAuth();
@@ -118,7 +119,8 @@ export default function Reports() {
               <DollarSign className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${stats.totalSpent.toFixed(2)}</div>
+              {/* 🔥 FIXED: Changed from $ to formatPula */}
+              <div className="text-2xl font-bold">{formatPula(stats.totalSpent)}</div>
               <p className="text-xs text-muted-foreground">
                 Across all services
               </p>
@@ -135,7 +137,8 @@ export default function Reports() {
               <DollarSign className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${stats.totalEarnings}</div>
+              {/* 🔥 FIXED: Changed from $ to formatPula */}
+              <div className="text-2xl font-bold">{formatPula(stats.totalEarnings)}</div>
               <p className="text-xs text-muted-foreground">
                 From completed jobs
               </p>
@@ -258,9 +261,10 @@ export default function Reports() {
                             <Badge variant={job.status === 'completed' ? 'default' : 'secondary'}>
                               {job.status}
                             </Badge>
+                            {/* 🔥 FIXED: Changed from $ to formatPula */}
                             {(job.amountPaid || job.providerCharge) && (
                               <span className="font-semibold">
-                                ${job.amountPaid || job.providerCharge}
+                                {formatPula(job.amountPaid || job.providerCharge)}
                               </span>
                             )}
                           </div>
