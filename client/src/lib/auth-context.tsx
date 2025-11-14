@@ -6,7 +6,7 @@ interface ExtendedUser extends User {
   isVerified: boolean;
   isIdentityVerified: boolean;
   status: 'active' | 'blocked' | 'deactivated';
-  lastLogin?: Date | string | null; // 🆕 Added lastLogin
+  lastLogin?: Date | string | null;
 }
 
 interface AuthContextType {
@@ -25,25 +25,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
-        // 🆕 Ensure parsed user has the new fields, defaulting to false/active if undefined
         const parsedUser = JSON.parse(storedUser);
         setUser({ 
           ...parsedUser,
           isVerified: parsedUser.isVerified ?? false, 
           isIdentityVerified: parsedUser.isIdentityVerified ?? false,
           status: parsedUser.status ?? 'active',
-          lastLogin: parsedUser.lastLogin ?? null, // 🆕 Added lastLogin
+          lastLogin: parsedUser.lastLogin ?? null,
         });
       } catch (error) {
         localStorage.removeItem('user');
+        localStorage.removeItem('token');
       }
     }
   }, []);
 
+  // 🔥 FIXED: Improved logout with proper cleanup and redirect
   const logout = () => {
+    // Clear user state
     setUser(null);
+    
+    // Clear all auth-related data
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    
+    // Clear any cached queries
+    sessionStorage.clear();
+    
+    // Force redirect to landing page
+    window.location.href = '/';
+    
+    // Force a hard reload to clear all cached data
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   };
 
   return (
