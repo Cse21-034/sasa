@@ -37,6 +37,9 @@ export const migrationStatusEnum = pgEnum("migration_status", ["pending", "appro
 export const verificationTypeEnum = pgEnum("verification_type", ["identity", "document"]);
 export const verificationStatusEnum = pgEnum("verification_status", ["pending", "approved", "rejected"]);
 
+export const messageTypeEnum = pgEnum("message_type", ["job_message", "admin_message", "system_notification"]);
+
+
 
 // Users table
 export const users = pgTable("users", {
@@ -143,13 +146,29 @@ export const serviceAreaMigrations = pgTable("service_area_migrations", {
 // Messages table for chat
 export const messages = pgTable("messages", {
   id: uuid("id").primaryKey().defaultRandom(),
-  jobId: uuid("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
+  jobId: uuid("job_id").references(() => jobs.id, { onDelete: "cascade" }), // Made nullable for admin messages
   senderId: uuid("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  receiverId: uuid("receiver_id").references(() => users.id, { onDelete: "cascade" }), // New: explicit receiver
   messageText: text("message_text").notNull(),
+  messageType: messageTypeEnum("message_type").default("job_message").notNull(),
   attachments: jsonb("attachments").$type<string[]>(),
   voiceNoteUrl: text("voice_note_url"),
+  isRead: boolean("is_read").default(false).notNull(),
+  readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const messageThreads = pgTable("message_threads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  jobId: uuid("job_id").references(() => jobs.id, { onDelete: "cascade" }),
+  reportId: uuid("report_id").references(() => jobReports.id, { onDelete: "cascade" }),
+  participants: jsonb("participants").$type<string[]>().notNull(), // Array of user IDs
+  subject: text("subject"),
+  lastMessageAt: timestamp("last_message_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+
 
 // Ratings table
 export const ratings = pgTable("ratings", {
@@ -557,10 +576,17 @@ export const insertServiceAreaMigrationSchema = z.object({
 
 // Message Schema
 export const insertMessageSchema = z.object({
-  jobId: z.string().uuid(),
+jobId: z.string().uuid().optional(), // Made optional for admin messages
+  receiverId: z.string().uuid().optional(), // For direct admin messages
   messageText: z.string().min(1, "Message cannot be empty"),
+  messageType: z.enum(["job_message", "admin_message", "system_notification"]).default("job_message"),
   attachments: z.array(z.string()).optional(),
   voiceNoteUrl: z.string().optional(),
+});
+
+// Mark message as read schema
+export const markMessageReadSchema = z.object({
+  messageId: z.string().uuid(),
 });
 
 // Rating Schema
@@ -660,6 +686,7 @@ export type InsertJob = z.infer<typeof insertJobSchema>;
 
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type MessageThread = typeof messageThreads.$inferSelect;
 
 export type Rating = typeof ratings.$inferSelect;
 export type InsertRating = z.infer<typeof insertRatingSchema>;
