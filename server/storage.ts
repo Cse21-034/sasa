@@ -36,9 +36,9 @@ import {
   type VerificationSubmission,
   type InsertVerificationSubmission,
 } from "@shared/schema";
-import { eq, and, sql, desc, asc, inArray, or } from "drizzle-orm"; // <-- 🚨 FIXED: Added 'or' operator
-import { InferSelectModel } from 'drizzle-orm';
-import { db } from "./db";
+import { db } from "./db"; // 🚨 CRITICAL FIX: Added missing 'db' import
+import { eq, and, sql, desc, asc, inArray, or } from "drizzle-orm"; // 🚨 FIX: Added 'or' operator
+import { InferSelectModel } from 'drizzle-orm'; 
 
 type JobWithRelations = Job & {
   requester: User;
@@ -148,7 +148,8 @@ export interface IStorage {
 
   // Messages
    getMessages(jobId: string): Promise<MessageWithSender[]>;
-  getAdminMessages(userId: string): Promise<MessageWithSender[]>; // New
+  getAdminMessages(userId: string): Promise<MessageWithSender[]>; // Old function, kept for completeness but not used for chat
+  getAdminChatMessages(adminId: string, targetUserId: string): Promise<MessageWithSender[]>; // 🚨 FIX: New function for dedicated admin chat
   getUnreadMessageCount(userId: string): Promise<number>; // New
   createMessage(message: InsertMessage & { senderId: string }): Promise<Message>;
   markMessageAsRead(messageId: string, userId: string): Promise<Message | undefined>; // New
@@ -836,7 +837,7 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
- // New: Get admin messages for a specific user
+ // Old: Get admin messages for a specific user (kept for completeness)
   async getAdminMessages(userId: string): Promise<MessageWithSender[]> {
     const results = await db
       .select({
@@ -851,6 +852,34 @@ export class DatabaseStorage implements IStorage {
           or(
             eq(messages.senderId, userId),
             eq(messages.receiverId, userId)
+          )
+        )
+      )
+      .orderBy(asc(messages.createdAt));
+
+    return results.map((r) => ({
+      ...r.message,
+      sender: r.sender,
+    }));
+  }
+  
+ // 🚨 FIX: New dedicated method for ADMIN-USER chat (Issue 1)
+  async getAdminChatMessages(adminId: string, targetUserId: string): Promise<MessageWithSender[]> {
+    const results = await db
+      .select({
+        message: messages,
+        sender: users,
+      })
+      .from(messages)
+      .leftJoin(users, eq(messages.senderId, users.id))
+      .where(
+        and(
+          eq(messages.messageType, 'admin_message'),
+          or(
+            // Message sent by Admin to User
+            and(eq(messages.senderId, adminId), eq(messages.receiverId, targetUserId)),
+            // Message sent by User to Admin
+            and(eq(messages.senderId, targetUserId), eq(messages.receiverId, adminId))
           )
         )
       )
@@ -929,6 +958,8 @@ export class DatabaseStorage implements IStorage {
 
   // New: Mark all messages in a conversation as read
   async markAllMessagesRead(jobId: string, userId: string): Promise<void> {
+    // This handles job-related messages and implicitly covers admin messages if you ever 
+    // want to reuse this for marking all admin messages read too (by setting jobId to admin-id)
     await db
       .update(messages)
       .set({ 
@@ -954,7 +985,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(jobs)
       .leftJoin(users, eq(jobs.requesterId, users.id))
-      .where(or(eq(jobs.requesterId, userId), eq(jobs.providerId, userId))); // <-- Uses 'or' operator
+      .where(or(eq(jobs.requesterId, userId), eq(jobs.providerId, userId))); 
 
     const conversations = [];
     
@@ -1068,27 +1099,37 @@ export class DatabaseStorage implements IStorage {
     const conversationsMap = new Map();
     
     for (const result of results) {
-      const userId = result.sender.id;
+      // Find the non-admin user in the conversation
+      const targetUser = result.sender.role === 'admin' ? result.receiver : result.sender;
+      const userId = targetUser.id; // Target user's ID
       
-      if (!conversationsMap.has(userId)) {
-        const [unreadResult] = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(messages)
-          .where(
-            and(
-              eq(messages.senderId, userId),
-              eq(messages.isRead, false),
-              eq(messages.messageType, 'admin_message')
-            )
-          );
-
-        conversationsMap.set(userId, {
-          userId,
-          user: result.sender,
-          lastMessage: result.message.messageText,
-          lastMessageTime: result.message.createdAt,
-          unreadCount: unreadResult?.count || 0,
-        });
+      // We only care about conversations with real users, not self-messages or system messages
+      if (userId && userId !== result.sender.id) { 
+        
+        // Only process if it's the latest message for this user or the map is empty
+        if (!conversationsMap.has(userId) || result.message.createdAt > conversationsMap.get(userId).lastMessageTime) {
+            
+            // Count unread messages *sent by admin* to this user
+            const [unreadResult] = await db
+                .select({ count: sql<number>`count(*)` })
+                .from(messages)
+                .where(
+                    and(
+                        eq(messages.receiverId, userId), // User is the receiver
+                        eq(messages.senderId, result.sender.id), // Admin is the sender (or the user who triggered the report)
+                        eq(messages.isRead, false),
+                        eq(messages.messageType, 'admin_message')
+                    )
+                );
+    
+            conversationsMap.set(userId, {
+              userId,
+              user: targetUser,
+              lastMessage: result.message.messageText,
+              lastMessageTime: result.message.createdAt,
+              unreadCount: unreadResult?.count || 0,
+            });
+        }
       }
     }
 
