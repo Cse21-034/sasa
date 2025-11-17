@@ -36,8 +36,7 @@ import {
   type VerificationSubmission,
   type InsertVerificationSubmission,
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, and, sql, desc, asc, inArray } from "drizzle-orm";
+import { eq, and, sql, desc, asc, inArray, or } from "drizzle-orm"; // <-- 🚨 FIXED: Added 'or' operator
 import { InferSelectModel } from 'drizzle-orm'; 
 
 type JobWithRelations = Job & {
@@ -954,7 +953,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(jobs)
       .leftJoin(users, eq(jobs.requesterId, users.id))
-      .where(sql`${jobs.requesterId} = ${userId} OR ${jobs.providerId} = ${userId}`);
+      .where(or(eq(jobs.requesterId, userId), eq(jobs.providerId, userId))); // <-- Uses 'or' operator
 
     const conversations = [];
     
