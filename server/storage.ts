@@ -37,7 +37,8 @@ import {
   type InsertVerificationSubmission,
 } from "@shared/schema";
 import { eq, and, sql, desc, asc, inArray, or } from "drizzle-orm"; // <-- 🚨 FIXED: Added 'or' operator
-import { InferSelectModel } from 'drizzle-orm'; 
+import { InferSelectModel } from 'drizzle-orm';
+import { db } from "./db";
 
 type JobWithRelations = Job & {
   requester: User;
