@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'; // 🚨 FIXED: Imported useMutation and useQueryClient
 import { useRoute } from 'wouter';
 import { Send, ArrowLeft, Paperclip, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,8 @@ export default function Chat() {
   const { user } = useAuth();
   const [messageText, setMessageText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  const queryClient = useQueryClient();
+  
   const { data: job } = useQuery({
     queryKey: ['/api/jobs', params?.jobId],
     enabled: !!params?.jobId,
@@ -41,11 +42,29 @@ export default function Chat() {
       setMessageText('');
     },
   });
-
-  useEffect(() => {
+  
+const markReadMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      await apiRequest('POST', `/api/messages/job/${jobId}/read-all`, {});
+    },
+    onSuccess: () => {
+      // 🚨 FIXED: Invalidate global conversation list/count to update the badge immediately
+      queryClient.invalidateQueries({ queryKey: ['/api/messages/conversations'] }); 
+      queryClient.invalidateQueries({ queryKey: ['/api/messages/unread-count'] });
+    },
+  });
+  
+useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    
+    // Mark as read whenever messages load successfully
+    if (messages && params?.jobId) {
+      markReadMutation.mutate(params.jobId);
+    }
+  }, [messages, params?.jobId]); // Removed markReadMutation from dependency list
 
+
+  
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (messageText.trim()) {
