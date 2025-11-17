@@ -1,5 +1,3 @@
-// client/src/pages/admin/messages.tsx - NEW ADMIN MESSAGES LIST
-
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRoute, Link } from 'wouter';
@@ -115,24 +113,19 @@ function AdminMessagesList() {
 }
 
 
-// --- ADMIN CHAT DETAIL COMPONENT (Exported as default) ---
+// --- ADMIN CHAT DETAIL COMPONENT ---
 
-export function AdminChatDetail() {
-  const [, params] = useRoute('/admin/messages/:userId');
+function AdminChatDetail({ userId }: { userId: string }) {
   const { user } =  useAuth();
   const { toast } = useToast();
   const [messageText, setMessageText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
-  const [ws, setWs] = useState<WebSocket | null>(null);
-
-  const userId = params?.userId;
 
   // Get user details
   const { data: targetUser } = useQuery({
     queryKey: ['user', userId],
     queryFn: async () => {
-      // 🚨 FIX: Using the /api/admin/users endpoint to fetch user details
       const res = await apiRequest('GET', `/api/admin/users`);
       const users = await res.json();
       return users.find((u: any) => u.id === userId);
@@ -144,7 +137,6 @@ export function AdminChatDetail() {
   const { data: messages, isLoading } = useQuery({
     queryKey: ['adminMessages', userId],
     queryFn: async () => {
-      // 🚨 FIX: Use the new route that correctly filters messages by target userId in the backend (Issue 1)
       const res = await apiRequest('GET', `/api/admin/messages/${userId}`); 
       return res.json();
     },
@@ -154,7 +146,6 @@ export function AdminChatDetail() {
   
   const sendMessageMutation = useMutation({
     mutationFn: async (text: string) => {
-      // 🚨 FIX: Send dedicated admin message payload
       const res = await apiRequest('POST', '/api/admin/messages', {
         receiverId: userId,
         messageText: text,
@@ -176,39 +167,7 @@ export function AdminChatDetail() {
     },
   });
 
-  // WebSocket connection
-  useEffect(() => {
-    if (!user) return;
-
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // 🚨 FIX: Using config.apiUrl to correctly build WebSocket URL if not on same host
-    const apiUrl = queryClient.getQueryData(['/api/config']) || window.location.host;
-    const wsUrl = apiUrl.toString().replace('http', 'ws');
-    const websocket = new WebSocket(`${wsUrl}/ws`);
-
-    websocket.onopen = () => {
-      websocket.send(JSON.stringify({ 
-        type: 'auth', 
-        userId: user.id,
-        userRole: user.role 
-      }));
-    };
-
-    websocket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'message') {
-        // Only invalidate if the message is from or to the current user
-        if (data.payload.senderId === userId || data.payload.receiverId === userId) {
-            queryClient.invalidateQueries({ queryKey: ['adminMessages', userId] });
-            queryClient.invalidateQueries({ queryKey: ['adminConversations'] });
-        }
-      }
-    };
-
-    setWs(websocket);
-
-    return () => websocket.close();
-  }, [user, userId]);
+  // WebSocket logic for real-time updates relies on global setup in App.tsx
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -289,7 +248,7 @@ export function AdminChatDetail() {
             ))
           ) : messages && messages.length > 0 ? (
             messages.map((message: any) => {
-              const isSender = message.senderId === user.id;
+              const isSender = message.senderId === user!.id;
               const isAdmin = message.sender?.role === 'admin';
               
               return (
@@ -367,4 +326,13 @@ export function AdminChatDetail() {
   );
 }
 
-export default AdminMessagesList;
+// FIX: This single default export is used by App.tsx to route.
+export default function AdminMessages() {
+  const [, params] = useRoute('/admin/messages/:userId');
+  
+  if (params?.userId) {
+    return <AdminChatDetail userId={params.userId} />;
+  }
+  
+  return <AdminMessagesList />;
+}
