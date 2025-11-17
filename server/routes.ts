@@ -47,47 +47,220 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   const clients = new Map<string, WebSocket>();
 
-  wss.on('connection', (ws: WebSocket, req) => {
-    let userId: string | null = null;
+// server/routes.ts - ENHANCED MESSAGE ROUTES
 
-    ws.on('message', async (message: string) => {
-      try {
-        const data = JSON.parse(message.toString());
+// Add to WebSocket connection handler
+wss.on('connection', (ws: WebSocket, req) => {
+  let userId: string | null = null;
+  let userRole: string | null = null;
+
+  ws.on('message', async (message: string) => {
+    try {
+      const data = JSON.parse(message.toString());
+      
+      if (data.type === 'auth') {
+        userId = data.userId;
+        userRole = data.userRole;
+        if (userId) {
+          clients.set(userId, ws);
+          
+          // Send unread count on connection
+          const unreadCount = await storage.getUnreadMessageCount(userId);
+          ws.send(JSON.stringify({ 
+            type: 'unread_count', 
+            payload: { count: unreadCount } 
+          }));
+        }
+      } else if (data.type === 'message' && userId) {
+        const msg = await storage.createMessage({
+          ...data.payload,
+          senderId: userId,
+        });
+
+        // Determine receiver(s)
+        let receiverIds: string[] = [];
         
-        if (data.type === 'auth') {
-          userId = data.userId;
-          if (userId) {
-            clients.set(userId, ws);
+        if (data.payload.messageType === 'admin_message') {
+          // Admin message: send to specific user or all admins
+          if (data.payload.receiverId) {
+            receiverIds = [data.payload.receiverId];
+          } else if (userRole === 'admin') {
+            // If admin sending, get all admins
+            // (handled separately)
           }
-        } else if (data.type === 'message' && userId) {
-          const msg = await storage.createMessage({
-            ...data.payload,
-            senderId: userId,
-          });
-
+        } else if (data.payload.jobId) {
+          // Job message: send to the other party
           const job = await storage.getJob(data.payload.jobId);
           if (job) {
             const otherUserId = job.requesterId === userId ? job.providerId : job.requesterId;
+            if (otherUserId) receiverIds = [otherUserId];
+          }
+        }
 
-            if (otherUserId && clients.has(otherUserId)) {
-              const otherWs = clients.get(otherUserId);
-              if (otherWs && otherWs.readyState === WebSocket.OPEN) {
-                otherWs.send(JSON.stringify({ type: 'message', payload: msg }));
-              }
+        // Send to all receivers
+        for (const receiverId of receiverIds) {
+          if (clients.has(receiverId)) {
+            const receiverWs = clients.get(receiverId);
+            if (receiverWs && receiverWs.readyState === WebSocket.OPEN) {
+              receiverWs.send(JSON.stringify({ 
+                type: 'message', 
+                payload: msg 
+              }));
+              
+              // Update unread count
+              const unreadCount = await storage.getUnreadMessageCount(receiverId);
+              receiverWs.send(JSON.stringify({ 
+                type: 'unread_count', 
+                payload: { count: unreadCount } 
+              }));
             }
           }
         }
-      } catch (error) {
-        console.error('WebSocket error:', error);
+        
+        // Send back to sender for confirmation
+        ws.send(JSON.stringify({ 
+          type: 'message_sent', 
+          payload: msg 
+        }));
+      } else if (data.type === 'mark_read' && userId) {
+        // Mark message as read
+        await storage.markMessageAsRead(data.payload.messageId, userId);
+        
+        // Send updated unread count
+        const unreadCount = await storage.getUnreadMessageCount(userId);
+        ws.send(JSON.stringify({ 
+          type: 'unread_count', 
+          payload: { count: unreadCount } 
+        }));
       }
+    } catch (error) {
+      console.error('WebSocket error:', error);
+    }
+  });
+
+  ws.on('close', () => {
+    if (userId) {
+      clients.delete(userId);
+    }
+  });
+});
+
+// Enhanced Message Routes
+
+// Get unread message count
+app.get('/api/messages/unread-count', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+  try {
+    const count = await storage.getUnreadMessageCount(req.user!.id);
+    res.json({ count });
+  } catch (error: any) {
+    console.error('Get unread count error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Mark message as read
+app.post('/api/messages/:messageId/read', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+  try {
+    const message = await storage.markMessageAsRead(req.params.messageId, req.user!.id);
+    
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found or not authorized' });
+    }
+    
+    res.json(message);
+  } catch (error: any) {
+    console.error('Mark message read error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Mark all messages in conversation as read
+app.post('/api/messages/job/:jobId/read-all', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+  try {
+    await storage.markAllMessagesRead(req.params.jobId, req.user!.id);
+    
+    const unreadCount = await storage.getUnreadMessageCount(req.user!.id);
+    res.json({ success: true, unreadCount });
+  } catch (error: any) {
+    console.error('Mark all messages read error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get admin messages (for specific user talking to admin)
+app.get('/api/messages/admin', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+  try {
+    const messages = await storage.getAdminMessages(req.user!.id);
+    res.json(messages);
+  } catch (error: any) {
+    console.error('Get admin messages error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Admin: Get all conversations (users they're messaging with)
+app.get('/api/admin/conversations', authMiddleware, async (req: AuthRequest, res) => {
+  if (req.user!.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  
+  try {
+    const conversations = await storage.getAdminConversations();
+    res.json(conversations);
+  } catch (error: any) {
+    console.error('Get admin conversations error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Admin: Send message to user about report
+app.post('/api/admin/messages', authMiddleware, async (req: AuthRequest, res) => {
+  if (req.user!.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  
+  try {
+    const validatedData = insertMessageSchema.parse(req.body);
+    
+    if (!validatedData.receiverId) {
+      return res.status(400).json({ message: 'Receiver ID is required for admin messages' });
+    }
+    
+    const message = await storage.createMessage({
+      ...validatedData,
+      senderId: req.user!.id,
+      messageType: 'admin_message',
     });
 
-    ws.on('close', () => {
-      if (userId) {
-        clients.delete(userId);
+    // Notify receiver via WebSocket if online
+    if (clients.has(validatedData.receiverId)) {
+      const receiverWs = clients.get(validatedData.receiverId);
+      if (receiverWs && receiverWs.readyState === WebSocket.OPEN) {
+        receiverWs.send(JSON.stringify({ 
+          type: 'message', 
+          payload: message 
+        }));
+        
+        const unreadCount = await storage.getUnreadMessageCount(validatedData.receiverId);
+        receiverWs.send(JSON.stringify({ 
+          type: 'unread_count', 
+          payload: { count: unreadCount } 
+        }));
       }
-    });
-  });
+    }
+
+    res.status(201).json(message);
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+      });
+    }
+    console.error('Admin send message error:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
 
   // ==================== AUTH MIDDLEWARE ENFORCEMENT (NEW) ====================
   // A wrapper middleware to enforce full verification before accessing core features
