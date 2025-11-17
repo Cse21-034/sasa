@@ -34,8 +34,9 @@ import AdminVerification from "@/pages/admin/verification";
 import AdminUsers from "@/pages/admin/users";
 import AdminReports from "@/pages/admin/reports";
 import AdminAnalytics from "@/pages/admin/analytics";
-import AdminMessages from "@/pages/admin/messages"; // NEW: For listing admin conversations
-import AdminChat from "@/pages/admin/messages"; // NEW: For single admin chat view
+import AdminMessages from "@/pages/admin/messages"; 
+import AdminChat from "@/pages/admin/messages"; 
+import AdminChatUserView from "@/pages/messages/admin-chat"; // Import the new component
 
 
 function ProtectedRoute({ component: Component, path, ...rest }: any) {
@@ -149,6 +150,10 @@ function Router() {
           </Route>
           <Route path="/messages">
             {() => <ProtectedRoute component={Messages} path="/messages" />}
+          </Route>
+          {/* NEW: Static route for user's Admin Chat */}
+          <Route path="/messages/admin-chat">
+            {() => <ProtectedRoute component={AdminChatUserView} path="/messages/admin-chat" />}
           </Route>
           <Route path="/messages/:jobId">
             {() => <ProtectedRoute component={Chat} path="/messages/:jobId" />}
