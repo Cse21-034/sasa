@@ -42,228 +42,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
 
-  // WebSocket server for real-time chat
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  
-  const clients = new Map<string, WebSocket>();
-
-// server/routes.ts - ENHANCED MESSAGE ROUTES
-
-// Add to WebSocket connection handler
-wss.on('connection', (ws: WebSocket, req) => {
-  let userId: string | null = null;
-  let userRole: string | null = null;
-
-  ws.on('message', async (message: string) => {
-    try {
-      const data = JSON.parse(message.toString());
-      
-      if (data.type === 'auth') {
-        userId = data.userId;
-        userRole = data.userRole;
-        if (userId) {
-          clients.set(userId, ws);
-          
-          // Send unread count on connection
-          const unreadCount = await storage.getUnreadMessageCount(userId);
-          ws.send(JSON.stringify({ 
-            type: 'unread_count', 
-            payload: { count: unreadCount } 
-          }));
-        }
-      } else if (data.type === 'message' && userId) {
-        const msg = await storage.createMessage({
-          ...data.payload,
-          senderId: userId,
-        });
-
-        // Determine receiver(s)
-        let receiverIds: string[] = [];
-        
-        if (data.payload.messageType === 'admin_message') {
-          // Admin message: send to specific user or all admins
-          if (data.payload.receiverId) {
-            receiverIds = [data.payload.receiverId];
-          } else if (userRole === 'admin') {
-            // If admin sending, get all admins
-            // (handled separately)
-          }
-        } else if (data.payload.jobId) {
-          // Job message: send to the other party
-          const job = await storage.getJob(data.payload.jobId);
-          if (job) {
-            const otherUserId = job.requesterId === userId ? job.providerId : job.requesterId;
-            if (otherUserId) receiverIds = [otherUserId];
-          }
-        }
-
-        // Send to all receivers
-        for (const receiverId of receiverIds) {
-          if (clients.has(receiverId)) {
-            const receiverWs = clients.get(receiverId);
-            if (receiverWs && receiverWs.readyState === WebSocket.OPEN) {
-              receiverWs.send(JSON.stringify({ 
-                type: 'message', 
-                payload: msg 
-              }));
-              
-              // Update unread count
-              const unreadCount = await storage.getUnreadMessageCount(receiverId);
-              receiverWs.send(JSON.stringify({ 
-                type: 'unread_count', 
-                payload: { count: unreadCount } 
-              }));
-            }
-          }
-        }
-        
-        // Send back to sender for confirmation
-        ws.send(JSON.stringify({ 
-          type: 'message_sent', 
-          payload: msg 
-        }));
-      } else if (data.type === 'mark_read' && userId) {
-        // Mark message as read
-        await storage.markMessageAsRead(data.payload.messageId, userId);
-        
-        // Send updated unread count
-        const unreadCount = await storage.getUnreadMessageCount(userId);
-        ws.send(JSON.stringify({ 
-          type: 'unread_count', 
-          payload: { count: unreadCount } 
-        }));
-      }
-    } catch (error) {
-      console.error('WebSocket error:', error);
-    }
-  });
-
-  ws.on('close', () => {
-    if (userId) {
-      clients.delete(userId);
-    }
-  });
-});
-
-// Enhanced Message Routes
-
-// Get unread message count
-app.get('/api/messages/unread-count', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
-  try {
-    const count = await storage.getUnreadMessageCount(req.user!.id);
-    res.json({ count });
-  } catch (error: any) {
-    console.error('Get unread count error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Mark message as read
-app.post('/api/messages/:messageId/read', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
-  try {
-    const message = await storage.markMessageAsRead(req.params.messageId, req.user!.id);
-    
-    if (!message) {
-      return res.status(404).json({ message: 'Message not found or not authorized' });
-    }
-    
-    res.json(message);
-  } catch (error: any) {
-    console.error('Mark message read error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Mark all messages in conversation as read
-app.post('/api/messages/job/:jobId/read-all', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
-  try {
-    await storage.markAllMessagesRead(req.params.jobId, req.user!.id);
-    
-    const unreadCount = await storage.getUnreadMessageCount(req.user!.id);
-    res.json({ success: true, unreadCount });
-  } catch (error: any) {
-    console.error('Mark all messages read error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Get admin messages (for specific user talking to admin)
-app.get('/api/messages/admin', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
-  try {
-    const messages = await storage.getAdminMessages(req.user!.id);
-    res.json(messages);
-  } catch (error: any) {
-    console.error('Get admin messages error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Admin: Get all conversations (users they're messaging with)
-app.get('/api/admin/conversations', authMiddleware, async (req: AuthRequest, res) => {
-  if (req.user!.role !== 'admin') {
-    return res.status(403).json({ message: 'Admin access required' });
-  }
-  
-  try {
-    const conversations = await storage.getAdminConversations();
-    res.json(conversations);
-  } catch (error: any) {
-    console.error('Get admin conversations error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Admin: Send message to user about report
-app.post('/api/admin/messages', authMiddleware, async (req: AuthRequest, res) => {
-  if (req.user!.role !== 'admin') {
-    return res.status(403).json({ message: 'Admin access required' });
-  }
-  
-  try {
-    const validatedData = insertMessageSchema.parse(req.body);
-    
-    if (!validatedData.receiverId) {
-      return res.status(400).json({ message: 'Receiver ID is required for admin messages' });
-    }
-    
-    const message = await storage.createMessage({
-      ...validatedData,
-      senderId: req.user!.id,
-      messageType: 'admin_message',
-    });
-
-    // Notify receiver via WebSocket if online
-    if (clients.has(validatedData.receiverId)) {
-      const receiverWs = clients.get(validatedData.receiverId);
-      if (receiverWs && receiverWs.readyState === WebSocket.OPEN) {
-        receiverWs.send(JSON.stringify({ 
-          type: 'message', 
-          payload: message 
-        }));
-        
-        const unreadCount = await storage.getUnreadMessageCount(validatedData.receiverId);
-        receiverWs.send(JSON.stringify({ 
-          type: 'unread_count', 
-          payload: { count: unreadCount } 
-        }));
-      }
-    }
-
-    res.status(201).json(message);
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
-      });
-    }
-    console.error('Admin send message error:', error);
-    res.status(400).json({ message: error.message });
-  }
-});
-
-  // ==================== AUTH MIDDLEWARE ENFORCEMENT (NEW) ====================
-  // A wrapper middleware to enforce full verification before accessing core features
+  // ==================== VERIFICATION MIDDLEWARE (MOVED TO TOP) ====================
+  // 🔥 FIX: Define verifyAccess BEFORE using it
   const verifyAccess = (req: AuthRequest, res: Response, next: NextFunction) => {
     // Admins always have access
     if (req.user!.role === 'admin') {
@@ -288,157 +68,324 @@ app.post('/api/admin/messages', authMiddleware, async (req: AuthRequest, res) =>
     next();
   };
 
+  // WebSocket server for real-time chat
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  const clients = new Map<string, WebSocket>();
+
+  // WebSocket connection handler
+  wss.on('connection', (ws: WebSocket, req) => {
+    let userId: string | null = null;
+    let userRole: string | null = null;
+
+    ws.on('message', async (message: string) => {
+      try {
+        const data = JSON.parse(message.toString());
+        
+        if (data.type === 'auth') {
+          userId = data.userId;
+          userRole = data.userRole;
+          if (userId) {
+            clients.set(userId, ws);
+            
+            // Send unread count on connection
+            const unreadCount = await storage.getUnreadMessageCount(userId);
+            ws.send(JSON.stringify({ 
+              type: 'unread_count', 
+              payload: { count: unreadCount } 
+            }));
+          }
+        } else if (data.type === 'message' && userId) {
+          const msg = await storage.createMessage({
+            ...data.payload,
+            senderId: userId,
+          });
+
+          // Determine receiver(s)
+          let receiverIds: string[] = [];
+          
+          if (data.payload.messageType === 'admin_message') {
+            if (data.payload.receiverId) {
+              receiverIds = [data.payload.receiverId];
+            }
+          } else if (data.payload.jobId) {
+            const job = await storage.getJob(data.payload.jobId);
+            if (job) {
+              const otherUserId = job.requesterId === userId ? job.providerId : job.requesterId;
+              if (otherUserId) receiverIds = [otherUserId];
+            }
+          }
+
+          // Send to all receivers
+          for (const receiverId of receiverIds) {
+            if (clients.has(receiverId)) {
+              const receiverWs = clients.get(receiverId);
+              if (receiverWs && receiverWs.readyState === WebSocket.OPEN) {
+                receiverWs.send(JSON.stringify({ 
+                  type: 'message', 
+                  payload: msg 
+                }));
+                
+                const unreadCount = await storage.getUnreadMessageCount(receiverId);
+                receiverWs.send(JSON.stringify({ 
+                  type: 'unread_count', 
+                  payload: { count: unreadCount } 
+                }));
+              }
+            }
+          }
+          
+          ws.send(JSON.stringify({ 
+            type: 'message_sent', 
+            payload: msg 
+          }));
+        } else if (data.type === 'mark_read' && userId) {
+          await storage.markMessageAsRead(data.payload.messageId, userId);
+          
+          const unreadCount = await storage.getUnreadMessageCount(userId);
+          ws.send(JSON.stringify({ 
+            type: 'unread_count', 
+            payload: { count: unreadCount } 
+          }));
+        }
+      } catch (error) {
+        console.error('WebSocket error:', error);
+      }
+    });
+
+    ws.on('close', () => {
+      if (userId) {
+        clients.delete(userId);
+      }
+    });
+  });
+
+  // ==================== MESSAGE ROUTES ====================
+
+  app.get('/api/messages/unread-count', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      const count = await storage.getUnreadMessageCount(req.user!.id);
+      res.json({ count });
+    } catch (error: any) {
+      console.error('Get unread count error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post('/api/messages/:messageId/read', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      const message = await storage.markMessageAsRead(req.params.messageId, req.user!.id);
+      
+      if (!message) {
+        return res.status(404).json({ message: 'Message not found or not authorized' });
+      }
+      
+      res.json(message);
+    } catch (error: any) {
+      console.error('Mark message read error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post('/api/messages/job/:jobId/read-all', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      await storage.markAllMessagesRead(req.params.jobId, req.user!.id);
+      
+      const unreadCount = await storage.getUnreadMessageCount(req.user!.id);
+      res.json({ success: true, unreadCount });
+    } catch (error: any) {
+      console.error('Mark all messages read error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/messages/admin', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      const messages = await storage.getAdminMessages(req.user!.id);
+      res.json(messages);
+    } catch (error: any) {
+      console.error('Get admin messages error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/admin/conversations', authMiddleware, async (req: AuthRequest, res) => {
+    if (req.user!.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    try {
+      const conversations = await storage.getAdminConversations();
+      res.json(conversations);
+    } catch (error: any) {
+      console.error('Get admin conversations error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post('/api/admin/messages', authMiddleware, async (req: AuthRequest, res) => {
+    if (req.user!.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    try {
+      const validatedData = insertMessageSchema.parse(req.body);
+      
+      if (!validatedData.receiverId) {
+        return res.status(400).json({ message: 'Receiver ID is required for admin messages' });
+      }
+      
+      const message = await storage.createMessage({
+        ...validatedData,
+        senderId: req.user!.id,
+        messageType: 'admin_message',
+      });
+
+      if (clients.has(validatedData.receiverId)) {
+        const receiverWs = clients.get(validatedData.receiverId);
+        if (receiverWs && receiverWs.readyState === WebSocket.OPEN) {
+          receiverWs.send(JSON.stringify({ 
+            type: 'message', 
+            payload: message 
+          }));
+          
+          const unreadCount = await storage.getUnreadMessageCount(validatedData.receiverId);
+          receiverWs.send(JSON.stringify({ 
+            type: 'unread_count', 
+            payload: { count: unreadCount } 
+          }));
+        }
+      }
+
+      res.status(201).json(message);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+        });
+      }
+      console.error('Admin send message error:', error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   // ==================== AUTH ROUTES ====================
   
- app.post('/api/auth/signup', async (req, res) => {
-  try {
-    console.log('Signup request body:', {
-      role: req.body.role,
-      hasCity: !!req.body.primaryCity,
-      email: req.body.email,
-      keys: Object.keys(req.body)
-    });
-
-    // 🔧 FIX: Validate the request body
-    const rawValidatedData = createUserRequestSchema.parse(req.body);
-    const { password, confirmPassword, primaryCity, ...userData } = rawValidatedData as any;
-    
-    console.log('After validation:', {
-      role: userData.role,
-      primaryCity: primaryCity,
-      isProvider: userData.role === 'provider'
-    });
-
-    if (password !== confirmPassword) {
-      return res.status(400).json({ message: "Passwords do not match." });
-    }
-
-    const existingUser = await storage.getUserByEmail(userData.email);
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-    
-    const isSupplier = userData.role === 'supplier';
-    let supplierData: any = null;
-    
-    if (isSupplier) {
-      const {
-        companyName,
-        physicalAddress,
-        contactPerson,
-        contactPosition,
-        companyEmail,
-        companyPhone,
-        industryType,
-        ...baseUserData
-      } = userData as any;
-      
-      supplierData = {
-        companyName,
-        physicalAddress,
-        contactPerson,
-        contactPosition,
-        companyEmail,
-        companyPhone,
-        industryType,
-      };
-      
-      // Remove supplier fields from userData
-      Object.keys(userData).forEach(key => {
-        if (!(key in baseUserData)) {
-          delete (userData as any)[key];
-        }
-      });
-    }
-
-    // 🔧 FIX: Create user first
-    console.log('Creating user with role:', userData.role);
-    const user = await storage.createUser({
-      ...userData,
-      passwordHash,
-    });
-    console.log('User created:', user.id, user.role);
-
-    // 🔧 FIX: Handle role-specific profiles AFTER user creation
+  app.post('/api/auth/signup', async (req, res) => {
     try {
-      if (user.role === 'provider') {
-        // Providers MUST have a city
-        if (!primaryCity) {
-          console.error('Provider signup missing city');
-          await storage.deleteUser(user.id);
-          return res.status(400).json({ 
-            message: 'City selection is required for service providers. Please select your service area.' 
+      const rawValidatedData = createUserRequestSchema.parse(req.body);
+      const { password, confirmPassword, primaryCity, ...userData } = rawValidatedData as any;
+      
+      if (password !== confirmPassword) {
+        return res.status(400).json({ message: "Passwords do not match." });
+      }
+
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'User already exists' });
+      }
+
+      const passwordHash = await bcrypt.hash(password, 10);
+      
+      const isSupplier = userData.role === 'supplier';
+      let supplierData: any = null;
+      
+      if (isSupplier) {
+        const {
+          companyName,
+          physicalAddress,
+          contactPerson,
+          contactPosition,
+          companyEmail,
+          companyPhone,
+          industryType,
+          ...baseUserData
+        } = userData as any;
+        
+        supplierData = {
+          companyName,
+          physicalAddress,
+          contactPerson,
+          contactPosition,
+          companyEmail,
+          companyPhone,
+          industryType,
+        };
+        
+        Object.keys(userData).forEach(key => {
+          if (!(key in baseUserData)) {
+            delete (userData as any)[key];
+          }
+        });
+      }
+
+      const user = await storage.createUser({
+        ...userData,
+        passwordHash,
+      });
+
+      try {
+        if (user.role === 'provider') {
+          if (!primaryCity) {
+            await storage.deleteUser(user.id);
+            return res.status(400).json({ 
+              message: 'City selection is required for service providers. Please select your service area.' 
+            });
+          }
+          
+          await storage.createProvider({
+            userId: user.id,
+            serviceCategories: [],
+            primaryCity,
+            approvedServiceAreas: [primaryCity],
+            serviceAreaRadiusMeters: 10000,
+          });
+          
+        } else if (user.role === 'supplier' && supplierData) {
+          await storage.createSupplier({
+            userId: user.id,
+            ...supplierData,
           });
         }
-        
-        console.log('Creating provider profile with city:', primaryCity);
-        await storage.createProvider({
-          userId: user.id,
-          serviceCategories: [],
-          primaryCity,
-          approvedServiceAreas: [primaryCity],
-          serviceAreaRadiusMeters: 10000,
+      } catch (profileError: any) {
+        await storage.deleteUser(user.id);
+        return res.status(500).json({ 
+          message: 'Failed to create user profile: ' + profileError.message 
         });
-        console.log('Provider profile created');
-        
-      } else if (user.role === 'supplier' && supplierData) {
-        console.log('Creating supplier profile');
-        await storage.createSupplier({
-          userId: user.id,
-          ...supplierData,
-        });
-        console.log('Supplier profile created');
-        
-      } else if (user.role === 'requester') {
-        // 🔧 FIX: Requesters don't need any additional profile
-        console.log('Requester - no additional profile needed');
       }
-    } catch (profileError: any) {
-      // If profile creation fails, delete the user and return error
-      console.error('Profile creation failed:', profileError);
-      await storage.deleteUser(user.id);
-      return res.status(500).json({ 
-        message: 'Failed to create user profile: ' + profileError.message 
+
+      const token = generateToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified,
+        isIdentityVerified: user.isIdentityVerified,
+        status: user.status, 
+      });
+
+      const { passwordHash: _, ...userWithoutPassword } = user;
+      
+      res.json({ user: userWithoutPassword, token });
+      
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: error.issues.map(i => ({ 
+            field: i.path.join('.'), 
+            message: i.message 
+          }))
+        });
+      }
+      
+      res.status(400).json({ 
+        message: error.message || 'Signup failed. Please try again.' 
       });
     }
-
-    // 🆕 Set unverified/active status in token
-    const token = generateToken({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      isVerified: user.isVerified,
-      isIdentityVerified: user.isIdentityVerified,
-      status: user.status, 
-    });
-
-    const { passwordHash: _, ...userWithoutPassword } = user;
-    
-    console.log('Signup successful for:', user.email, user.role);
-    res.json({ user: userWithoutPassword, token });
-    
-  } catch (error: any) {
-    console.error('Signup error:', error);
-    
-    if (error instanceof ZodError) {
-      console.error('Validation errors:', error.issues);
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: error.issues.map(i => ({ 
-          field: i.path.join('.'), 
-          message: i.message 
-        }))
-      });
-    }
-    
-    res.status(400).json({ 
-      message: error.message || 'Signup failed. Please try again.' 
-    });
-  }
-});
-  
+  });
 
   app.post('/api/auth/login', async (req, res) => {
     try {
@@ -458,18 +405,13 @@ app.post('/api/admin/messages', authMiddleware, async (req: AuthRequest, res) =>
         return res.status(401).json({ message: 'Invalid credentials' });
       }
       
-      // 🆕 Check user status on login
       if (user.status !== 'active') {
-         // Return 403 Forbidden if blocked or deactivated
          return res.status(403).json({ message: `Your account is currently ${user.status}. Please contact support.` });
       }
       
-      // 🆕 NEW: Update last login time
       const updatedUser = await storage.updateUser(user.id, { lastLogin: new Date() });
       const userToUse = updatedUser || user;
 
-
-      // 🆕 Update token with current verification/status
       const token = generateToken({
         id: userToUse.id,
         email: userToUse.email,
@@ -486,6 +428,7 @@ app.post('/api/admin/messages', authMiddleware, async (req: AuthRequest, res) =>
       res.status(500).json({ message: error.message || 'Login failed' });
     }
   });
+
 
   // ==================== JOB ROUTES - PROTECTED BY verifyAccess ====================
 
