@@ -147,9 +147,14 @@ export interface IStorage {
   confirmPayment(jobId: string, amount: string): Promise<Job | undefined>;
 
   // Messages
-  getMessages(jobId: string): Promise<MessageWithSender[]>;
+   getMessages(jobId: string): Promise<MessageWithSender[]>;
+  getAdminMessages(userId: string): Promise<MessageWithSender[]>; // New
+  getUnreadMessageCount(userId: string): Promise<number>; // New
   createMessage(message: InsertMessage & { senderId: string }): Promise<Message>;
-  getConversations(userId: string): Promise<any[]>; 
+  markMessageAsRead(messageId: string, userId: string): Promise<Message | undefined>; // New
+  markAllMessagesRead(jobId: string, userId: string): Promise<void>; // New
+  getConversations(userId: string): Promise<any[]>;
+  getAdminConversations(): Promise<any[]>; // New for admin
 
   // Ratings
   createRating(rating: InsertRating & { fromUserId: string }): Promise<Rating>;
@@ -831,12 +836,117 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
+ // New: Get admin messages for a specific user
+  async getAdminMessages(userId: string): Promise<MessageWithSender[]> {
+    const results = await db
+      .select({
+        message: messages,
+        sender: users,
+      })
+      .from(messages)
+      .leftJoin(users, eq(messages.senderId, users.id))
+      .where(
+        and(
+          eq(messages.messageType, 'admin_message'),
+          or(
+            eq(messages.senderId, userId),
+            eq(messages.receiverId, userId)
+          )
+        )
+      )
+      .orderBy(asc(messages.createdAt));
+
+    return results.map((r) => ({
+      ...r.message,
+      sender: r.sender,
+    }));
+  }
+
+  // New: Get unread message count
+  async getUnreadMessageCount(userId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(
+        and(
+          eq(messages.receiverId, userId),
+          eq(messages.isRead, false)
+        )
+      );
+    
+    return result?.count || 0;
+  }
+
+  // Enhanced createMessage with receiver tracking
   async createMessage(insertMessage: InsertMessage & { senderId: string }): Promise<Message> {
-    const [message] = await db.insert(messages).values(insertMessage).returning();
+    // If it's a job message and no receiver specified, determine receiver from job
+    let receiverId = insertMessage.receiverId;
+    
+    if (insertMessage.jobId && !receiverId) {
+      const [job] = await db
+        .select()
+        .from(jobs)
+        .where(eq(jobs.id, insertMessage.jobId));
+      
+      if (job) {
+        // Receiver is the other party in the job
+        receiverId = job.requesterId === insertMessage.senderId 
+          ? job.providerId 
+          : job.requesterId;
+      }
+    }
+
+    const [message] = await db
+      .insert(messages)
+      .values({
+        ...insertMessage,
+        receiverId,
+        isRead: false,
+      })
+      .returning();
+    
     return message;
   }
 
+  // New: Mark message as read
+  async markMessageAsRead(messageId: string, userId: string): Promise<Message | undefined> {
+    const [updated] = await db
+      .update(messages)
+      .set({ 
+        isRead: true, 
+        readAt: new Date() 
+      })
+      .where(
+        and(
+          eq(messages.id, messageId),
+          eq(messages.receiverId, userId)
+        )
+      )
+      .returning();
+    
+    return updated || undefined;
+  }
+
+  // New: Mark all messages in a conversation as read
+  async markAllMessagesRead(jobId: string, userId: string): Promise<void> {
+    await db
+      .update(messages)
+      .set({ 
+        isRead: true, 
+        readAt: new Date() 
+      })
+      .where(
+        and(
+          eq(messages.jobId, jobId),
+          eq(messages.receiverId, userId),
+          eq(messages.isRead, false)
+        )
+      );
+  }
+
+  // Enhanced getConversations with unread counts
   async getConversations(userId: string): Promise<any[]> {
+    // Get all jobs where user is involved
     const userJobs = await db
       .select({
         job: jobs,
@@ -847,6 +957,8 @@ export class DatabaseStorage implements IStorage {
       .where(sql`${jobs.requesterId} = ${userId} OR ${jobs.providerId} = ${userId}`);
 
     const conversations = [];
+    
+    // Job-based conversations
     for (const { job, requester } of userJobs) {
       const [lastMessage] = await db
         .select()
@@ -859,19 +971,133 @@ export class DatabaseStorage implements IStorage {
         const otherUserId = job.requesterId === userId ? job.providerId : job.requesterId;
         const [otherUser] = await db.select().from(users).where(eq(users.id, otherUserId!));
 
+        // Count unread messages
+        const [unreadResult] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.jobId, job.id),
+              eq(messages.receiverId, userId),
+              eq(messages.isRead, false)
+            )
+          );
+
         conversations.push({
           jobId: job.id,
           jobTitle: job.title,
           otherUser,
           lastMessage: lastMessage.messageText,
           lastMessageTime: lastMessage.createdAt,
-          unreadCount: 0,
+          unreadCount: unreadResult?.count || 0,
+          messageType: lastMessage.messageType,
         });
       }
     }
 
-    return conversations;
+    // Add admin messages if any
+    const [lastAdminMessage] = await db
+      .select({
+        message: messages,
+        sender: users,
+      })
+      .from(messages)
+      .leftJoin(users, eq(messages.senderId, users.id))
+      .where(
+        and(
+          eq(messages.messageType, 'admin_message'),
+          or(
+            eq(messages.senderId, userId),
+            eq(messages.receiverId, userId)
+          )
+        )
+      )
+      .orderBy(desc(messages.createdAt))
+      .limit(1);
+
+    if (lastAdminMessage) {
+      const [unreadAdminResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(messages)
+        .where(
+          and(
+            eq(messages.messageType, 'admin_message'),
+            eq(messages.receiverId, userId),
+            eq(messages.isRead, false)
+          )
+        );
+
+      conversations.push({
+        jobId: 'admin-messages',
+        jobTitle: 'Admin Messages',
+        otherUser: lastAdminMessage.sender,
+        lastMessage: lastAdminMessage.message.messageText,
+        lastMessageTime: lastAdminMessage.message.createdAt,
+        unreadCount: unreadAdminResult?.count || 0,
+        messageType: 'admin_message',
+      });
+    }
+
+    return conversations.sort((a, b) => 
+      new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+    );
   }
+
+  // New: Get admin conversations (all users with messages)
+  async getAdminConversations(): Promise<any[]> {
+    // Get all users who have messages related to reports or admin communication
+    const results = await db
+      .select({
+        message: messages,
+        sender: users,
+        receiver: sql<any>`
+          (SELECT row_to_json(u.*) FROM users u WHERE u.id = ${messages.receiverId})
+        `.as('receiver'),
+      })
+      .from(messages)
+      .leftJoin(users, eq(messages.senderId, users.id))
+      .where(
+        or(
+          eq(messages.messageType, 'admin_message'),
+          sql`${messages.jobId} IN (SELECT job_id FROM job_reports WHERE resolved = false)`
+        )
+      )
+      .orderBy(desc(messages.createdAt));
+
+    // Group by user
+    const conversationsMap = new Map();
+    
+    for (const result of results) {
+      const userId = result.sender.id;
+      
+      if (!conversationsMap.has(userId)) {
+        const [unreadResult] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.senderId, userId),
+              eq(messages.isRead, false),
+              eq(messages.messageType, 'admin_message')
+            )
+          );
+
+        conversationsMap.set(userId, {
+          userId,
+          user: result.sender,
+          lastMessage: result.message.messageText,
+          lastMessageTime: result.message.createdAt,
+          unreadCount: unreadResult?.count || 0,
+        });
+      }
+    }
+
+    return Array.from(conversationsMap.values()).sort((a, b) => 
+      new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+    );
+  }
+
+
 
   // Ratings
   async createRating(insertRating: InsertRating & { fromUserId: string }): Promise<Rating> {
