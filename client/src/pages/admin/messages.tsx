@@ -125,7 +125,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function AdminChat() {
   const [, params] = useRoute('/admin/messages/:userId');
-  const { user } = useAuth();
+  const { user } =  useAuth();
   const { toast } = useToast();
   const [messageText, setMessageText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -148,17 +148,14 @@ export default function AdminChat() {
   const { data: messages, isLoading } = useQuery({
     queryKey: ['adminMessages', userId],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/messages/admin');
-      const allMessages = await res.json();
-      // Filter messages for this specific user
-      return allMessages.filter((m: any) => 
-        m.senderId === userId || m.receiverId === userId
-      );
+      // 🚨 FIXED: Use the new route that correctly filters messages by target userId in the backend (Issue 1)
+      const res = await apiRequest('GET', `/api/admin/messages/${userId}`); 
+      return res.json();
     },
     enabled: !!userId,
     refetchInterval: 3000,
   });
-
+  
   const sendMessageMutation = useMutation({
     mutationFn: async (text: string) => {
       const res = await apiRequest('POST', '/api/admin/messages', {
