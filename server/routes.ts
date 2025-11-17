@@ -199,9 +199,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/messages/admin', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+ app.get('/api/admin/messages/:userId', authMiddleware, async (req: AuthRequest, res) => {
+    if (req.user!.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
     try {
-      const messages = await storage.getAdminMessages(req.user!.id);
+      // Use the dedicated storage method to fetch only messages exchanged between admin and target user
+      const messages = await storage.getAdminChatMessages(req.user!.id, req.params.userId); 
       res.json(messages);
     } catch (error: any) {
       console.error('Get admin messages error:', error);
