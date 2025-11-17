@@ -198,8 +198,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-
- app.get('/api/admin/messages/:userId', authMiddleware, async (req: AuthRequest, res) => {
+  
+  // FIX: Admin Chat - Get all messages between Admin and target User
+  app.get('/api/admin/messages/:userId', authMiddleware, async (req: AuthRequest, res) => {
     if (req.user!.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
     }
@@ -214,6 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // FIX: Admin Chat - Get list of users Admin has conversations with
   app.get('/api/admin/conversations', authMiddleware, async (req: AuthRequest, res) => {
     if (req.user!.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
@@ -228,20 +230,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // FIX: Admin Chat - Send a message from Admin to a target user
   app.post('/api/admin/messages', authMiddleware, async (req: AuthRequest, res) => {
     if (req.user!.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
     }
     
     try {
-      const validatedData = insertMessageSchema.parse(req.body);
+      const validatedData = insertMessageSchema.partial().parse(req.body);
       
       if (!validatedData.receiverId) {
         return res.status(400).json({ message: 'Receiver ID is required for admin messages' });
       }
       
       const message = await storage.createMessage({
-        ...validatedData,
+        ...validatedData as any,
         senderId: req.user!.id,
         messageType: 'admin_message',
       });
@@ -534,17 +537,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Provider can see if:
         // 1. They are assigned to it
         // 2. It's open and in their approved service areas
-        if (job.providerId !== req.user!.id && job.status !== 'open') {
-          return res.status(403).json({ message: 'Access denied' });
-        }
+        const provider = await storage.getProvider(req.user!.id);
+        const approvedCities = (provider?.approvedServiceAreas as string[]) || [provider?.primaryCity];
+
+        // Access is granted if assigned OR job is open and in an approved city
+        const isAssigned = job.providerId === req.user!.id;
+        const isAvailableOpenJob = job.status === 'open' && approvedCities.includes(job.city);
         
-        if (job.status === 'open') {
-          const provider = await storage.getProvider(req.user!.id);
-          const approvedCities = (provider?.approvedServiceAreas as string[]) || [provider?.primaryCity];
-          
-          if (!approvedCities.includes(job.city)) {
-            return res.status(403).json({ message: 'This job is not in your service area' });
-          }
+        if (!isAssigned && !isAvailableOpenJob) {
+          return res.status(403).json({ message: 'Access denied to this job' });
         }
       }
 
@@ -963,8 +964,8 @@ app.patch('/api/provider/categories', authMiddleware, verifyAccess, async (req: 
   } catch (error: any) {
     console.error('Update categories error:', error);
     res.status(500).json({ message: error.message });
-  }
-});
+    }
+  });
 
   // ==================== CATEGORY ROUTES ====================
 
