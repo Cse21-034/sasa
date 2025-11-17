@@ -1,17 +1,22 @@
 // client/src/pages/admin/messages.tsx - NEW ADMIN MESSAGES LIST
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Shield, Search, MessageSquare } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRoute, Link } from 'wouter';
+import { Send, ArrowLeft, Shield, Search, MessageSquare, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Link } from 'wouter';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/hooks/use-toast';
 
-export default function AdminMessages() {
+
+// --- ADMIN MESSAGES LIST COMPONENT ---
+function AdminMessagesList() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: conversations, isLoading } = useQuery({
@@ -109,26 +114,16 @@ export default function AdminMessages() {
   );
 }
 
-import { useState, useEffect, useRef } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useRoute } from 'wouter';
-import { Send, ArrowLeft, Shield, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/lib/auth-context';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
 
-export default function AdminChat() {
+// --- ADMIN CHAT DETAIL COMPONENT (Exported as default) ---
+
+export function AdminChatDetail() {
   const [, params] = useRoute('/admin/messages/:userId');
   const { user } =  useAuth();
   const { toast } = useToast();
   const [messageText, setMessageText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   const userId = params?.userId;
@@ -137,6 +132,7 @@ export default function AdminChat() {
   const { data: targetUser } = useQuery({
     queryKey: ['user', userId],
     queryFn: async () => {
+      // 🚨 FIX: Using the /api/admin/users endpoint to fetch user details
       const res = await apiRequest('GET', `/api/admin/users`);
       const users = await res.json();
       return users.find((u: any) => u.id === userId);
@@ -148,7 +144,7 @@ export default function AdminChat() {
   const { data: messages, isLoading } = useQuery({
     queryKey: ['adminMessages', userId],
     queryFn: async () => {
-      // 🚨 FIXED: Use the new route that correctly filters messages by target userId in the backend (Issue 1)
+      // 🚨 FIX: Use the new route that correctly filters messages by target userId in the backend (Issue 1)
       const res = await apiRequest('GET', `/api/admin/messages/${userId}`); 
       return res.json();
     },
@@ -158,6 +154,7 @@ export default function AdminChat() {
   
   const sendMessageMutation = useMutation({
     mutationFn: async (text: string) => {
+      // 🚨 FIX: Send dedicated admin message payload
       const res = await apiRequest('POST', '/api/admin/messages', {
         receiverId: userId,
         messageText: text,
@@ -167,6 +164,7 @@ export default function AdminChat() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminMessages', userId] });
+      queryClient.invalidateQueries({ queryKey: ['adminConversations'] });
       setMessageText('');
     },
     onError: (error: any) => {
@@ -183,7 +181,10 @@ export default function AdminChat() {
     if (!user) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    // 🚨 FIX: Using config.apiUrl to correctly build WebSocket URL if not on same host
+    const apiUrl = queryClient.getQueryData(['/api/config']) || window.location.host;
+    const wsUrl = apiUrl.toString().replace('http', 'ws');
+    const websocket = new WebSocket(`${wsUrl}/ws`);
 
     websocket.onopen = () => {
       websocket.send(JSON.stringify({ 
@@ -196,7 +197,11 @@ export default function AdminChat() {
     websocket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'message') {
-        queryClient.invalidateQueries({ queryKey: ['adminMessages', userId] });
+        // Only invalidate if the message is from or to the current user
+        if (data.payload.senderId === userId || data.payload.receiverId === userId) {
+            queryClient.invalidateQueries({ queryKey: ['adminMessages', userId] });
+            queryClient.invalidateQueries({ queryKey: ['adminConversations'] });
+        }
       }
     };
 
@@ -207,6 +212,9 @@ export default function AdminChat() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    
+    // Invalidate conversation list when chat opens to clear badge on desktop header
+    queryClient.invalidateQueries({ queryKey: ['/api/messages/conversations'] });
   }, [messages]);
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -227,6 +235,18 @@ export default function AdminChat() {
         </Card>
       </div>
     );
+  }
+  
+  if (!targetUser) {
+      return (
+        <div className="container mx-auto px-4 py-8 max-w-4xl flex flex-col">
+            <Button variant="ghost" className="mb-4" onClick={() => window.history.back()}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Messages
+            </Button>
+            <Card><CardContent className="p-12 text-center">User not found</CardContent></Card>
+        </div>
+      );
   }
 
   return (
@@ -346,3 +366,5 @@ export default function AdminChat() {
     </div>
   );
 }
+
+export default AdminMessagesList;
