@@ -32,9 +32,8 @@ export default function AdminChatUserView() {
   
   const sendMessageMutation = useMutation({
     mutationFn: async (text: string) => {
-      // When the user (reporter) sends a message, they send it via the /api/messages/admin-chat 
-      // endpoint which knows to forward it to the primary admin.
-      
+      // Endpoint /api/messages/admin-chat is the new static path that tells the backend 
+      // to route the message to the primary admin.
       const res = await apiRequest('POST', '/api/messages/admin-chat', {
         messageText: text,
       });
@@ -84,7 +83,16 @@ export default function AdminChatUserView() {
   const isReporter = user?.role === 'requester' || user?.role === 'provider' || user?.role === 'supplier';
   
   if (!isReporter) {
-      return <Alert variant="destructive">Not authorized to view admin chat.</Alert>
+      return (
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <Card className="border-destructive">
+                <CardContent className="p-12 text-center">
+                    <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+                    <p className="text-destructive font-semibold">Access denied.</p>
+                </CardContent>
+            </Card>
+        </div>
+      )
   }
 
   return (
