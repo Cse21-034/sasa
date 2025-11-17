@@ -199,23 +199,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // FIX: Admin Chat - Get all messages between Admin and target User
+  // FIX: Admin Chat - Get all messages between Admin and target User (Used by both admin and reporter)
   app.get('/api/admin/messages/:userId', authMiddleware, async (req: AuthRequest, res) => {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
+    
+    // Authorization: User must be Admin OR the ID requested must be their own ID.
+    if (req.user!.role !== 'admin' && req.user!.id !== req.params.userId) {
+      return res.status(403).json({ message: 'Access denied: Cannot view other users\' admin chats.' });
     }
     
     try {
+      const targetUserId = req.user!.role === 'admin' ? req.params.userId : req.user!.id; // Use self ID if not admin
+      const adminUser = await storage.getAdminUser();
+
+      if (!adminUser) {
+           return res.status(500).json({ message: 'System Admin account required to fetch chat.' });
+      }
+      
       // Use the dedicated storage method to fetch only messages exchanged between admin and target user
-      const messages = await storage.getAdminChatMessages(req.user!.id, req.params.userId); 
+      const messages = await storage.getAdminChatMessages(adminUser.id, targetUserId); 
       res.json(messages);
     } catch (error: any) {
       console.error('Get admin messages error:', error);
       res.status(500).json({ message: error.message });
     }
   });
+  
+  // Reporter: Send a private message to Admin (using static path to avoid UUID conflict)
+  app.post('/api/messages/admin-chat', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+        const validatedData = insertMessageSchema.partial().parse(req.body);
 
-  // FIX: Admin Chat - Get list of users Admin has conversations with
+        const adminUser = await storage.getAdminUser(); 
+        
+        if (!adminUser) {
+            return res.status(500).json({ message: 'System Admin not found.' });
+        }
+
+        const message = await storage.createMessage({
+            messageText: validatedData.messageText,
+            senderId: req.user!.id,
+            receiverId: adminUser.id, // Explicitly target the Admin
+            messageType: 'admin_message',
+            // Note: jobId is null here, relying on sender/receiverId
+        });
+
+        // Notify Admin via WebSocket (if client is open)
+        if (clients.has(adminUser.id)) {
+            const adminWs = clients.get(adminUser.id);
+            if (adminWs && adminWs.readyState === WebSocket.OPEN) {
+                adminWs.send(JSON.stringify({ 
+                    type: 'message', 
+                    payload: message 
+                }));
+                const unreadCount = await storage.getUnreadMessageCount(adminUser.id);
+                adminWs.send(JSON.stringify({ 
+                    type: 'unread_count', 
+                    payload: { count: unreadCount } 
+                }));
+            }
+        }
+        
+        res.status(201).json(message);
+    } catch (error: any) {
+        if (error instanceof ZodError) {
+            return res.status(400).json({ 
+                message: 'Validation failed', 
+                errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+            });
+        }
+        console.error('Reporter send admin message error:', error);
+        res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Reporter: Mark all Admin messages as read
+  app.post('/api/messages/admin-chat/read-all', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+        // Mark messages where the current user is the receiver and the sender is the Admin
+        await storage.markAllAdminMessagesRead(req.user!.id);
+        
+        const unreadCount = await storage.getUnreadMessageCount(req.user!.id);
+        res.json({ success: true, unreadCount });
+    } catch (error: any) {
+        console.error('Mark all admin messages read error:', error);
+        res.status(500).json({ message: error.message });
+    }
+  });
+
+
+  // Admin Chat - Get list of users Admin has conversations with
   app.get('/api/admin/conversations', authMiddleware, async (req: AuthRequest, res) => {
     if (req.user!.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
@@ -230,7 +302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // FIX: Admin Chat - Send a message from Admin to a target user
+  // Admin Chat - Send a message from Admin to a target user
   app.post('/api/admin/messages', authMiddleware, async (req: AuthRequest, res) => {
     if (req.user!.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
@@ -851,6 +923,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 🆕 Added verifyAccess
   app.get('/api/messages/:jobId', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
+      // NOTE: This endpoint handles job chat and expects a UUID. 
       const messages = await storage.getMessages(req.params.jobId);
       res.json(messages);
     } catch (error: any) {
@@ -858,6 +931,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
+  
+  // Reporter: Static GET route for Admin chat
+  app.get('/api/messages/admin-chat', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    // This effectively routes to the same logic as /api/admin/messages/:userId with self-ID
+     try {
+      const adminUser = await storage.getAdminUser();
+
+      if (!adminUser) {
+           return res.status(500).json({ message: 'System Admin account required to fetch chat.' });
+      }
+      
+      const messages = await storage.getAdminChatMessages(adminUser.id, req.user!.id); 
+      res.json(messages);
+    } catch (error: any) {
+      console.error('Get reporter admin chat messages error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
 
   // 🆕 Added verifyAccess
   app.post('/api/messages', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
@@ -878,6 +970,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error('Create message error:', error);
       res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Reporter: Send a private message to Admin (using static path to avoid UUID conflict)
+  app.post('/api/messages/admin-chat', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+        // We only allow messageText here, forcing receiver to be Admin and type to be admin_message
+        const { messageText } = insertMessageSchema.partial().parse(req.body);
+
+        const adminUser = await storage.getAdminUser(); 
+        
+        if (!adminUser) {
+            return res.status(500).json({ message: 'System Admin not found.' });
+        }
+
+        const message = await storage.createMessage({
+            messageText,
+            senderId: req.user!.id,
+            receiverId: adminUser.id, // Explicitly target the Admin
+            messageType: 'admin_message',
+        });
+
+        // Notify Admin via WebSocket (if client is open)
+        if (clients.has(adminUser.id)) {
+            const adminWs = clients.get(adminUser.id);
+            if (adminWs && adminWs.readyState === WebSocket.OPEN) {
+                adminWs.send(JSON.stringify({ 
+                    type: 'message', 
+                    payload: message 
+                }));
+                const unreadCount = await storage.getUnreadMessageCount(adminUser.id);
+                adminWs.send(JSON.stringify({ 
+                    type: 'unread_count', 
+                    payload: { count: unreadCount } 
+                }));
+            }
+        }
+        
+        res.status(201).json(message);
+    } catch (error: any) {
+        if (error instanceof ZodError) {
+            return res.status(400).json({ 
+                message: 'Validation failed', 
+                errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+            });
+        }
+        console.error('Reporter send admin message error:', error);
+        res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Reporter: Mark all Admin messages as read
+  app.post('/api/messages/admin-chat/read-all', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+        // Mark messages where the current user is the receiver and the sender is the Admin
+        await storage.markAllAdminMessagesRead(req.user!.id);
+        
+        const unreadCount = await storage.getUnreadMessageCount(req.user!.id);
+        res.json({ success: true, unreadCount });
+    } catch (error: any) {
+        console.error('Mark all admin messages read error:', error);
+        res.status(500).json({ message: error.message });
     }
   });
 
@@ -964,8 +1118,8 @@ app.patch('/api/provider/categories', authMiddleware, verifyAccess, async (req: 
   } catch (error: any) {
     console.error('Update categories error:', error);
     res.status(500).json({ message: error.message });
-    }
-  });
+  }
+});
 
   // ==================== CATEGORY ROUTES ====================
 
