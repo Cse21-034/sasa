@@ -116,13 +116,6 @@ export interface IStorage {
   deleteSupplierPromotion(id: string): Promise<void>;
 
 
-
-
-
-
-
-  
-
   // Service Area Migrations
   createServiceAreaMigration(migration: InsertServiceAreaMigration & { providerId: string }): Promise<ServiceAreaMigration>;
   getProviderMigrations(providerId: string): Promise<ServiceAreaMigration[]>;
@@ -156,6 +149,10 @@ export interface IStorage {
   markAllMessagesRead(jobId: string, userId: string): Promise<void>; // New
   getConversations(userId: string): Promise<any[]>;
   getAdminConversations(): Promise<any[]>; // New for admin
+  
+  // NEW ADMIN/USER CHAT UTILITIES
+  getAdminUser(): Promise<User | undefined>;
+  markAllAdminMessagesRead(userId: string): Promise<void>; 
 
   // Ratings
   createRating(rating: InsertRating & { fromUserId: string }): Promise<Rating>;
@@ -376,6 +373,14 @@ export class DatabaseStorage implements IStorage {
     rejectionReason?: string
   ): Promise<VerificationSubmission | undefined> {
     const [submission] = await db
+      .select()
+      .from(verificationSubmissions)
+      .where(eq(verificationSubmissions.id, id));
+
+    if (!submission) return undefined;
+
+    // Update migration status
+    const [updated] = await db
       .update(verificationSubmissions)
       .set({
         status: status,
@@ -386,7 +391,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(verificationSubmissions.id, id))
       .returning();
 
-    if (!submission) return undefined;
+    if (!updated) return undefined;
     
     // Logic for user update based on verification type
     if (status === 'approved') {
@@ -414,7 +419,7 @@ export class DatabaseStorage implements IStorage {
         }
     }
 
-    return submission;
+    return updated;
   }
 
   // Providers
@@ -1027,46 +1032,52 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Add admin messages if any
-    const [lastAdminMessage] = await db
-      .select({
-        message: messages,
-        sender: users,
-      })
-      .from(messages)
-      .leftJoin(users, eq(messages.senderId, users.id))
-      .where(
-        and(
-          eq(messages.messageType, 'admin_message'),
-          or(
-            eq(messages.senderId, userId),
-            eq(messages.receiverId, userId)
-          )
-        )
-      )
-      .orderBy(desc(messages.createdAt))
-      .limit(1);
+    const adminUser = await this.getAdminUser();
 
-    if (lastAdminMessage) {
-      const [unreadAdminResult] = await db
-        .select({ count: sql<number>`count(*)` })
+    if (adminUser) {
+      const [lastAdminMessage] = await db
+        .select({
+          message: messages,
+          sender: users,
+        })
         .from(messages)
+        .leftJoin(users, eq(messages.senderId, users.id))
         .where(
           and(
             eq(messages.messageType, 'admin_message'),
-            eq(messages.receiverId, userId),
-            eq(messages.isRead, false)
+            or(
+              // Message sent by Admin to User
+              and(eq(messages.senderId, adminUser.id), eq(messages.receiverId, userId)),
+              // Message sent by User to Admin
+              and(eq(messages.senderId, userId), eq(messages.receiverId, adminUser.id))
+            )
           )
-        );
+        )
+        .orderBy(desc(messages.createdAt))
+        .limit(1);
 
-      conversations.push({
-        jobId: 'admin-messages',
-        jobTitle: 'Admin Messages',
-        otherUser: lastAdminMessage.sender,
-        lastMessage: lastAdminMessage.message.messageText,
-        lastMessageTime: lastAdminMessage.message.createdAt,
-        unreadCount: unreadAdminResult?.count || 0,
-        messageType: 'admin_message',
-      });
+      if (lastAdminMessage) {
+        const [unreadAdminResult] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.messageType, 'admin_message'),
+              eq(messages.receiverId, userId),
+              eq(messages.isRead, false)
+            )
+          );
+
+        conversations.push({
+          jobId: 'admin-messages',
+          jobTitle: 'Admin Messages',
+          otherUser: adminUser,
+          lastMessage: lastAdminMessage.message.messageText,
+          lastMessageTime: lastAdminMessage.message.createdAt,
+          unreadCount: unreadAdminResult?.count || 0,
+          messageType: 'admin_message',
+        });
+      }
     }
 
     return conversations.sort((a, b) => 
@@ -1076,60 +1087,62 @@ export class DatabaseStorage implements IStorage {
 
   // New: Get admin conversations (all users with messages)
   async getAdminConversations(): Promise<any[]> {
-    // Get all users who have messages related to reports or admin communication
+    const adminUser = await this.getAdminUser();
+
+    if (!adminUser) return [];
+
+    // Get messages sent/received by the admin
     const results = await db
       .select({
         message: messages,
         sender: users,
-        receiver: sql<any>`
-          (SELECT row_to_json(u.*) FROM users u WHERE u.id = ${messages.receiverId})
-        `.as('receiver'),
       })
       .from(messages)
       .leftJoin(users, eq(messages.senderId, users.id))
       .where(
-        or(
-          eq(messages.messageType, 'admin_message'),
-          sql`${messages.jobId} IN (SELECT job_id FROM job_reports WHERE resolved = false)`
-        )
+        eq(messages.messageType, 'admin_message')
       )
       .orderBy(desc(messages.createdAt));
 
-    // Group by user
+    // Group by the non-admin user
     const conversationsMap = new Map();
     
     for (const result of results) {
-      // Find the non-admin user in the conversation
-      const targetUser = result.sender.role === 'admin' ? result.receiver : result.sender;
-      const userId = targetUser.id; // Target user's ID
+      // Determine the target user (the non-admin party)
+      const targetUserId = result.message.senderId === adminUser.id ? result.message.receiverId : result.message.senderId;
       
-      // We only care about conversations with real users, not self-messages or system messages
-      if (userId && userId !== result.sender.id) { 
-        
-        // Only process if it's the latest message for this user or the map is empty
-        if (!conversationsMap.has(userId) || result.message.createdAt > conversationsMap.get(userId).lastMessageTime) {
-            
-            // Count unread messages *sent by admin* to this user
-            const [unreadResult] = await db
-                .select({ count: sql<number>`count(*)` })
-                .from(messages)
-                .where(
-                    and(
-                        eq(messages.receiverId, userId), // User is the receiver
-                        eq(messages.senderId, result.sender.id), // Admin is the sender (or the user who triggered the report)
-                        eq(messages.isRead, false),
-                        eq(messages.messageType, 'admin_message')
-                    )
-                );
-    
-            conversationsMap.set(userId, {
-              userId,
-              user: targetUser,
-              lastMessage: result.message.messageText,
-              lastMessageTime: result.message.createdAt,
-              unreadCount: unreadResult?.count || 0,
-            });
-        }
+      if (!targetUserId || targetUserId === adminUser.id) continue;
+      
+      // Get target user details
+      const [targetUser] = await db.select().from(users).where(eq(users.id, targetUserId));
+      
+      if (!targetUser) continue;
+      
+      const userId = targetUser.id; 
+      
+      // Only include the most recent message
+      if (!conversationsMap.has(userId) || result.message.createdAt.getTime() > conversationsMap.get(userId).lastMessageTime.getTime()) {
+          
+          // Count unread messages *sent to admin* by this user
+          const [unreadResult] = await db
+              .select({ count: sql<number>`count(*)` })
+              .from(messages)
+              .where(
+                  and(
+                      eq(messages.receiverId, adminUser.id), // Admin is the receiver
+                      eq(messages.senderId, userId), // User is the sender
+                      eq(messages.isRead, false),
+                      eq(messages.messageType, 'admin_message')
+                  )
+              );
+  
+          conversationsMap.set(userId, {
+            userId,
+            user: targetUser,
+            lastMessage: result.message.messageText,
+            lastMessageTime: result.message.createdAt,
+            unreadCount: unreadResult?.count || 0,
+          });
       }
     }
 
@@ -1139,7 +1152,37 @@ export class DatabaseStorage implements IStorage {
   }
 
 
+  // 🆕 NEW: Get the primary admin user
+  async getAdminUser(): Promise<User | undefined> {
+    const [admin] = await db.select().from(users).where(eq(users.role, 'admin')).limit(1);
+    return admin;
+  }
+  
+  // 🆕 NEW: Mark all admin messages read for a non-admin user
+  async markAllAdminMessagesRead(userId: string): Promise<void> {
+    const adminUser = await this.getAdminUser();
 
+    if (!adminUser) {
+      // If no admin user exists, there are no admin messages to mark read.
+      return;
+    }
+
+    await db
+      .update(messages)
+      .set({ 
+        isRead: true, 
+        readAt: new Date() 
+      })
+      .where(
+        and(
+          eq(messages.receiverId, userId), // Messages received by the user
+          eq(messages.senderId, adminUser.id), // Sent by the Admin
+          eq(messages.messageType, 'admin_message'), // Is an admin message
+          eq(messages.isRead, false)
+        )
+      );
+  }
+  
   // Ratings
   async createRating(insertRating: InsertRating & { fromUserId: string }): Promise<Rating> {
     const [rating] = await db.insert(ratings).values(insertRating).returning();
