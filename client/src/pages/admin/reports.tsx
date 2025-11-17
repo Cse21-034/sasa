@@ -153,7 +153,8 @@ export default function AdminReports() {
                         {new Date(report.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right flex justify-end gap-2">
-                        <Link href={`/messages/${report.jobId}`}>
+                        {/* FIX: Change to link to the dedicated Admin Chat route using the reporter's ID */}
+                        <Link href={`/admin/messages/${report.reporter.id}`}>
                             <Button variant="outline" size="sm">
                                 <MessageSquare className="h-4 w-4" />
                             </Button>
