@@ -1,5 +1,3 @@
-// client/src/pages/messages/index.tsx - ENHANCED WITH UNREAD TRACKING
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, MessageSquare, Shield } from 'lucide-react';
@@ -11,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'wouter';
 import { useAuth } from '@/lib/auth-context';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 
 export default function Messages() {
   const { user } = useAuth();
@@ -141,7 +139,8 @@ export default function Messages() {
           filteredConversations.map((conv: any) => (
             <Link 
               key={conv.jobId} 
-              href={conv.messageType === 'admin_message' ? '/messages/admin' : `/messages/${conv.jobId}`}
+              // FIX: Use a unique static path for the user's view of Admin chat
+              href={conv.jobId === 'admin-messages' ? '/messages/admin-chat' : `/messages/${conv.jobId}`}
             >
               <a>
                 <Card className={`hover-elevate active-elevate-2 transition-all ${
