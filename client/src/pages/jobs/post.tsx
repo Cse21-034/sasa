@@ -85,7 +85,8 @@ export default function PostJob() {
 
     // Request high accuracy location with multiple attempts
     let attempts = 0;
-    const maxAttempts = 3;
+    // FIX: Increased max attempts for a better chance of high accuracy
+    const maxAttempts = 5; 
     let bestAccuracy = Infinity;
     let bestPosition: GeolocationPosition | null = null;
 
@@ -101,8 +102,8 @@ export default function PostJob() {
             bestPosition = position;
           }
 
-          // If accuracy is good enough (≤10m) or we've tried enough times
-          if (accuracy <= 10 || attempts >= maxAttempts) {
+          // FIX: Set "good enough" threshold to 25m
+          if (bestAccuracy <= 25 || attempts >= maxAttempts) {
             if (bestPosition) {
               const { latitude: lat, longitude: lng, accuracy: acc } = bestPosition.coords;
               
@@ -135,10 +136,11 @@ export default function PostJob() {
                   }
                 }
 
+                // FIX: Update toast message for 25m threshold and offer better guidance
                 toast({
-                  title: acc <= 10 ? '✅ High accuracy achieved' : '⚠️ Best effort accuracy',
-                  description: `Location captured with ${acc.toFixed(1)}m accuracy${acc > 10 ? '. Consider moving to an open area for better precision.' : '.'}`,
-                  variant: acc <= 10 ? 'default' : 'destructive',
+                  title: acc <= 25 ? '✅ Good accuracy achieved' : '⚠️ Low accuracy fallback',
+                  description: `Location captured with ${acc.toFixed(1)}m accuracy${acc > 25 ? '. Accuracy is poor. Please manually verify or move to an open area and try again.' : '.'}`,
+                  variant: acc <= 25 ? 'default' : 'warning',
                 });
               } catch (error) {
                 console.error('Reverse geocoding error:', error);
@@ -183,7 +185,8 @@ export default function PostJob() {
         },
         {
           enableHighAccuracy: true,  // Use GPS
-          timeout: 15000,            // 15 seconds per attempt
+          // FIX: Increased timeout from 15s to 30s to allow more time for a GPS fix
+          timeout: 30000,            // 30 seconds per attempt
           maximumAge: 0              // Don't use cached position
         }
       );
