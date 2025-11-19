@@ -87,7 +87,7 @@ export default function Login() {
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
             <div className="flex items-center gap-2">
-              <Briefcase className="h-8 w-8 text-primary" />
+              <img src="/logo.png" alt="JobTradeSasa" className="h-8 w-8" />
               <span className="text-2xl font-bold">JobTradeSasa</span>
             </div>
           </div>
