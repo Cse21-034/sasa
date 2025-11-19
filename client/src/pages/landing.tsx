@@ -124,7 +124,7 @@ export default function Landing() {
     <div 
       className="flex flex-col overflow-hidden bg-cover bg-fixed bg-center" 
       // FIX 1: Updated background URL to high quality placeholder
-      style={{ backgroundImage: `url('https://images.unsplash.com/photo-1542037101-38c23232057d?q=80&w=2600&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')` }}
+      style={{ backgroundImage: `url('https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80')` }}
     >
       
       {/* Hero Section */}
