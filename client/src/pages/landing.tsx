@@ -123,14 +123,14 @@ export default function Landing() {
     // Set the overall page background image 
     <div 
       className="flex flex-col overflow-hidden bg-cover bg-fixed bg-center" 
-      // FIX 1: Updated background URL to high quality placeholder
+      // FIX: Updated background URL to high quality placeholder for clarity
       style={{ backgroundImage: `url('https://images.unsplash.com/photo-1542037101-38c23232057d?q=80&w=2600&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')` }}
     >
       
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-24 pb-16 sm:py-32">
         {/* Semi-transparent overlay for readability against background image */}
-        {/* FIX 1: Reduced overlay opacity for more clarity (was bg-black/60) */}
+        {/* FIX: Reduced overlay opacity for more clarity (was bg-black/60) */}
         <div className="absolute inset-0 bg-black/40"></div> 
         
         <div className="container mx-auto px-4 relative z-10 text-center text-white">
@@ -216,33 +216,57 @@ export default function Landing() {
               Mascom's current promotions and offers in partnership with JobTradeSasa.
             </p>
           </div>
-          {/* FIX 2: Added realistic Mascom advert banners */}
+          {/* FIX: Updated with realistic banner content using high-quality image placeholders */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Mascom Banner 1: Data Deal (Using green/yellow colors) */}
-            <div className="group relative aspect-video bg-[#4B8C3E] rounded-xl shadow-lg overflow-hidden flex flex-col items-center justify-center p-6 text-white transform hover:scale-[1.03] transition-transform duration-300">
-              <span className="absolute top-4 left-4 bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded-full transform group-hover:rotate-2 transition-transform">TOP DEAL</span>
-              <img src="/logo.png" alt="Mascom" className="h-10 w-auto mb-2 opacity-50" />
-              <p className="text-4xl font-extrabold mb-1">50GB</p>
-              <p className="text-sm font-semibold mb-3">Mobile Data for Artisans</p>
-              <Button size="sm" className="bg-white text-black hover:bg-neutral-200 shadow-md">Get Offer</Button>
+            {/* Mascom Banner 1: Data Deal (Professional Image) */}
+            <div className="group relative aspect-video bg-gray-900 rounded-xl shadow-lg overflow-hidden flex items-center justify-center transform hover:scale-[1.03] transition-transform duration-300">
+              <img 
+                  src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1200&auto=format&fit=crop" 
+                  alt="Tech team working" 
+                  className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-70 transition-opacity"
+              />
+              <div className="relative z-10 p-6 text-white text-center">
+                <span className="absolute top-4 left-4 bg-yellow-400 text-gray-900 px-2 py-1 text-xs font-bold rounded-full transform group-hover:rotate-2 transition-transform">TOP DEAL</span>
+                {/* Generic Mascom Logo Placeholder */}
+                <span className="text-sm font-semibold mb-2 block tracking-widest text-yellow-300">MASCOM</span>
+                <p className="text-4xl font-extrabold mb-1">50GB</p>
+                <p className="text-sm font-semibold mb-3">Mobile Data for Artisans</p>
+                <Button size="sm" className="bg-primary text-white hover:bg-primary/90 shadow-md">Get Offer</Button>
+              </div>
             </div>
 
-            {/* Mascom Banner 2: Voice Offer (Using blue/white colors) */}
-            <div className="group relative aspect-video bg-[#00AEEF] rounded-xl shadow-lg overflow-hidden flex flex-col items-center justify-center p-6 text-white transform hover:scale-[1.03] transition-transform duration-300">
-              <span className="absolute top-4 right-4 text-xs font-medium border border-white px-2 py-0.5 rounded-full">NEW</span>
-              <img src="/logo.png" alt="Mascom" className="h-10 w-auto mb-2 opacity-50" />
-              <p className="text-4xl font-extrabold mb-1">FREE Calls</p>
-              <p className="text-sm font-semibold mb-3">Unlimited Talktime on Mascom</p>
-              <Button size="sm" variant="outline" className="text-white hover:bg-white/20 border-white shadow-md">More Info</Button>
+            {/* Mascom Banner 2: Voice Offer (Happy Customer Image) */}
+            <div className="group relative aspect-video bg-blue-600 rounded-xl shadow-lg overflow-hidden flex items-center justify-center transform hover:scale-[1.03] transition-transform duration-300">
+                <img 
+                    src="https://images.unsplash.com/photo-1549444458-9a3d46f90956?q=80&w=1200&auto=format&fit=crop" 
+                    alt="Happy person on phone" 
+                    className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-80 transition-opacity"
+                />
+              <div className="relative z-10 p-6 text-white text-center">
+                <span className="absolute top-4 right-4 text-xs font-medium border border-white/70 px-2 py-0.5 rounded-full">NEW</span>
+                 {/* Generic Mascom Logo Placeholder */}
+                <span className="text-sm font-semibold mb-2 block tracking-widest text-white">MASCOM</span>
+                <p className="text-4xl font-extrabold mb-1">FREE Calls</p>
+                <p className="text-sm font-semibold mb-3">Unlimited Talktime on Mascom</p>
+                <Button size="sm" variant="outline" className="text-white hover:bg-white/20 border-white shadow-md">More Info</Button>
+              </div>
             </div>
 
-            {/* Mascom Banner 3: App Bonus (Using corporate primary color) */}
-            <div className="group relative aspect-video bg-primary/90 rounded-xl shadow-lg overflow-hidden flex flex-col items-center justify-center p-6 text-white transform hover:scale-[1.03] transition-transform duration-300">
-              <span className="absolute bottom-4 right-4 text-xs font-medium bg-white/30 px-2 py-0.5 rounded-full">JOB BONUS</span>
-              <img src="/logo.png" alt="Mascom" className="h-10 w-auto mb-2 opacity-50" />
-              <p className="text-4xl font-extrabold mb-1">+2GB</p>
-              <p className="text-sm font-semibold mb-3">On Every Completed Job</p>
-              <Button size="sm" className="bg-white text-primary hover:bg-neutral-200 shadow-md">Claim Now</Button>
+            {/* Mascom Banner 3: App Bonus (JobTradeSasa-Themed Image) */}
+            <div className="group relative aspect-video bg-secondary/90 rounded-xl shadow-lg overflow-hidden flex items-center justify-center transform hover:scale-[1.03] transition-transform duration-300">
+                 <img 
+                    src="https://images.unsplash.com/photo-1517430030588-468f9a263259?q=80&w=1200&auto=format&fit=crop" 
+                    alt="Mobile app screen" 
+                    className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-70 transition-opacity"
+                />
+              <div className="relative z-10 p-6 text-white text-center">
+                <span className="absolute bottom-4 right-4 text-xs font-medium bg-black/30 px-2 py-0.5 rounded-full">JOB BONUS</span>
+                 {/* Generic Mascom Logo Placeholder */}
+                <span className="text-sm font-semibold mb-2 block tracking-widest text-primary">MASCOM</span>
+                <p className="text-4xl font-extrabold mb-1">+2GB</p>
+                <p className="text-sm font-semibold mb-3">On Every Completed Job</p>
+                <Button size="sm" className="bg-primary text-white hover:bg-primary/90 shadow-md">Claim Now</Button>
+              </div>
             </div>
           </div>
         </div>
