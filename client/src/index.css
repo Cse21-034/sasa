@@ -1,13 +1,12 @@
-/* client/src/index.css - UPDATED FOR MONOCHROMATIC EMERALD GREEN THEME */
+/* client/src/index.css - UPDATED FOR MONOCHROMATIC CORPORATE THEME (#F8992D, #274345) */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* Modern HSL Color System
-  Primary: Emerald Green (Success, Main Action)
-  Secondary: Emerald Green (Same as Primary for Monochromatic look)
-  Neutrals: Soft Beige/Sand (Light) and Deep Navy (Dark)
+  Primary: Orange (#F8992D -> 33 92% 58%)
+  Secondary: Dark Teal/Navy (#274345 -> 186 35% 21%)
 */
 
 /* LIGHT MODE (Primary Theme) */
@@ -19,70 +18,70 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  /* Neutral Palette - Soft Sand/Beige Base */
-  --background: 45 30% 95%;   
-  --foreground: 220 20% 10%;  /* Near Navy Black text */
-  --border: 45 10% 85%;       /* Light Sand/Gray border */
+  /* Corporate Palette - White Base */
+  --background: 0 0% 100%;       /* White */
+  --foreground: 186 35% 21%;    /* Dark Teal/Navy Text */
+  --border: 186 10% 90%;        /* Light Blue/Gray border */
 
   /* Card Styling */
-  --card: 45 30% 98%;        /* Lighter Sand Card background */
-  --card-foreground: 220 20% 10%;
-  --card-border: 45 10% 85%;  /* Visible light border */
+  --card: 0 0% 100%;            /* White Card background */
+  --card-foreground: 186 35% 21%;
+  --card-border: 186 10% 90%;   /* Visible light border */
 
   /* Sidebar */
-  --sidebar: 45 20% 90%;      /* Subtle Gray/Sand Sidebar */
-  --sidebar-foreground: 220 20% 10%;
-  --sidebar-border: 45 10% 80%;
+  --sidebar: 186 10% 95%;      /* Very Light Blue/Gray Sidebar */
+  --sidebar-foreground: 186 35% 21%;
+  --sidebar-border: 186 10% 90%;
   
-  /* Primary Emerald Green */
-  --primary: 25 95% 53%;  
-  --primary-foreground: 0 0% 100%;
+  /* Primary Orange (#F8992D) */
+  --primary: 33 92% 58%; 
+  --primary-foreground: 0 0% 100%; /* White text */
 
-  /* Secondary Emerald Green (MATCHES PRIMARY) */
-  --secondary: 25 95% 53%;  /* Emerald Green */
+  /* Secondary Orange (MATCHES PRIMARY) */
+  --secondary: 33 92% 58%; 
   --secondary-foreground: 0 0% 100%; /* White text */
 
   /* Sidebar/Accent - Using primary/secondary colors */
-  --sidebar-primary: 25 95% 53%; 
+  --sidebar-primary: 33 92% 58%; 
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 25 95% 53%;  /* New Secondary (Primary) */
+  --sidebar-accent: 33 92% 58%;  
   --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-ring: 25 95% 60%;
+  --sidebar-ring: 33 92% 65%;
 
   /* Popover */
-  --popover: 45 30% 98%;
-  --popover-foreground: 220 20% 10%;
-  --popover-border: 45 10% 85%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 186 35% 21%;
+  --popover-border: 186 10% 90%;
 
   /* Muted */
-  --muted: 45 10% 85%;
-  --muted-foreground: 45 10% 45%;
+  --muted: 186 10% 90%;
+  --muted-foreground: 186 10% 45%;
 
-  /* Accent - Emerald Green (Same as Secondary/Primary) */
-  --accent: 25 95% 53%;  /* New Accent (Primary) */
+  /* Accent - Orange (Same as Primary/Secondary) */
+  --accent: 33 92% 58%;  
   --accent-foreground: 0 0% 100%;
 
-  /* Destructive - Keeping red for warnings */
+  /* Destructive - Keeping standard red for warnings/errors */
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
 
-  /* Success - Emerald Green (Same as Primary) */
-  --success: 25 95% 53%; 
+  /* Success - Using Primary Orange for general success/completion indicators, keeping destructive separate */
+  --success: 33 92% 58%; 
   --success-foreground: 0 0% 100%;
 
   /* Warning - Standard Orange/Yellow */
   --warning: 40 80% 55%;
-  --warning-foreground: 220 20% 10%;
+  --warning-foreground: 186 35% 21%;
 
-  --input: 45 10% 80%;
-  --ring: 25 95% 60%;
+  --input: 186 10% 90%;
+  --ring: 33 92% 65%;
   
-  /* Chart colors - Now chart-1 and chart-2 are the same. chart-3 is the neutral accent. */
-  --chart-1: 25 95% 53%;     /* Emerald (Primary) */
-  --chart-2: 25 95% 53%;     /* Emerald (Secondary is now Primary) */
-  --chart-3: 220 20% 40%;    /* Navy Blue/Gray-Blue accent (From base palette) */
-  --chart-4: 45 10% 60%;     /* Medium Gray/Sand */
-  --chart-5: 45 10% 70%;     /* Light Gray/Sand */
+  /* Chart colors */
+  --chart-1: 33 92% 58%;     /* Orange (Primary) */
+  --chart-2: 186 35% 21%;    /* Dark Teal (Secondary) */
+  --chart-3: 186 10% 45%;    /* Muted Text */
+  --chart-4: 186 10% 60%;     /* Medium Gray/Blue */
+  --chart-5: 186 10% 70%;     /* Light Gray/Blue */
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-serif: Georgia, serif;
@@ -100,12 +99,12 @@
   --shadow-2xl: 0px 25px 50px 0px hsla(0, 0%, 0%, 0.25);
 
   /* Computed borders */
-  --sidebar-primary-border: hsl(25 95% 48%);
-  --sidebar-accent-border: hsl(25 95% 48%); /* New Secondary border (Primary) */
-  --primary-border: hsl(25 95% 48%);
-  --secondary-border: hsl(25 95% 48%); /* New Secondary border (Primary) */
-  --muted-border: hsl(45 10% 75%);
-  --accent-border: hsl(25 95% 48%); /* New Secondary border (Primary) */
+  --sidebar-primary-border: hsl(33 92% 65%);
+  --sidebar-accent-border: hsl(33 92% 65%);
+  --primary-border: hsl(33 92% 65%);
+  --secondary-border: hsl(33 92% 65%);
+  --muted-border: hsl(186 10% 80%);
+  --accent-border: hsl(33 92% 65%);
   --destructive-border: hsl(0 84% 50%);
 }
 
@@ -118,70 +117,70 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  /* Neutral Palette - Navy Blue Base */
-  --background: 220 20% 8%;     /* Deep Navy Blue */
-  --foreground: 45 30% 95%;     /* Light Beige Text */
-  --border: 220 20% 18%;        /* Dark Navy Border */
+  /* Corporate Palette - Dark Teal/Navy Base */
+  --background: 186 35% 21%;     /* Dark Teal/Navy */
+  --foreground: 0 0% 100%;       /* White Text */
+  --border: 186 35% 30%;        /* Dark Teal Border */
 
   /* Card Styling */
-  --card: 220 20% 12%;          /* Slightly lighter Navy Card */
-  --card-foreground: 45 30% 95%;
-  --card-border: 220 20% 15%;   /* Subtle card separation */
+  --card: 186 35% 25%;          /* Slightly lighter Dark Teal Card */
+  --card-foreground: 0 0% 100%;
+  --card-border: 186 35% 35%;   /* Subtle card separation */
 
   /* Sidebar - Darker Navy for contrast */
-  --sidebar: 220 20% 10%;       /* Darker Navy Sidebar */
-  --sidebar-foreground: 45 30% 95%;
-  --sidebar-border: 220 20% 18%;
+  --sidebar: 186 35% 18%;       /* Darker Dark Teal Sidebar */
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-border: 186 35% 30%;
 
-  /* Primary Emerald Green */
-  --primary: 25 95% 60%; 
-  --primary-foreground: 220 20% 10%;
+  /* Primary Orange (#F8992D) */
+  --primary: 33 92% 58%; 
+  --primary-foreground: 0 0% 100%;
 
-  /* Secondary Emerald Green (MATCHES PRIMARY) */
-  --secondary: 25 95% 60%; /* Emerald Green */
-  --secondary-foreground: 220 20% 10%;
+  /* Secondary Orange (MATCHES PRIMARY) */
+  --secondary: 33 92% 58%; 
+  --secondary-foreground: 0 0% 100%;
 
   /* Sidebar/Accent - Using primary/secondary colors */
-  --sidebar-primary: 25 95% 60%;
-  --sidebar-primary-foreground: 220 20% 10%;
-  --sidebar-accent: 25 95% 60%; /* New Secondary (Primary) */
-  --sidebar-accent-foreground: 220 20% 10%;
-  --sidebar-ring: 25 95% 60%;
+  --sidebar-primary: 33 92% 58%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 33 92% 58%; 
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-ring: 33 92% 65%;
 
   /* Popover */
-  --popover: 220 20% 15%;
-  --popover-foreground: 45 30% 95%;
-  --popover-border: 220 20% 20%;
+  --popover: 186 35% 25%;
+  --popover-foreground: 0 0% 100%;
+  --popover-border: 186 35% 30%;
 
   /* Muted - Dark Gray/Navy */
-  --muted: 220 20% 18%;
-  --muted-foreground: 220 10% 70%;
+  --muted: 186 35% 30%;
+  --muted-foreground: 186 10% 70%;
 
-  /* Accent - Emerald Green */
-  --accent: 25 95% 60%; /* New Accent (Primary) */
-  --accent-foreground: 220 20% 10%;
+  /* Accent - Orange */
+  --accent: 33 92% 58%; 
+  --accent-foreground: 0 0% 100%;
 
   /* Destructive */
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
 
-  /* Success - Emerald Green */
-  --success: 25 95% 60%;
+  /* Success - Orange */
+  --success: 33 92% 58%;
   --success-foreground: 0 0% 100%;
 
   /* Warning - Standard Orange/Yellow */
   --warning: 40 80% 65%;
-  --warning-foreground: 220 20% 10%;
+  --warning-foreground: 0 0% 100%;
 
-  --input: 220 20% 25%;
-  --ring: 25 95% 60%;
+  --input: 186 35% 35%;
+  --ring: 33 92% 65%;
 
   /* Chart colors */
-  --chart-1: 25 95% 60%; /* Emerald (Primary) */
-  --chart-2: 25 95% 60%;/* Emerald (Secondary is now Primary) */
-  --chart-3: 220 20% 50%; /* Navy Blue/Gray-Blue accent */
-  --chart-4: 220 10% 70%;
-  --chart-5: 220 10% 80%;
+  --chart-1: 33 92% 58%; /* Orange (Primary) */
+  --chart-2: 0 0% 100%;/* White (on Dark BG) */
+  --chart-3: 186 10% 70%; /* Muted Text */
+  --chart-4: 186 10% 80%;
+  --chart-5: 186 10% 90%;
 
   /* Shadows - Adjusted to use HSL colors */
   --shadow-2xs: 0px 1px 2px 0px hsla(0, 0%, 0%, 0.3);
@@ -194,12 +193,12 @@
   --shadow-2xl: 0px 25px 50px 0px hsla(0, 0%, 0%, 0.7);
 
   /* Computed borders */
-  --sidebar-primary-border: hsl(25 95% 65%);
-  --sidebar-accent-border: hsl(25 95% 65%); /* New Secondary border (Primary) */
-  --primary-border: hsl(25 95% 65%);
-  --secondary-border: hsl(25 95% 65%); /* New Secondary border (Primary) */
-  --muted-border: hsl(220 20% 25%);
-  --accent-border: hsl(25 95% 65%); /* New Secondary border (Primary) */
+  --sidebar-primary-border: hsl(33 92% 65%);
+  --sidebar-accent-border: hsl(33 92% 65%);
+  --primary-border: hsl(33 92% 65%);
+  --secondary-border: hsl(33 92% 65%);
+  --muted-border: hsl(186 35% 30%);
+  --accent-border: hsl(33 92% 65%);
   --destructive-border: hsl(0 84% 68%);
 }
 
