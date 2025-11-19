@@ -120,16 +120,18 @@ export default function Landing() {
   ];
 
   return (
-    // Set the overall page background image (Goal 2)
+    // Set the overall page background image 
     <div 
       className="flex flex-col overflow-hidden bg-cover bg-fixed bg-center" 
-      style={{ backgroundImage: `url('/background.png-8a92a6ad-cb35-4cb1-a6ef-fcb0fe3b1b14')` }}
+      // FIX 1: Updated background URL to high quality placeholder
+      style={{ backgroundImage: `url('https://images.unsplash.com/photo-1542037101-38c23232057d?q=80&w=2600&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')` }}
     >
       
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-24 pb-16 sm:py-32">
         {/* Semi-transparent overlay for readability against background image */}
-        <div className="absolute inset-0 bg-black/60"></div> 
+        {/* FIX 1: Reduced overlay opacity for more clarity (was bg-black/60) */}
+        <div className="absolute inset-0 bg-black/40"></div> 
         
         <div className="container mx-auto px-4 relative z-10 text-center text-white">
           
@@ -140,11 +142,10 @@ export default function Landing() {
             Linking people with skilled artisans to deliver trusted services
           </p>
           
-          {/* Replace Search Bar with Buttons (Goal 4) */}
+          {/* Replace Search Bar with Buttons (Buttons are already styled nicely) */}
           {!isAuthenticated && (
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4 max-w-2xl mx-auto mb-12">
               <Link href="/signup">
-                {/* Get Started Free button */}
                 <Button 
                   size="lg" 
                   className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-secondary hover:bg-secondary/90 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
@@ -153,7 +154,6 @@ export default function Landing() {
                 </Button>
               </Link>
               <Link href="/login">
-                {/* Login button */}
                 <Button 
                   variant="outline" 
                   size="lg" 
@@ -213,19 +213,36 @@ export default function Landing() {
               Advertising Space
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              These three spaces are reserved for future promotions and advertisements.
+              Mascom's current promotions and offers in partnership with JobTradeSasa.
             </p>
           </div>
-          {/* Three advert spaces */}
+          {/* FIX 2: Added realistic Mascom advert banners */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="aspect-video bg-neutral-200 dark:bg-neutral-800 rounded-xl shadow-lg flex items-center justify-center border-4 border-dashed border-neutral-300 dark:border-neutral-700">
-              <p className="text-neutral-500 font-semibold">AD Space 1</p>
+            {/* Mascom Banner 1: Data Deal (Using green/yellow colors) */}
+            <div className="group relative aspect-video bg-[#4B8C3E] rounded-xl shadow-lg overflow-hidden flex flex-col items-center justify-center p-6 text-white transform hover:scale-[1.03] transition-transform duration-300">
+              <span className="absolute top-4 left-4 bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded-full transform group-hover:rotate-2 transition-transform">TOP DEAL</span>
+              <img src="/logo.png" alt="Mascom" className="h-10 w-auto mb-2 opacity-50" />
+              <p className="text-4xl font-extrabold mb-1">50GB</p>
+              <p className="text-sm font-semibold mb-3">Mobile Data for Artisans</p>
+              <Button size="sm" className="bg-white text-black hover:bg-neutral-200 shadow-md">Get Offer</Button>
             </div>
-            <div className="aspect-video bg-neutral-200 dark:bg-neutral-800 rounded-xl shadow-lg flex items-center justify-center border-4 border-dashed border-neutral-300 dark:border-neutral-700">
-              <p className="text-neutral-500 font-semibold">AD Space 2</p>
+
+            {/* Mascom Banner 2: Voice Offer (Using blue/white colors) */}
+            <div className="group relative aspect-video bg-[#00AEEF] rounded-xl shadow-lg overflow-hidden flex flex-col items-center justify-center p-6 text-white transform hover:scale-[1.03] transition-transform duration-300">
+              <span className="absolute top-4 right-4 text-xs font-medium border border-white px-2 py-0.5 rounded-full">NEW</span>
+              <img src="/logo.png" alt="Mascom" className="h-10 w-auto mb-2 opacity-50" />
+              <p className="text-4xl font-extrabold mb-1">FREE Calls</p>
+              <p className="text-sm font-semibold mb-3">Unlimited Talktime on Mascom</p>
+              <Button size="sm" variant="outline" className="text-white hover:bg-white/20 border-white shadow-md">More Info</Button>
             </div>
-            <div className="aspect-video bg-neutral-200 dark:bg-neutral-800 rounded-xl shadow-lg flex items-center justify-center border-4 border-dashed border-neutral-300 dark:border-neutral-700">
-              <p className="text-neutral-500 font-semibold">AD Space 3</p>
+
+            {/* Mascom Banner 3: App Bonus (Using corporate primary color) */}
+            <div className="group relative aspect-video bg-primary/90 rounded-xl shadow-lg overflow-hidden flex flex-col items-center justify-center p-6 text-white transform hover:scale-[1.03] transition-transform duration-300">
+              <span className="absolute bottom-4 right-4 text-xs font-medium bg-white/30 px-2 py-0.5 rounded-full">JOB BONUS</span>
+              <img src="/logo.png" alt="Mascom" className="h-10 w-auto mb-2 opacity-50" />
+              <p className="text-4xl font-extrabold mb-1">+2GB</p>
+              <p className="text-sm font-semibold mb-3">On Every Completed Job</p>
+              <Button size="sm" className="bg-white text-primary hover:bg-neutral-200 shadow-md">Claim Now</Button>
             </div>
           </div>
         </div>
