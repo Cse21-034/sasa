@@ -82,12 +82,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
             <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="JobTradeSasa" className="h-8 w-8" />
+              <Briefcase className="h-8 w-8 text-primary" />
               <span className="text-2xl font-bold">JobTradeSasa</span>
             </div>
           </div>

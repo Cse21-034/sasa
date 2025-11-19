@@ -65,39 +65,39 @@ export default function Landing() {
     {
       title: 'Location-Based Matching',
       description: 'Find service providers near you with real-time distance tracking',
-      // Using solid color for hover effect (Secondary/Emerald Green)
-      hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
+      // Using solid color for hover effect (Primary Orange)
+      hoverBg: 'bg-primary/10 dark:bg-primary/20',
       image: 'https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?w=400&auto=format&fit=crop&q=80',
     },
     {
       title: 'Verified Providers',
       description: 'All providers are verified with certificates and ID documentation',
-      // Using solid color for hover effect (Primary/Emerald Green)
-      hoverBg: 'bg-primary/10 dark:bg-primary/20',
+      // Using solid color for hover effect (Secondary Dark Teal/Navy)
+      hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
       image: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=400&auto=format&fit=crop&q=80',
     },
     {
       title: 'Real-Time Chat',
       description: 'Communicate directly with providers through instant messaging',
-      hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
+      hoverBg: 'bg-primary/10 dark:bg-primary/20',
       image: 'https://images.unsplash.com/photo-1577563908411-5077b6dc7624?w=400&auto=format&fit=crop&q=80',
     },
     {
       title: 'Ratings & Reviews',
       description: 'Make informed decisions based on community feedback',
-      hoverBg: 'bg-primary/10 dark:bg-primary/20',
+      hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
       image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&auto=format&fit=crop&q=80',
     },
     {
       title: 'Fast Response',
       description: 'Get connected with available providers within minutes',
-      hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
+      hoverBg: 'bg-primary/10 dark:bg-primary/20',
       image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&auto=format&fit=crop&q=80',
     },
     {
       title: 'Quality Assurance',
       description: 'Premium service standards guaranteed by our platform',
-      hoverBg: 'bg-primary/10 dark:bg-primary/20',
+      hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
       image: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&auto=format&fit=crop&q=80',
     },
   ];
@@ -137,14 +137,14 @@ export default function Landing() {
               <img src="https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400&auto=format&fit=crop&q=80" alt="Painter at work" className="w-full h-full object-cover" />
             </div>
           </div>
-          {/* Overlay using new Soft Beige/Navy colors */}
+          {/* Overlay using new Dark Teal/Navy colors */}
           <div className="absolute inset-0 bg-background/95 dark:bg-background/95"></div>
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-5xl mx-auto text-center">
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              {/* Text Primary (Emerald Green) */}
+              {/* Text Primary (Orange) */}
               <span className="text-primary">
                 Connect with Trusted
               </span>
@@ -162,7 +162,7 @@ export default function Landing() {
                   <Link href="/jobs">
                     <Button 
                       size="lg" 
-                      // Solid Secondary (Emerald Green)
+                      // Solid Secondary (Orange)
                       className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-secondary hover:bg-secondary/90 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                     >
                       Browse Services
@@ -173,7 +173,7 @@ export default function Landing() {
                     <Button 
                       variant="outline" 
                       size="lg" 
-                      // Border/Text: Primary (Emerald Green)
+                      // Border/Text: Primary (Orange)
                       className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-2 border-primary text-primary hover:bg-primary/10 dark:hover:bg-primary/20 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                     >
                       Post a Request
@@ -185,7 +185,7 @@ export default function Landing() {
                   <Link href="/signup">
                     <Button 
                       size="lg" 
-                      // Solid Secondary (Emerald Green)
+                      // Solid Secondary (Orange)
                       className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-secondary hover:bg-secondary/90 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                     >
                       Get Started Free
@@ -196,7 +196,7 @@ export default function Landing() {
                     <Button 
                       variant="outline" 
                       size="lg" 
-                      // Border/Text: Primary (Emerald Green)
+                      // Border/Text: Primary (Orange)
                       className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-2 border-primary text-primary hover:bg-primary/10 dark:hover:bg-primary/20 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                     >
                       Login
@@ -220,7 +220,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Stats Section - Solid Primary (Emerald Green) */}
+      {/* Stats Section - Solid Primary (Orange) */}
       <section className="py-16 sm:py-20 bg-primary relative overflow-hidden">
         {/* Grid pattern adapted to Primary color */}
         <div className="absolute inset-0 bg-grid-primary/[0.1] bg-[size:20px_20px]"></div>
@@ -244,14 +244,14 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
             <Badge 
-              // Using secondary/Emerald Green for offer badge
+              // Using secondary/Orange for offer badge
               className="mb-4 bg-secondary/10 text-secondary dark:bg-secondary/20"
             >
               <Tag className="h-3 w-3 mr-1" />
               Limited Time Offers
             </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              {/* Text Secondary (Emerald Green) */}
+              {/* Text Secondary (Orange) */}
               <span className="text-secondary">Special Offers</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
@@ -263,20 +263,20 @@ export default function Landing() {
             {specialOffers.map((offer, index) => (
               <Card 
                 key={index} 
-                // Hover border: Secondary (Emerald Green)
+                // Hover border: Secondary (Orange)
                 className="group cursor-pointer border-card-border border-2 bg-card hover:border-secondary transition-all duration-300 hover:shadow-2xl transform hover:scale-105 overflow-hidden"
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex gap-2">
                       {offer.badge === 'NEW' && (
-                        // Solid Secondary (Emerald Green)
+                        // Solid Secondary (Orange)
                         <Badge className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
                           🚨 {offer.badge}
                         </Badge>
                       )}
                       {offer.badge === 'ALL SERVICES' && (
-                        // Solid Primary (Emerald Green)
+                        // Solid Primary (Orange)
                         <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground">
                           {offer.badge}
                         </Badge>
@@ -305,7 +305,7 @@ export default function Landing() {
                     <ul className="text-xs text-muted-foreground space-y-1">
                       {offer.terms.map((term, idx) => (
                         <li key={idx} className="flex items-start gap-1">
-                          {/* Icon: Primary (Emerald Green) */}
+                          {/* Icon: Primary (Orange) */}
                           <CheckCircle className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
                           <span>{term}</span>
                         </li>
@@ -314,7 +314,7 @@ export default function Landing() {
                   </div>
 
                   <Button 
-                    // Solid Secondary (Emerald Green)
+                    // Solid Secondary (Orange)
                     className="w-full mt-4 bg-secondary hover:bg-secondary/90 text-secondary-foreground"
                   >
                     Book Now
@@ -331,13 +331,13 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
             <Badge 
-              // Using primary/Emerald Green for category badge
+              // Using primary/Orange for category badge
               className="mb-4 bg-primary/10 text-primary dark:bg-primary/20"
             >
               Popular Services
             </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              {/* Text Primary (Emerald Green) */}
+              {/* Text Primary (Orange) */}
               <span className="text-primary">Browse by Category</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
@@ -349,7 +349,7 @@ export default function Landing() {
             {categories.map((category) => (
               <Card 
                 key={category.name} 
-                // Hover border: Primary (Emerald Green)
+                // Hover border: Primary (Orange)
                 className="group cursor-pointer border-2 border-card-border bg-card hover:border-primary transition-all duration-300 hover:shadow-2xl transform hover:scale-105 overflow-hidden"
               >
                 <CardContent className="p-0">
@@ -373,13 +373,13 @@ export default function Landing() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-12 sm:mb-16">
             <Badge 
-              // Using primary/Emerald Green for feature badge
+              // Using primary/Orange for feature badge
               className="mb-4 bg-primary/10 text-primary dark:bg-primary/20"
             >
               Why Choose Us
             </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              {/* Text Secondary (Emerald Green) */}
+              {/* Text Secondary (Orange) */}
               <span className="text-secondary">Everything You Need</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
@@ -396,7 +396,7 @@ export default function Landing() {
                     <img src={feature.image} alt={feature.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
                     <div className="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors"></div>
                   </div>
-                  {/* Hover text: Secondary (Emerald Green) */}
+                  {/* Hover text: Secondary (Orange) */}
                   <h3 className="text-xl sm:text-2xl font-bold mb-3 group-hover:text-secondary transition-colors">
                     {feature.title}
                   </h3>
@@ -408,7 +408,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA Section - Solid Secondary (Emerald Green) / Primary (Emerald Green) */}
+      {/* CTA Section - Solid Secondary (Orange) / Primary (Orange) */}
       <section className="py-20 sm:py-24 relative overflow-hidden">
         <div className="absolute inset-0">
           <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1600&auto=format&fit=crop&q=80" alt="Team collaboration" className="w-full h-full object-cover" />
@@ -431,7 +431,7 @@ export default function Landing() {
               <Link href="/signup">
                 <Button 
                   size="lg" 
-                  // White button with Secondary (Emerald Green) text
+                  // White button with Secondary (Orange) text
                   className="w-full sm:w-auto bg-white text-secondary hover:bg-gray-100 px-8 sm:px-10 py-5 sm:py-6 text-base sm:text-lg font-bold shadow-2xl transform hover:scale-105 transition-all duration-300"
                 >
                   I Need Services
@@ -442,7 +442,7 @@ export default function Landing() {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  // Outline button with White border and Primary (Emerald Green) hover
+                  // Outline button with White border and Primary (Orange) hover
                   className="w-full sm:w-auto border-2 border-white text-white hover:bg-white/10 px-8 sm:px-10 py-5 sm:py-6 text-base sm:text-lg font-bold shadow-2xl transform hover:scale-105 transition-all duration-300"
                 >
                   I'm a Service Provider
@@ -454,7 +454,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer - Solid Secondary (Emerald Green) / Primary (Emerald Green) */}
+      {/* Footer - Solid Secondary (Orange) / Primary (Orange) */}
       <footer className="border-t border-border py-8 sm:py-12 bg-sidebar">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -464,11 +464,11 @@ export default function Landing() {
             </div>
             <p className="text-muted-foreground text-sm sm:text-base text-center">&copy; 2025 JobTradeSasa. All rights reserved.</p>
             <div className="flex gap-3 sm:gap-4 flex-wrap justify-center">
-              {/* Secondary (Emerald Green) Badge */}
+              {/* Secondary (Orange) Badge */}
               <Badge variant="outline" className="border-secondary text-secondary hover:bg-secondary/5">Terms</Badge>
-              {/* Primary (Emerald Green) Badge */}
+              {/* Primary (Orange) Badge */}
               <Badge variant="outline" className="border-primary text-primary hover:bg-primary/5">Privacy</Badge>
-              {/* Secondary (Emerald Green) Badge */}
+              {/* Secondary (Orange) Badge */}
               <Badge variant="outline" className="border-secondary text-secondary hover:bg-secondary/5">Contact</Badge>
             </div>
           </div>
@@ -484,17 +484,17 @@ export default function Landing() {
         .animate-blob {
           animation: blob 7s infinite;
         }
-        /* UPDATED grid color to use Primary in light mode, Secondary (which is now Primary) in dark mode */
+        /* UPDATED grid color to use Primary in light mode, Primary in dark mode */
         .bg-grid-primary {
           background-image: 
             linear-gradient(to right, hsla(var(--primary), 0.1) 1px, transparent 1px),
             linear-gradient(to bottom, hsla(var(--primary), 0.1) 1px, transparent 1px);
         }
         .dark .bg-grid-primary {
-           /* Using the new Secondary (Emerald Green) in dark mode for the grid pattern */
+           /* Using the new Primary (Orange) in dark mode for the grid pattern */
            background-image: 
-            linear-gradient(to right, hsla(var(--secondary), 0.1) 1px, transparent 1px),
-            linear-gradient(to bottom, hsla(var(--secondary), 0.1) 1px, transparent 1px);
+            linear-gradient(to right, hsla(var(--primary), 0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, hsla(var(--primary), 0.1) 1px, transparent 1px);
         }
       `}</style>
     </div>
