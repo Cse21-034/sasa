@@ -459,10 +459,8 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              {/* Solid Primary (Emerald Green) */}
-              <div className="w-10 h-10 rounded-full bg-primary"></div>
-              {/* Text: Primary (Emerald Green) */}
-              <span className="text-lg sm:text-xl font-bold text-primary">JobTradeSasa</span>
+              <img src="/logo.png" alt="JobTradeSasa" className="h-8 w-8" />
+              <span className="text-2xl font-bold">JobTradeSasa</span>
             </div>
             <p className="text-muted-foreground text-sm sm:text-base text-center">&copy; 2025 JobTradeSasa. All rights reserved.</p>
             <div className="flex gap-3 sm:gap-4 flex-wrap justify-center">
