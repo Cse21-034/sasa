@@ -35,19 +35,19 @@
   --sidebar-border: 45 10% 80%;
   
   /* Primary Emerald Green */
-  --primary: 170 60% 30%; 
+  --primary: 25 95% 53%;  
   --primary-foreground: 0 0% 100%;
 
   /* Secondary Emerald Green (MATCHES PRIMARY) */
-  --secondary: 170 60% 30%; /* Emerald Green */
+  --secondary: 25 95% 53%;  /* Emerald Green */
   --secondary-foreground: 0 0% 100%; /* White text */
 
   /* Sidebar/Accent - Using primary/secondary colors */
-  --sidebar-primary: 170 60% 30%;
+  --sidebar-primary: 25 95% 53%; 
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 170 60% 30%; /* New Secondary (Primary) */
+  --sidebar-accent: 25 95% 53%;  /* New Secondary (Primary) */
   --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-ring: 170 60% 30%;
+  --sidebar-ring: 25 95% 60%;
 
   /* Popover */
   --popover: 45 30% 98%;
@@ -59,7 +59,7 @@
   --muted-foreground: 45 10% 45%;
 
   /* Accent - Emerald Green (Same as Secondary/Primary) */
-  --accent: 170 60% 30%; /* New Accent (Primary) */
+  --accent: 25 95% 53%;  /* New Accent (Primary) */
   --accent-foreground: 0 0% 100%;
 
   /* Destructive - Keeping red for warnings */
@@ -67,7 +67,7 @@
   --destructive-foreground: 0 0% 100%;
 
   /* Success - Emerald Green (Same as Primary) */
-  --success: 170 60% 30%;
+  --success: 25 95% 53%; 
   --success-foreground: 0 0% 100%;
 
   /* Warning - Standard Orange/Yellow */
@@ -75,11 +75,11 @@
   --warning-foreground: 220 20% 10%;
 
   --input: 45 10% 80%;
-  --ring: 170 60% 30%;
+  --ring: 25 95% 60%;
   
   /* Chart colors - Now chart-1 and chart-2 are the same. chart-3 is the neutral accent. */
-  --chart-1: 170 60% 30%;    /* Emerald (Primary) */
-  --chart-2: 170 60% 30%;    /* Emerald (Secondary is now Primary) */
+  --chart-1: 25 95% 53%;     /* Emerald (Primary) */
+  --chart-2: 25 95% 53%;     /* Emerald (Secondary is now Primary) */
   --chart-3: 220 20% 40%;    /* Navy Blue/Gray-Blue accent (From base palette) */
   --chart-4: 45 10% 60%;     /* Medium Gray/Sand */
   --chart-5: 45 10% 70%;     /* Light Gray/Sand */
@@ -100,12 +100,12 @@
   --shadow-2xl: 0px 25px 50px 0px hsla(0, 0%, 0%, 0.25);
 
   /* Computed borders */
-  --sidebar-primary-border: hsl(170 60% 25%);
-  --sidebar-accent-border: hsl(170 60% 25%); /* New Secondary border (Primary) */
-  --primary-border: hsl(170 60% 25%);
-  --secondary-border: hsl(170 60% 25%); /* New Secondary border (Primary) */
+  --sidebar-primary-border: hsl(25 95% 48%);
+  --sidebar-accent-border: hsl(25 95% 48%); /* New Secondary border (Primary) */
+  --primary-border: hsl(25 95% 48%);
+  --secondary-border: hsl(25 95% 48%); /* New Secondary border (Primary) */
   --muted-border: hsl(45 10% 75%);
-  --accent-border: hsl(170 60% 25%); /* New Secondary border (Primary) */
+  --accent-border: hsl(25 95% 48%); /* New Secondary border (Primary) */
   --destructive-border: hsl(0 84% 50%);
 }
 
@@ -134,19 +134,19 @@
   --sidebar-border: 220 20% 18%;
 
   /* Primary Emerald Green */
-  --primary: 170 60% 45%; 
+  --primary: 25 95% 60%; 
   --primary-foreground: 220 20% 10%;
 
   /* Secondary Emerald Green (MATCHES PRIMARY) */
-  --secondary: 170 60% 45%; /* Emerald Green */
+  --secondary: 25 95% 60%; /* Emerald Green */
   --secondary-foreground: 220 20% 10%;
 
   /* Sidebar/Accent - Using primary/secondary colors */
-  --sidebar-primary: 170 60% 45%;
+  --sidebar-primary: 25 95% 60%;
   --sidebar-primary-foreground: 220 20% 10%;
-  --sidebar-accent: 170 60% 45%; /* New Secondary (Primary) */
+  --sidebar-accent: 25 95% 60%; /* New Secondary (Primary) */
   --sidebar-accent-foreground: 220 20% 10%;
-  --sidebar-ring: 170 60% 45%;
+  --sidebar-ring: 25 95% 60%;
 
   /* Popover */
   --popover: 220 20% 15%;
@@ -158,7 +158,7 @@
   --muted-foreground: 220 10% 70%;
 
   /* Accent - Emerald Green */
-  --accent: 170 60% 45%; /* New Accent (Primary) */
+  --accent: 25 95% 60%; /* New Accent (Primary) */
   --accent-foreground: 220 20% 10%;
 
   /* Destructive */
@@ -166,7 +166,7 @@
   --destructive-foreground: 0 0% 98%;
 
   /* Success - Emerald Green */
-  --success: 170 60% 45%;
+  --success: 25 95% 60%;
   --success-foreground: 0 0% 100%;
 
   /* Warning - Standard Orange/Yellow */
@@ -174,11 +174,11 @@
   --warning-foreground: 220 20% 10%;
 
   --input: 220 20% 25%;
-  --ring: 170 60% 45%;
+  --ring: 25 95% 60%;
 
   /* Chart colors */
-  --chart-1: 170 60% 45%; /* Emerald (Primary) */
-  --chart-2: 170 60% 45%; /* Emerald (Secondary is now Primary) */
+  --chart-1: 25 95% 60%; /* Emerald (Primary) */
+  --chart-2: 25 95% 60%;/* Emerald (Secondary is now Primary) */
   --chart-3: 220 20% 50%; /* Navy Blue/Gray-Blue accent */
   --chart-4: 220 10% 70%;
   --chart-5: 220 10% 80%;
@@ -194,12 +194,12 @@
   --shadow-2xl: 0px 25px 50px 0px hsla(0, 0%, 0%, 0.7);
 
   /* Computed borders */
-  --sidebar-primary-border: hsl(170 60% 50%);
-  --sidebar-accent-border: hsl(170 60% 50%); /* New Secondary border (Primary) */
-  --primary-border: hsl(170 60% 50%);
-  --secondary-border: hsl(170 60% 50%); /* New Secondary border (Primary) */
+  --sidebar-primary-border: hsl(25 95% 65%);
+  --sidebar-accent-border: hsl(25 95% 65%); /* New Secondary border (Primary) */
+  --primary-border: hsl(25 95% 65%);
+  --secondary-border: hsl(25 95% 65%); /* New Secondary border (Primary) */
   --muted-border: hsl(220 20% 25%);
-  --accent-border: hsl(170 60% 50%); /* New Secondary border (Primary) */
+  --accent-border: hsl(25 95% 65%); /* New Secondary border (Primary) */
   --destructive-border: hsl(0 84% 68%);
 }
 
