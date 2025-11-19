@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { Menu, Bell, User, Briefcase, MessageSquare, LayoutDashboard, FileText, Plus, Sparkles, Tag, ArrowRight } from 'lucide-react';
+import { Menu, Bell, User, Briefcase, MessageSquare, LayoutDashboard, FileText, Plus, Sparkles, Tag, ArrowRight, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -27,14 +27,14 @@ export function Header() {
   // NOTE: 'scrolled' state and its useEffect have been removed 
   // because the header is now always a fixed color.
 
-  // 🔥 NEW: Query for unread messages count
+  // 櫨 NEW: Query for unread messages count
   const { data: conversations } = useQuery({
     queryKey: ['/api/messages/conversations'],
     enabled: isAuthenticated,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  // 🔥 NEW: Query for pending verifications (admin only)
+  // 櫨 NEW: Query for pending verifications (admin only)
   const { data: pendingVerifications } = useQuery({
     queryKey: ['adminPendingVerification'],
     queryFn: async () => {
@@ -45,7 +45,7 @@ export function Header() {
     refetchInterval: 60000, // Refresh every minute
   });
 
-  // 🔥 NEW: Query for unresolved reports (admin only)
+  // 櫨 NEW: Query for unresolved reports (admin only)
   const { data: unresolvedReports } = useQuery({
     queryKey: ['adminUnresolvedReports'],
     queryFn: async () => {
@@ -56,7 +56,7 @@ export function Header() {
     refetchInterval: 60000, // Refresh every minute
   });
 
-  // 🔥 NEW: Calculate notification counts
+  // 櫨 NEW: Calculate notification counts
   const unreadMessagesCount = conversations?.filter((c: any) => c.unreadCount > 0).length || 0;
   const pendingVerificationsCount = pendingVerifications?.length || 0;
   const unresolvedReportsCount = unresolvedReports?.length || 0;
@@ -107,11 +107,12 @@ export function Header() {
               >
                 About
               </a>
+              {/* FIX 3: Shortened navigation text for the landing page link */}
               <a 
                 href="/#suppliers-section" 
                 className="px-3 py-2 transition-colors hover:text-secondary"
               >
-                Buy supply materials with trusted suppliers
+                Buy Supplies
               </a>
             </nav>
           )}
@@ -163,7 +164,8 @@ export function Header() {
                       className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors text-white hover:text-secondary"
                       data-testid="link-suppliers"
                     >
-                      <Briefcase className="h-4 w-4 mr-2" /> Suppliers
+                      {/* FIX: Updated icon for suppliers */}
+                      <ShoppingBag className="h-4 w-4 mr-2" /> Suppliers
                     </Button>
                   </Link>
 
@@ -197,7 +199,7 @@ export function Header() {
                       className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors text-white hover:text-secondary"
                       data-testid="link-admin-users"
                     >
-                      <User className="h-4 w-4 mr-2" /> Users
+                      <Users className="h-4 w-4 mr-2" /> Users
                     </Button>
                   </Link>
                 </>
