@@ -82,12 +82,10 @@ export function Header() {
         {/* Logo Section */}
         <div className="flex items-center gap-8">
           <Link href="/">
-            <div className="flex items-center gap-3 hover-elevate rounded-xl px-3 py-2 cursor-pointer group" data-testid="link-home">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300">
-                <Briefcase className="h-6 w-6 text-primary-foreground" />
-              </div>
+            <div className="flex items-center gap-3 hover-elevate rounded-xl px-3 py-2 cursor-pointer group">
+              <img src="/logo.png" alt="JobTradeSasa" className="h-10 w-10" />
               <div className="flex flex-col">
-                <span className="text-xl font-bold text-primary dark:text-secondary">
+                <span className="text-xl font-bold text-primary">
                   JobTradeSasa
                 </span>
                 <span className="text-xs text-muted-foreground -mt-1">
