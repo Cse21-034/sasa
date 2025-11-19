@@ -1,7 +1,7 @@
 import { Link } from 'wouter';
-import { 
-  Search, MapPin, MessageSquare, Star, Shield, Clock, ArrowRight, 
-  Wrench, Zap, Hammer, Paintbrush, Sparkles, Leaf, TrendingUp, 
+import {
+  Search, MapPin, MessageSquare, Star, Shield, Clock, ArrowRight,
+  Wrench, Zap, Hammer, Paintbrush, Sparkles, Leaf, TrendingUp,
   CheckCircle, Users, Award, Headphones, Tag, Gift, AlertCircle, Calendar,
   Building2 // Added for Suppliers section icon
 } from 'lucide-react';
@@ -120,43 +120,43 @@ export default function Landing() {
   ];
 
   return (
-    // Set the overall page background image 
-    <div 
-      className="flex flex-col overflow-hidden bg-cover bg-fixed bg-center" 
-      // FIX 1: Updated background URL to high quality placeholder
-      style={{ backgroundImage: `url('https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80')` }}
+    // Set the overall page background image
+    <div
+      className="flex flex-col overflow-hidden bg-cover bg-fixed bg-center"
+      // Updated background URL to higher quality for clarity
+      style={{ backgroundImage: `url('https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=100')` }}
     >
-      
+     
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-24 pb-16 sm:py-32">
         {/* Semi-transparent overlay for readability against background image */}
-        {/* FIX 1: Reduced overlay opacity for more clarity (was bg-black/60) */}
-        <div className="absolute inset-0 bg-black/40"></div> 
-        
+        {/* Reduced overlay opacity further for more clarity */}
+        <div className="absolute inset-0 bg-black/30"></div>
+       
         <div className="container mx-auto px-4 relative z-10 text-center text-white">
-          
+         
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold mb-6 tracking-tight text-white leading-tight">
             Life Made Easier
           </h1>
           <p className="text-xl sm:text-2xl text-neutral-200 max-w-4xl mx-auto mb-12 font-medium">
             Linking people with skilled artisans to deliver trusted services
           </p>
-          
+         
           {/* Replace Search Bar with Buttons (Buttons are already styled nicely) */}
           {!isAuthenticated && (
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4 max-w-2xl mx-auto mb-12">
               <Link href="/signup">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 bg-secondary hover:bg-secondary/90 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                 >
                   Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href="/login">
-                <Button 
-                  variant="outline" 
-                  size="lg" 
+                <Button
+                  variant="outline"
+                  size="lg"
                   className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-2 border-white text-white hover:bg-white/20 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                 >
                   Login
@@ -164,7 +164,7 @@ export default function Landing() {
               </Link>
             </div>
           )}
-          
+         
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto px-4">
             {categories.slice(0, 4).map((category) => (
               <div key={category.name} className="relative group overflow-hidden rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300">
@@ -175,7 +175,6 @@ export default function Landing() {
               </div>
             ))}
           </div>
-
         </div>
       </section>
 
@@ -184,8 +183,8 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
             {stats.map((stat, index) => (
-              <Card 
-                key={stat.label} 
+              <Card
+                key={stat.label}
                 className={`bg-primary-foreground/10 border-none shadow-xl backdrop-blur-sm group hover:scale-[1.03] transition-transform duration-300`}
               >
                 <CardContent className="p-6 sm:p-8 flex flex-col items-center text-center">
@@ -216,33 +215,49 @@ export default function Landing() {
               Mascom's current promotions and offers in partnership with JobTradeSasa.
             </p>
           </div>
-          {/* FIX 2: Added realistic Mascom advert banners */}
+          {/* Updated with real Mascom ad images for more appeal */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Mascom Banner 1: Data Deal (Using green/yellow colors) */}
-            <div className="group relative aspect-video bg-[#4B8C3E] rounded-xl shadow-lg overflow-hidden flex flex-col items-center justify-center p-6 text-white transform hover:scale-[1.03] transition-transform duration-300">
-              <span className="absolute top-4 left-4 bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded-full transform group-hover:rotate-2 transition-transform">TOP DEAL</span>
-              <img src="/logo.png" alt="Mascom" className="h-10 w-auto mb-2 opacity-50" />
-              <p className="text-4xl font-extrabold mb-1">50GB</p>
-              <p className="text-sm font-semibold mb-3">Mobile Data for Artisans</p>
-              <Button size="sm" className="bg-white text-black hover:bg-neutral-200 shadow-md">Get Offer</Button>
+            {/* Mascom Banner 1: Data Deal */}
+            <div className="group relative aspect-video rounded-xl shadow-lg overflow-hidden transform hover:scale-[1.03] transition-transform duration-300">
+              <div 
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url('https://pbs.twimg.com/media/G5j9370WEAAbClT.jpg')` }}
+              ></div>
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+              <div className="relative flex flex-col items-center justify-center p-6 text-white h-full">
+                <span className="absolute top-4 left-4 bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded-full transform group-hover:rotate-2 transition-transform">TOP DEAL</span>
+                <p className="text-4xl font-extrabold mb-1 text-yellow-300">MySurf 5G</p>
+                <p className="text-sm font-semibold mb-3 text-center">Fast internet for artisans on the go</p>
+                <Button size="sm" className="bg-white text-black hover:bg-neutral-200 shadow-md">Get Offer</Button>
+              </div>
             </div>
-
-            {/* Mascom Banner 2: Voice Offer (Using blue/white colors) */}
-            <div className="group relative aspect-video bg-[#00AEEF] rounded-xl shadow-lg overflow-hidden flex flex-col items-center justify-center p-6 text-white transform hover:scale-[1.03] transition-transform duration-300">
-              <span className="absolute top-4 right-4 text-xs font-medium border border-white px-2 py-0.5 rounded-full">NEW</span>
-              <img src="/logo.png" alt="Mascom" className="h-10 w-auto mb-2 opacity-50" />
-              <p className="text-4xl font-extrabold mb-1">FREE Calls</p>
-              <p className="text-sm font-semibold mb-3">Unlimited Talktime on Mascom</p>
-              <Button size="sm" variant="outline" className="text-white hover:bg-white/20 border-white shadow-md">More Info</Button>
+            {/* Mascom Banner 2: Voice Offer */}
+            <div className="group relative aspect-video rounded-xl shadow-lg overflow-hidden transform hover:scale-[1.03] transition-transform duration-300">
+              <div 
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url('https://pbs.twimg.com/media/G5n1OMbWwAAlOuZ.jpg')` }}
+              ></div>
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+              <div className="relative flex flex-col items-center justify-center p-6 text-white h-full">
+                <span className="absolute top-4 right-4 text-xs font-medium border border-white px-2 py-0.5 rounded-full">NEW</span>
+                <p className="text-4xl font-extrabold mb-1 text-yellow-300">200% Bonus</p>
+                <p className="text-sm font-semibold mb-3 text-center">Airtime for unlimited calls</p>
+                <Button size="sm" variant="outline" className="text-white hover:bg-white/20 border-white shadow-md">More Info</Button>
+              </div>
             </div>
-
-            {/* Mascom Banner 3: App Bonus (Using corporate primary color) */}
-            <div className="group relative aspect-video bg-primary/90 rounded-xl shadow-lg overflow-hidden flex flex-col items-center justify-center p-6 text-white transform hover:scale-[1.03] transition-transform duration-300">
-              <span className="absolute bottom-4 right-4 text-xs font-medium bg-white/30 px-2 py-0.5 rounded-full">JOB BONUS</span>
-              <img src="/logo.png" alt="Mascom" className="h-10 w-auto mb-2 opacity-50" />
-              <p className="text-4xl font-extrabold mb-1">+2GB</p>
-              <p className="text-sm font-semibold mb-3">On Every Completed Job</p>
-              <Button size="sm" className="bg-white text-primary hover:bg-neutral-200 shadow-md">Claim Now</Button>
+            {/* Mascom Banner 3: App Bonus */}
+            <div className="group relative aspect-video rounded-xl shadow-lg overflow-hidden transform hover:scale-[1.03] transition-transform duration-300">
+              <div 
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url('https://pbs.twimg.com/media/G5eVJ0-WYAASO5j.jpg')` }}
+              ></div>
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+              <div className="relative flex flex-col items-center justify-center p-6 text-white h-full">
+                <span className="absolute bottom-4 right-4 text-xs font-medium bg-white/30 px-2 py-0.5 rounded-full">JOB BONUS</span>
+                <p className="text-4xl font-extrabold mb-1 text-yellow-300">+Bonus Airtime</p>
+                <p className="text-sm font-semibold mb-3 text-center">Recharge P30+ via MyZaka</p>
+                <Button size="sm" className="bg-white text-primary hover:bg-neutral-200 shadow-md">Claim Now</Button>
+              </div>
             </div>
           </div>
         </div>
@@ -252,8 +267,8 @@ export default function Landing() {
       <section id="popular-services" className="py-16 sm:py-20 bg-background/90 backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
-            <Badge 
-              variant="outline" 
+            <Badge
+              variant="outline"
               className="border-primary text-primary hover:bg-primary/5 py-1 px-3 text-sm font-semibold"
             >
               Popular Services
@@ -267,16 +282,16 @@ export default function Landing() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             {categories.map((category) => (
-              <Card 
-                key={category.name} 
+              <Card
+                key={category.name}
                 className="group overflow-hidden rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:border-primary/50 cursor-pointer"
               >
                 <CardContent className="p-0">
                   <div className="relative w-full h-32 overflow-hidden">
-                    <img 
-                      src={category.image} 
-                      alt={category.name} 
-                      className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" 
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-primary/20 group-hover:bg-primary/40 transition-colors"></div>
                   </div>
@@ -303,8 +318,8 @@ export default function Landing() {
       <section id="why-choose-us" className="py-16 sm:py-24 bg-background/90 backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
-            <Badge 
-              variant="default" 
+            <Badge
+              variant="default"
               className="bg-secondary text-secondary-foreground hover:bg-secondary/90 py-1 px-3 text-sm font-semibold"
             >
               Why Choose Us
@@ -316,11 +331,11 @@ export default function Landing() {
               A platform built on trust, transparency, and quality assurance.
             </p>
           </div>
-          
+         
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card 
-                key={index} 
+              <Card
+                key={index}
                 className={`group overflow-hidden rounded-2xl shadow-xl border-2 border-transparent transition-all duration-500 hover:shadow-2xl transform hover:-translate-y-2`}
               >
                 <div className={`absolute inset-0 ${feature.hoverBg} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
@@ -370,16 +385,16 @@ export default function Landing() {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link href="/signup">
-              <Button 
-                size="xl" 
+              <Button
+                size="xl"
                 className="w-full sm:w-auto text-lg sm:text-xl px-10 py-7 bg-secondary hover:bg-secondary/90 shadow-2xl hover:shadow-3xl transform hover:scale-[1.05] transition-all duration-300 font-bold"
               >
                 Create Your Account Now <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/jobs">
-              <Button 
-                size="xl" 
+              <Button
+                size="xl"
                 variant="outline"
                 className="w-full sm:w-auto text-lg sm:text-xl px-10 py-7 border-4 border-white text-white hover:bg-white/20 shadow-2xl hover:shadow-3xl transform hover:scale-[1.05] transition-all duration-300 font-bold"
               >
@@ -389,7 +404,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
 
       {/* Footer Section - kept as is */}
       <footer className="bg-neutral-800 text-neutral-300 py-12">
