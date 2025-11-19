@@ -1,3 +1,5 @@
+// client/src/components/layout/header.tsx - FIXED VERSION
+
 import { Link, useLocation } from 'wouter';
 import { Menu, Bell, User, Briefcase, MessageSquare, LayoutDashboard, FileText, Plus, Sparkles, Tag, ArrowRight, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,17 +26,14 @@ export function Header() {
   // New: Check if we are on the landing page (root route)
   const isLandingPage = location === '/'; 
   
-  // NOTE: 'scrolled' state and its useEffect have been removed 
-  // because the header is now always a fixed color.
-
-  // 櫨 NEW: Query for unread messages count
+  // Query for unread messages count
   const { data: conversations } = useQuery({
     queryKey: ['/api/messages/conversations'],
     enabled: isAuthenticated,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  // 櫨 NEW: Query for pending verifications (admin only)
+  // Query for pending verifications (admin only)
   const { data: pendingVerifications } = useQuery({
     queryKey: ['adminPendingVerification'],
     queryFn: async () => {
@@ -45,7 +44,7 @@ export function Header() {
     refetchInterval: 60000, // Refresh every minute
   });
 
-  // 櫨 NEW: Query for unresolved reports (admin only)
+  // Query for unresolved reports (admin only)
   const { data: unresolvedReports } = useQuery({
     queryKey: ['adminUnresolvedReports'],
     queryFn: async () => {
@@ -56,7 +55,7 @@ export function Header() {
     refetchInterval: 60000, // Refresh every minute
   });
 
-  // 櫨 NEW: Calculate notification counts
+  // Calculate notification counts
   const unreadMessagesCount = conversations?.filter((c: any) => c.unreadCount > 0).length || 0;
   const pendingVerificationsCount = pendingVerifications?.length || 0;
   const unresolvedReportsCount = unresolvedReports?.length || 0;
@@ -67,9 +66,7 @@ export function Header() {
         : unreadMessagesCount)
     : 0;
 
-
   return (
-    // 1. Fixed dark grey background for header (consistent regardless of theme)
     <header 
       className={`sticky top-0 z-50 w-full bg-neutral-800 text-white transition-all duration-300 shadow-xl`}
     >
@@ -81,7 +78,6 @@ export function Header() {
             <div className="flex items-center gap-3 hover-elevate rounded-xl px-3 py-2 cursor-pointer group">
               <img src="/logo.png" alt="JobTradeSasa" className="h-10 w-10" />
               <div className="flex flex-col">
-                {/* Text color changed to white/light grey for contrast on dark background */}
                 <span className="text-xl font-bold text-white"> 
                   JobTradeSasa
                 </span>
@@ -92,7 +88,7 @@ export function Header() {
             </div>
           </Link>
 
-          {/* Landing Page Desktop Navigation - ONLY show if not authenticated AND on landing page */}
+          {/* Landing Page Desktop Navigation */}
           {isLandingPage && !isAuthenticated && (
             <nav className="hidden lg:flex items-center gap-2 text-sm font-medium">
               <a 
@@ -107,17 +103,16 @@ export function Header() {
               >
                 About
               </a>
-              {/* FIX 3: Shortened navigation text for the landing page link */}
               <a 
                 href="/#suppliers-section" 
                 className="px-3 py-2 transition-colors hover:text-secondary"
               >
-                Buy Supplies
+                Suppliers
               </a>
             </nav>
           )}
 
-          {/* Existing Desktop Navigation (Authenticated) */}
+          {/* Authenticated Desktop Navigation */}
           {isAuthenticated && (
             <nav className="hidden lg:flex items-center gap-2">
               {/* Show Jobs/Dashboard ONLY for non-admin users */}
@@ -164,7 +159,6 @@ export function Header() {
                       className="hover:bg-accent/10 dark:hover:bg-accent/20 hover:text-accent transition-colors text-white hover:text-secondary"
                       data-testid="link-suppliers"
                     >
-                      {/* FIX: Updated icon for suppliers */}
                       <ShoppingBag className="h-4 w-4 mr-2" /> Suppliers
                     </Button>
                   </Link>
@@ -199,7 +193,7 @@ export function Header() {
                       className="hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors text-white hover:text-secondary"
                       data-testid="link-admin-users"
                     >
-                      <Users className="h-4 w-4 mr-2" /> Users
+                      <User className="h-4 w-4 mr-2" /> Users
                     </Button>
                   </Link>
                 </>
@@ -292,21 +286,21 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* User Avatar Dropdown */}
+              {/* User Avatar Dropdown - FIXED: Changed username to name */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-neutral-700">
                     <Avatar className="h-9 w-9 border-2 border-white">
-                      <AvatarImage src={user?.profilePictureUrl} alt={user?.username} />
+                      <AvatarImage src={user?.profilePictureUrl} alt={user?.name} />
                       <AvatarFallback className="bg-primary text-primary-foreground">
-                        {user?.username.charAt(0).toUpperCase()}
+                        {user?.name?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 p-2">
                   <DropdownMenuLabel className="font-semibold text-sm truncate">
-                    {user?.username} ({user?.role})
+                    {user?.name} ({user?.role})
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
