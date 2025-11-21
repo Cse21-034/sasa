@@ -211,9 +211,6 @@ export default function Landing() {
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
               Advertisments
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Mascom's current promotions and offers in partnership with JobTradeSasa.
-            </p>
           </div>
           {/* Updated with real Mascom ad images for more appeal */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -324,9 +321,6 @@ export default function Landing() {
             >
               Why Choose Us
             </Badge>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mt-3">
-              The JobTradeSasa Advantage
-            </h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
               A platform built on trust, transparency, and quality assurance.
             </p>
@@ -365,7 +359,7 @@ export default function Landing() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
             Browse our network of verified suppliers to find and purchase high-quality building and repair materials for your projects.
           </p>
-          <Link href="/suppliers">
+          <Link href="/login">
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl">
               Browse Suppliers <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
