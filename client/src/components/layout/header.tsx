@@ -1,4 +1,4 @@
-// client/src/components/layout/header.tsx - UPDATED WITH LOGO BACKGROUND COLOR & IMPROVED NOTIFICATIONS
+// client/src/components/layout/header.tsx - UPDATED WITH NEW RIGHT SECTION UI
 
 import { Link, useLocation } from 'wouter';
 import { Menu, Bell, User, Briefcase, MessageSquare, LayoutDashboard, FileText, Plus, Sparkles, Tag, ArrowRight, ShoppingBag } from 'lucide-react';
@@ -24,9 +24,9 @@ export function Header() {
   const [location, setLocation] = useLocation();
   const [prevNotificationCount, setPrevNotificationCount] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  
+   
   const isLandingPage = location === '/'; 
-  
+   
   // Query for unread messages count
   const { data: conversations } = useQuery({
     queryKey: ['/api/messages/conversations'],
@@ -60,14 +60,14 @@ export function Header() {
   const unreadMessagesCount = conversations?.filter((c: any) => c.unreadCount > 0).length || 0;
   const pendingVerificationsCount = pendingVerifications?.length || 0;
   const unresolvedReportsCount = unresolvedReports?.length || 0;
-  
+   
   const totalNotifications = isAuthenticated 
     ? (user?.role === 'admin' 
         ? pendingVerificationsCount + unresolvedReportsCount + unreadMessagesCount
         : unreadMessagesCount)
     : 0;
 
-  // Play notification sound when count increases
+  // Play notification sound when count increases (Retained from your original code)
   useEffect(() => {
     if (!audioRef.current) {
       // Create audio element for notification sound
@@ -223,138 +223,186 @@ export function Header() {
           )}
         </div>
         
-        {/* Right Side */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        {/* Right Section (COPIED FROM YOUR PROVIDED CODE) */}
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+
           {isAuthenticated ? (
             <>
-              {/* Enhanced Notification Bell */}
+              {user?.role === 'requester' && (
+                <Link href="/post-job">
+                  <Button 
+                    className="hidden sm:flex bg-orange-500 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:bg-orange-600"
+                    data-testid="button-post-job"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Post a Job
+                  </Button>
+                </Link>
+              )}
+
+              {/* Notification Bell with Dropdown (Updated with new style) */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    size="icon" 
-                    className="relative text-white hover:text-orange-300 hover:bg-white/10 transition-all h-11 w-11"
+                    size="icon"
+                    className="relative text-white hover:text-orange-300 hover:bg-white/10 transition-colors"
+                    data-testid="button-notifications"
                   >
-                    <Bell className={`h-6 w-6 ${totalNotifications > 0 ? 'animate-pulse' : ''}`} />
+                    <Bell className="h-6 w-6" />
+                    {/* Show notification count */}
                     {totalNotifications > 0 && (
-                      <>
-                        <Badge 
-                          className="absolute -top-1 -right-1 h-6 w-6 p-0 flex items-center justify-center rounded-full text-xs font-bold bg-orange-500 text-white border-2 border-[#274345] shadow-lg animate-bounce"
-                        >
-                          {totalNotifications > 9 ? '9+' : totalNotifications}
-                        </Badge>
-                        {/* Pulse ring effect */}
-                        <span className="absolute top-0 right-0 h-6 w-6 rounded-full bg-orange-500 animate-ping opacity-75"></span>
-                      </>
+                      <span className="absolute top-0 right-0 w-5 h-5 bg-orange-500 text-white text-xs flex items-center justify-center rounded-full animate-pulse border-2 border-[#274345]">
+                        {totalNotifications > 9 ? '9+' : totalNotifications}
+                      </span>
                     )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80 p-3 bg-white dark:bg-gray-900">
-                  <DropdownMenuLabel className="text-lg font-bold flex items-center gap-2">
-                    <Bell className="h-5 w-5 text-orange-500" />
-                    Notifications
-                  </DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-80">
+                  <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   
-                  {totalNotifications === 0 && (
-                     <div className="text-center py-8 text-muted-foreground">
-                        <Sparkles className="h-8 w-8 mx-auto mb-3 text-orange-500" />
-                        <p className="text-sm font-medium">You're all caught up!</p>
-                        <p className="text-xs mt-1">No new notifications</p>
-                      </div>
-                  )}
-
-                  {unreadMessagesCount > 0 && (
-                    <DropdownMenuItem onClick={() => setLocation('/messages')} className="cursor-pointer hover:bg-orange-50 dark:hover:bg-orange-950 p-3 mb-2">
-                      <div className="flex items-center gap-3 w-full">
-                        <div className="bg-orange-100 dark:bg-orange-900 p-2 rounded-full">
-                          <MessageSquare className="h-5 w-5 text-orange-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm">Unread Messages</p>
-                          <p className="text-xs text-muted-foreground">
-                            {unreadMessagesCount} conversation{unreadMessagesCount !== 1 ? 's' : ''} waiting
-                          </p>
-                        </div>
-                        <Badge className="bg-orange-500 text-white font-bold">{unreadMessagesCount}</Badge>
-                      </div>
-                    </DropdownMenuItem>
-                  )}
-
+                  {/* Admin notifications */}
                   {user?.role === 'admin' && (
                     <>
                       {pendingVerificationsCount > 0 && (
-                        <DropdownMenuItem onClick={() => setLocation('/admin/verification')} className="cursor-pointer hover:bg-yellow-50 dark:hover:bg-yellow-950 p-3 mb-2">
-                          <div className="flex items-center gap-3 w-full">
-                            <div className="bg-yellow-100 dark:bg-yellow-900 p-2 rounded-full">
-                              <User className="h-5 w-5 text-yellow-600" />
-                            </div>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation('/admin/verification')}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 w-full">
+                            <User className="h-4 w-4 text-yellow-500" />
                             <div className="flex-1">
-                              <p className="font-semibold text-sm">Pending Verifications</p>
+                              <p className="font-medium">Pending Verifications</p>
                               <p className="text-xs text-muted-foreground">
                                 {pendingVerificationsCount} user{pendingVerificationsCount !== 1 ? 's' : ''} awaiting approval
                               </p>
                             </div>
-                            <Badge className="bg-yellow-500 text-white font-bold">{pendingVerificationsCount}</Badge>
+                            <Badge className="bg-yellow-500 text-white">{pendingVerificationsCount}</Badge>
                           </div>
                         </DropdownMenuItem>
                       )}
+                      
                       {unresolvedReportsCount > 0 && (
-                        <DropdownMenuItem onClick={() => setLocation('/admin/reports')} className="cursor-pointer hover:bg-red-50 dark:hover:bg-red-950 p-3">
-                          <div className="flex items-center gap-3 w-full">
-                            <div className="bg-red-100 dark:bg-red-900 p-2 rounded-full">
-                              <FileText className="h-5 w-5 text-red-600" />
-                            </div>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation('/admin/reports')}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 w-full">
+                            <FileText className="h-4 w-4 text-red-500" />
                             <div className="flex-1">
-                              <p className="font-semibold text-sm">Unresolved Reports</p>
+                              <p className="font-medium">Unresolved Reports</p>
                               <p className="text-xs text-muted-foreground">
-                                {unresolvedReportsCount} report{unresolvedReportsCount !== 1 ? 's' : ''} requiring action
+                                {unresolvedReportsCount} report{unresolvedReportsCount !== 1 ? 's' : ''} need attention
                               </p>
                             </div>
-                            <Badge className="bg-red-500 text-white font-bold">{unresolvedReportsCount}</Badge>
+                            <Badge className="bg-red-500 text-white">{unresolvedReportsCount}</Badge>
                           </div>
                         </DropdownMenuItem>
                       )}
                     </>
                   )}
+                  
+                  {/* Unread messages notification */}
+                  {unreadMessagesCount > 0 && (
+                    <DropdownMenuItem 
+                      onClick={() => setLocation('/messages')}
+                      className="cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2 w-full">
+                        <MessageSquare className="h-4 w-4 text-orange-500" />
+                        <div className="flex-1">
+                          <p className="font-medium">New Messages</p>
+                          <p className="text-xs text-muted-foreground">
+                            {unreadMessagesCount} unread conversation{unreadMessagesCount !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                        <Badge className="bg-orange-500 text-white">{unreadMessagesCount}</Badge>
+                      </div>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {totalNotifications === 0 && (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No new notifications
+                    </div>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* User Avatar Dropdown */}
+              {/* User Dropdown Menu (Adapted for color scheme) */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full hover:bg-white/10 transition-all">
-                    <Avatar className="h-10 w-10 border-2 border-orange-400 shadow-lg">
+                  <Button 
+                    variant="ghost" 
+                    className="relative h-10 w-10 rounded-full hover:bg-white/10 transition-all"
+                    data-testid="button-user-menu"
+                  >
+                    <Avatar className="h-10 w-10 ring-2 ring-orange-400">
                       <AvatarImage src={user?.profilePictureUrl} alt={user?.name} />
                       <AvatarFallback className="bg-orange-500 text-white font-bold">
                         {user?.name?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
+                    {user?.isVerified && (
+                      <div 
+                        className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-orange-500 flex items-center justify-center border-2 border-[#274345]"
+                      >
+                        <Sparkles className="h-3 w-3 text-white" />
+                      </div>
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 p-2">
-                  <DropdownMenuLabel className="font-semibold text-sm truncate">
-                    {user?.name} ({user?.role})
+                <DropdownMenuContent 
+                  align="end" 
+                  className="w-64 border-2 border-orange-200 dark:border-orange-900"
+                >
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col gap-2">
+                      <p className="text-base font-bold truncate">{user?.name}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                      <Badge 
+                        className="w-fit bg-orange-500 text-white border-none"
+                      >
+                        {user?.role}
+                      </Badge>
+                    </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => setLocation('/profile')}
-                    className="cursor-pointer"
+                    className="cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900"
+                    data-testid="menu-profile"
                   >
-                    <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <User className="mr-2 h-4 w-4 text-orange-500" />
                     Profile
                   </DropdownMenuItem>
+                  {user?.role === 'admin' && (
+                      <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => setLocation('/admin/verification')}
+                        className="cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900"
+                        data-testid="menu-admin-verification"
+                      >
+                        <User className="mr-2 h-4 w-4 text-yellow-500" />
+                        Verify Users
+                      </DropdownMenuItem>
+                      </>
+                  )}
                   <DropdownMenuItem 
                     onClick={() => setLocation('/messages')}
-                    className="cursor-pointer"
+                    className="cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900"
+                    data-testid="menu-messages"
                   >
-                    <MessageSquare className="mr-2 h-4 w-4 text-primary" />
+                    <MessageSquare className="mr-2 h-4 w-4 text-orange-500" />
                     Messages
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={logout}
-                    className="cursor-pointer text-destructive hover:bg-destructive/10"
+                    className="cursor-pointer text-destructive hover:bg-red-100 dark:hover:bg-red-900"
                     data-testid="menu-logout"
                   >
                     Logout
@@ -384,9 +432,6 @@ export function Header() {
               </Link>
             </div>
           )}
-          
-          {/* Theme Toggle */}
-          <ThemeToggle />
         </div>
       </div>
     </header>
