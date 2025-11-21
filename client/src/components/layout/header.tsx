@@ -76,7 +76,7 @@ export function Header() {
         <div className="flex items-center gap-8">
           <Link href="/">
             <div className="flex items-center gap-3 hover-elevate rounded-xl px-3 py-2 cursor-pointer group">
-              <img src="/logo.png" alt="JobTradeSasa" className="h-10 w-10" />
+              <img src="/image.png" alt="JobTradeSasa" className="h-10 w-10" />
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-white"> 
                   JobTradeSasa
