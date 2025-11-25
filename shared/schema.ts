@@ -18,6 +18,7 @@ import { z } from "zod";
 // Enums
 export const roleEnum = pgEnum("role", ["requester", "provider", "supplier", "admin"]);
 export const urgencyEnum = pgEnum("urgency", ["normal", "emergency"]);
+export const providerTypeEnum = pgEnum("provider_type", ["individual", "company", "both"]);
 export const jobStatusEnum = pgEnum("job_status", [
   "open",
   "offered", 
@@ -95,6 +96,32 @@ export const supplierPromotions = pgTable("supplier_promotions", {
   images: jsonb("images").$type<string[]>().default([]),
   termsAndConditions: text("terms_and_conditions"),
   isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// 🆕 Companies table (for company requesters and company service providers)
+export const companies = pgTable("companies", {
+  userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  companyName: text("company_name").notNull(),
+  registrationNumber: text("registration_number").notNull().unique(),
+  taxNumber: text("tax_number"),
+  physicalAddress: text("physical_address").notNull(),
+  contactPerson: text("contact_person").notNull(),
+  contactPosition: text("contact_position").notNull(),
+  companyEmail: text("company_email").notNull(),
+  companyPhone: text("company_phone").notNull(),
+  companyWebsite: text("company_website"),
+  industryType: text("industry_type").notNull(),
+  numberOfEmployees: integer("number_of_employees"),
+  yearsInBusiness: integer("years_in_business"),
+  businessLicense: text("business_license"), // Document URL
+  registrationCertificate: text("registration_certificate"), // Document URL
+  bankDetails: jsonb("bank_details").$type<{ bankName: string; accountNumber: string; accountHolder: string }>(),
+  logo: text("logo"),
+  ratingAverage: numeric("rating_average", { precision: 3, scale: 2 }).default("0"),
+  completedJobsCount: integer("completed_jobs_count").default(0).notNull(),
+  isVerified: boolean("is_verified").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -248,6 +275,7 @@ export const jobs = pgTable("jobs", {
     amountPaid: numeric("amount_paid", { precision: 10, scale: 2 }),
     priceAgreed: numeric("price_agreed", { precision: 10, scale: 2 }),
     pricePaid: numeric("price_paid", { precision: 10, scale: 2 }),
+    allowedProviderType: providerTypeEnum("allowed_provider_type").default("both").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   });
@@ -565,6 +593,7 @@ export const insertJobSchema = z.object({
   photos: z.array(z.string()).optional().default([]),
   budgetMin: z.string().optional(),
   budgetMax: z.string().optional(),
+  allowedProviderType: z.enum(["individual", "company", "both"]).default("both"),
 });
 
 // Service Area Migration Schema

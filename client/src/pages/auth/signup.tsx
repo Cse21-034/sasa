@@ -60,9 +60,34 @@ const supplierSignupSchema = z.object({
   path: ['confirmPassword'],
 });
 
+// Company signup schema (FOR company requesters/service providers)
+const companySignupSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string(),
+  role: z.literal('company'),
+  companyName: z.string().min(2, 'Company name is required'),
+  registrationNumber: z.string().min(3, 'Registration number is required'),
+  taxNumber: z.string().optional(),
+  physicalAddress: z.string().min(5, 'Physical address is required'),
+  contactPerson: z.string().min(2, 'Contact person name is required'),
+  contactPosition: z.string().min(2, 'Position/role is required'),
+  companyEmail: z.string().email('Invalid company email'),
+  companyPhone: z.string().min(5, 'Company phone is required'),
+  companyWebsite: z.string().url().optional(),
+  industryType: z.string().min(2, 'Industry type is required'),
+  numberOfEmployees: z.string().optional(),
+  yearsInBusiness: z.string().optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
+});
+
 type IndividualSignupForm = z.infer<typeof individualSignupSchema>;
 type SupplierSignupForm = z.infer<typeof supplierSignupSchema>;
-type SignupData = IndividualSignupForm | SupplierSignupForm;
+type CompanySignupForm = z.infer<typeof companySignupSchema>;
+type SignupData = IndividualSignupForm | SupplierSignupForm | CompanySignupForm;
 
 // INDIVIDUAL FORM COMPONENT
 interface IndividualFormProps {
@@ -452,13 +477,301 @@ const OrganizationForm = ({ form, isLoading, onSubmit }: OrganizationFormProps) 
   </Form>
 );
 
+// COMPANY FORM COMPONENT
+interface CompanyFormProps {
+  form: UseFormReturn<CompanySignupForm>;
+  isLoading: boolean;
+  onSubmit: (data: SignupData) => void;
+}
+
+const CompanyForm = ({ form, isLoading, onSubmit }: CompanyFormProps) => (
+  <Form {...form}>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Your Full Name</FormLabel>
+              <FormControl>
+                <Input placeholder="John Doe" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Your Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="you@example.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="companyName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Name</FormLabel>
+              <FormControl>
+                <Input placeholder="ABC Corporation Ltd" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="registrationNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Registration Number</FormLabel>
+              <FormControl>
+                <Input placeholder="REG123456" {...field} />
+              </FormControl>
+              <FormDescription>Your company registration number</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="taxNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tax Number (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="TAX123456" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="industryType"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Industry Type</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select industry" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="construction">Construction</SelectItem>
+                  <SelectItem value="technology">Technology</SelectItem>
+                  <SelectItem value="consulting">Consulting</SelectItem>
+                  <SelectItem value="logistics">Logistics</SelectItem>
+                  <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                  <SelectItem value="retail">Retail</SelectItem>
+                  <SelectItem value="services">Services</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <FormField
+        control={form.control}
+        name="physicalAddress"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Physical Address</FormLabel>
+            <FormControl>
+              <Input 
+                placeholder="123 Business Ave, Gaborone" 
+                {...field} 
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="contactPerson"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Contact Person</FormLabel>
+              <FormControl>
+                <Input placeholder="Jane Smith" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="contactPosition"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Position/Role</FormLabel>
+              <FormControl>
+                <Input placeholder="Director" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="companyEmail"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="info@company.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="companyPhone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Phone</FormLabel>
+              <FormControl>
+                <Input placeholder="+267 XX XXX XXXX" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="companyWebsite"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Website (Optional)</FormLabel>
+              <FormControl>
+                <Input type="url" placeholder="https://example.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="numberOfEmployees"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Number of Employees (Optional)</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="50" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="yearsInBusiness"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Years in Business (Optional)</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="5" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <FormField
+        control={form.control}
+        name="password"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Password</FormLabel>
+            <FormControl>
+              <Input type="password" placeholder="••••••••" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="confirmPassword"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Confirm Password</FormLabel>
+            <FormControl>
+              <Input type="password" placeholder="••••••••" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormDescription className="text-sm">
+        Your documents will need to be verified before you can post jobs. Verification typically takes 24-48 hours.
+      </FormDescription>
+
+      <Button
+        type="submit"
+        className="w-full h-12"
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Creating account...
+          </>
+        ) : (
+          'Create Company Account'
+        )}
+      </Button>
+    </form>
+  </Form>
+);
+
 // MAIN SIGNUP COMPONENT
 export default function Signup() {
   const [, setLocation] = useLocation();
   const { setUser } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [accountType, setAccountType] = useState<'individual' | 'organization'>('individual');
+  const [accountType, setAccountType] = useState<'individual' | 'organization' | 'company'>('individual');
 
   const individualForm = useForm<IndividualSignupForm>({
     resolver: zodResolver(individualSignupSchema),
@@ -493,11 +806,35 @@ export default function Signup() {
       industryType: '',
     },
   });
+
+  const companyForm = useForm<CompanySignupForm>({
+    resolver: zodResolver(companySignupSchema),
+    mode: 'onBlur',
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      role: 'company',
+      companyName: '',
+      registrationNumber: '',
+      taxNumber: '',
+      physicalAddress: '',
+      contactPerson: '',
+      contactPosition: '',
+      companyEmail: '',
+      companyPhone: '',
+      companyWebsite: '',
+      industryType: '',
+      numberOfEmployees: '',
+      yearsInBusiness: '',
+    },
+  });
   
   const selectedRole = individualForm.watch('role');
 
   // FIX: Proper form reset when switching tabs
-  const handleAccountTypeChange = (newType: 'individual' | 'organization') => {
+  const handleAccountTypeChange = (newType: 'individual' | 'organization' | 'company') => {
     if (newType === 'individual') {
       supplierForm.reset({
         name: '', 
@@ -514,7 +851,26 @@ export default function Signup() {
         companyPhone: '', 
         industryType: '',
       });
-    } else {
+      companyForm.reset({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'company',
+        companyName: '',
+        registrationNumber: '',
+        taxNumber: '',
+        physicalAddress: '',
+        contactPerson: '',
+        contactPosition: '',
+        companyEmail: '',
+        companyPhone: '',
+        companyWebsite: '',
+        industryType: '',
+        numberOfEmployees: '',
+        yearsInBusiness: '',
+      });
+    } else if (newType === 'organization') {
       individualForm.reset({
         name: '', 
         email: '', 
@@ -523,6 +879,51 @@ export default function Signup() {
         confirmPassword: '',
         role: 'requester', 
         primaryCity: '',
+      });
+      companyForm.reset({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'company',
+        companyName: '',
+        registrationNumber: '',
+        taxNumber: '',
+        physicalAddress: '',
+        contactPerson: '',
+        contactPosition: '',
+        companyEmail: '',
+        companyPhone: '',
+        companyWebsite: '',
+        industryType: '',
+        numberOfEmployees: '',
+        yearsInBusiness: '',
+      });
+    } else {
+      // company type
+      individualForm.reset({
+        name: '', 
+        email: '', 
+        phone: '', 
+        password: '', 
+        confirmPassword: '',
+        role: 'requester', 
+        primaryCity: '',
+      });
+      supplierForm.reset({
+        name: '', 
+        email: '', 
+        phone: '', 
+        password: '', 
+        confirmPassword: '',
+        role: 'supplier', 
+        companyName: '', 
+        physicalAddress: '', 
+        contactPerson: '',
+        contactPosition: '', 
+        companyEmail: '', 
+        companyPhone: '', 
+        industryType: '',
       });
     }
     setAccountType(newType);
@@ -534,7 +935,7 @@ export default function Signup() {
     // 🔧 FIX: Clean up the payload based on account type
     let payload: any = {
       ...data,
-      role: accountType === 'organization' ? 'supplier' : (data as IndividualSignupForm).role,
+      role: accountType === 'organization' ? 'supplier' : accountType === 'company' ? 'company' : (data as IndividualSignupForm).role,
     };
 
     // 🔧 FIX: Remove primaryCity if it's empty or if user is a requester
@@ -544,6 +945,17 @@ export default function Signup() {
       // Remove primaryCity for requesters OR if it's empty
       if (individualData.role === 'requester' || !individualData.primaryCity) {
         delete payload.primaryCity;
+      }
+    }
+
+    // 🔧 FIX: Convert company fields to proper types
+    if (accountType === 'company') {
+      const companyData = data as CompanySignupForm;
+      if (companyData.numberOfEmployees) {
+        payload.numberOfEmployees = parseInt(companyData.numberOfEmployees);
+      }
+      if (companyData.yearsInBusiness) {
+        payload.yearsInBusiness = parseInt(companyData.yearsInBusiness);
       }
     }
 
@@ -562,10 +974,10 @@ export default function Signup() {
 
     toast({
       title: 'Account created!',
-      description: `Welcome to JobTradeSasa${result.user.role === 'supplier' ? ', ' + (data as SupplierSignupForm).companyName : ''}.`,
+      description: `Welcome to JobTradeSasa${result.user.role === 'supplier' ? ', ' + (data as SupplierSignupForm).companyName : result.user.role === 'company' ? ', ' + (data as CompanySignupForm).companyName : ''}.`,
     });
 
-    setLocation(result.user.role === 'provider' ? '/dashboard' : '/jobs');
+    setLocation(result.user.role === 'provider' || result.user.role === 'company' ? '/dashboard' : '/jobs');
   } catch (error: any) {
     let message = error.message || 'An unknown error occurred.';
     if (message.startsWith('400:')) {
@@ -601,14 +1013,21 @@ export default function Signup() {
         </CardHeader>
         <CardContent>
           <Tabs value={accountType} onValueChange={(v) => handleAccountTypeChange(v as any)} className="mb-6">
-            <TabsList className="grid w-full grid-cols-2 h-12">
-              <TabsTrigger value="individual" className="text-sm">
-                <UserCircle className="h-4 w-4 mr-2" />
-                Individual Account
+            <TabsList className="grid w-full grid-cols-3 h-12">
+              <TabsTrigger value="individual" className="text-xs sm:text-sm">
+                <UserCircle className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Individual</span>
+                <span className="sm:hidden">Person</span>
               </TabsTrigger>
-              <TabsTrigger value="organization" className="text-sm">
-                <Building2 className="h-4 w-4 mr-2" />
-                Organization/Supplier
+              <TabsTrigger value="organization" className="text-xs sm:text-sm">
+                <Building2 className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Supplier</span>
+                <span className="sm:hidden">Supp.</span>
+              </TabsTrigger>
+              <TabsTrigger value="company" className="text-xs sm:text-sm">
+                <Briefcase className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Company</span>
+                <span className="sm:hidden">Co.</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -620,9 +1039,15 @@ export default function Signup() {
                 isLoading={isLoading}
                 onSubmit={onSubmit}
             />
-          ) : (
+          ) : accountType === 'organization' ? (
             <OrganizationForm 
                 form={supplierForm}
+                isLoading={isLoading}
+                onSubmit={onSubmit}
+            />
+          ) : (
+            <CompanyForm 
+                form={companyForm}
                 isLoading={isLoading}
                 onSubmit={onSubmit}
             />

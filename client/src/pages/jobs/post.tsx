@@ -45,6 +45,7 @@ export default function PostJob() {
       photos: [],
       budgetMin: '',
       budgetMax: '',
+      allowedProviderType: 'both' as const,
     },
   });
 
@@ -492,6 +493,38 @@ export default function PostJob() {
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="allowedProviderType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Provider Type (Who can apply?)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Select provider type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="individual">
+                          Individual Service Providers Only
+                        </SelectItem>
+                        <SelectItem value="company">
+                          Companies/Organizations Only
+                        </SelectItem>
+                        <SelectItem value="both">
+                          Both Individual and Companies
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Choose who you'd like to hire for this job
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}

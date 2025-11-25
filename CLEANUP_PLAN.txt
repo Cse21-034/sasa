@@ -1,0 +1,83 @@
+# Cleanup Plan - Unused Files to Remove
+
+## Root Level Documentation (DUPLICATES - Keep only REFACTORING_SUMMARY.md)
+
+### ❌ REMOVE THESE (Duplicates/Outdated):
+1. DEPLOYMENT_CHECKLIST.md - Outdated deployment info
+2. DEPLOYMENT_GUIDE.md - Duplicate
+3. design_guidelines.md - Not used
+4. FILES_CREATED_INDEX.md - Outdated index
+5. PRODUCTION_DEPLOYMENT_QUICK_FIX.md - Temporary fix file
+6. PRODUCTION_READINESS_FINAL_REPORT.md - Outdated report
+7. PRODUCTION_READINESS_REPORT.md - Duplicate report
+8. PRODUCTION_READY_SUMMARY.md - Duplicate
+9. REFACTORING_COMPLETE.md - Outdated (replaced by ROUTES_REFACTORING_COMPLETE.md)
+10. REFACTORING_SUMMARY.md - Duplicate (keep only REFACTORING_SUMMARY.md in root)
+11. replit.md - Deployment-specific, not needed
+12. SEPARATE_DEPLOYMENT_NOTE.md - Temporary note
+13. SOLID_QUICK_START.md - Outdated SOLID guide
+14. SOLID_VISUAL_SUMMARY.md - Duplicate
+
+### ✅ KEEP THESE:
+- README.md (main project guide)
+- REFACTORING_SUMMARY.md (final summary of what was done)
+- ROUTES_REFACTORING_COMPLETE.md (in root, summarizes routes changes)
+- render.yaml (deployment config - in use)
+- vercel.json (deployment config - in use)
+- package.json (project config - in use)
+- tsconfig.json (TypeScript config - in use)
+- vite.config.ts (build config - in use)
+- tailwind.config.ts (styling config - in use)
+- postcss.config.js (CSS processing - in use)
+- drizzle.config.ts (database config - in use)
+- components.json (shadcn config - in use)
+
+## Server Files to Review
+
+### storage.ts (1,158 lines)
+**Status**: Large but still in use for database operations
+**Action**: KEEP (being used by old code, routes still use it)
+**Note**: Could be refactored later to thin layer only
+
+## Old Route/Documentation Files in /server/routes/
+
+### REFACTORING FILES (Documentation - Can be cleaned up later)
+- ROUTES_REFACTORING.md
+- IMPLEMENTATION_GUIDE.md  
+- VISUAL_OVERVIEW.md
+- README.md (in routes folder)
+
+**Action**: KEEP - These document the refactoring
+
+## Attached Assets
+
+### /attached_assets/ directory
+**Status**: Contains old uploaded files/screenshots
+**Action**: SAFE TO REMOVE if not actively used
+
+## Summary
+
+### Files to Remove NOW (Safe - No Code Uses Them)
+1. DEPLOYMENT_CHECKLIST.md
+2. DEPLOYMENT_GUIDE.md
+3. design_guidelines.md
+4. FILES_CREATED_INDEX.md
+5. PRODUCTION_DEPLOYMENT_QUICK_FIX.md
+6. PRODUCTION_READINESS_FINAL_REPORT.md
+7. PRODUCTION_READINESS_REPORT.md
+8. PRODUCTION_READY_SUMMARY.md
+9. REFACTORING_COMPLETE.md
+10. replit.md
+11. SEPARATE_DEPLOYMENT_NOTE.md
+12. SOLID_QUICK_START.md
+13. SOLID_VISUAL_SUMMARY.md
+14. /attached_assets/ (entire directory)
+
+**Total: 14 files + 1 directory to remove**
+
+### Files to Keep
+- All config files (in use)
+- All source code (in use)
+- REFACTORING_SUMMARY.md (current summary)
+- ROUTES_REFACTORING_COMPLETE.md (current summary)
+- All documentation in /server/routes/ (explains refactoring)
