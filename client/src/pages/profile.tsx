@@ -1,11 +1,11 @@
-// client/src/pages/profile.tsx - ENHANCED WITH PHOTO UPLOAD & CATEGORIES
+// client/src/pages/profile.tsx - ENHANCED WITH PHOTO UPLOAD & CATEGORIES & LOCATION MIGRATION
 
 import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { User, Mail, Phone, Loader2, Camera, Wrench } from 'lucide-react';
+import { User, Mail, Phone, Loader2, Camera, Wrench, MapPin, Clock, CheckCircle, XCircle, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
@@ -13,10 +13,20 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import type { Category } from '@shared/schema';
+import type { Category, ServiceAreaMigration } from '@shared/schema';
+
+// Botswana cities for migration request
+const botswanaCities = [
+  "Gaborone", "Francistown", "Maun", "Kasane", "Serowe",
+  "Palapye", "Selebi-Phikwe", "Molepolole", "Kanye", "Lobatse",
+  "Letlhakane", "Orapa", "Jwaneng", "Ghanzi", "Nata"
+];
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -28,12 +38,21 @@ const profileSchema = z.object({
 
 type ProfileForm = z.infer<typeof profileSchema>;
 
+// Migration request schema
+const migrationRequestSchema = z.object({
+  requestedCity: z.string().min(1, 'Please select a city'),
+  reason: z.string().min(10, 'Please provide a reason for your request (at least 10 characters)'),
+});
+
+type MigrationRequestForm = z.infer<typeof migrationRequestSchema>;
+
 export default function Profile() {
   const { user, setUser } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(user?.profilePhotoUrl || null);
+  const [migrationDialogOpen, setMigrationDialogOpen] = useState(false);
 
   // Fetch categories for providers
   const { data: categories } = useQuery<Category[]>({
@@ -49,6 +68,49 @@ export default function Profile() {
       return response.json();
     },
     enabled: user?.role === 'provider',
+  });
+
+  // Fetch migration requests for providers
+  const { data: migrations } = useQuery<ServiceAreaMigration[]>({
+    queryKey: ['/api/provider/migrations'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/provider/migrations');
+      return response.json();
+    },
+    enabled: user?.role === 'provider',
+  });
+
+  // Migration request form
+  const migrationForm = useForm<MigrationRequestForm>({
+    resolver: zodResolver(migrationRequestSchema),
+    defaultValues: {
+      requestedCity: '',
+      reason: '',
+    },
+  });
+
+  // Migration request mutation
+  const migrationMutation = useMutation({
+    mutationFn: async (data: MigrationRequestForm) => {
+      const res = await apiRequest('POST', '/api/provider/migration-request', data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/provider/migrations'] });
+      setMigrationDialogOpen(false);
+      migrationForm.reset();
+      toast({
+        title: 'Request Submitted',
+        description: 'Your location migration request has been submitted for admin approval.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Request Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
   });
 
   const form = useForm<ProfileForm>({
@@ -338,6 +400,186 @@ export default function Profile() {
                     </FormItem>
                   )}
                 />
+              )}
+
+              {/* Service Areas for Providers */}
+              {user?.role === 'provider' && providerProfile && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <FormLabel className="text-base flex items-center gap-2">
+                        <MapPin className="h-5 w-5" />
+                        Service Areas
+                      </FormLabel>
+                      <FormDescription>
+                        Cities where you can accept jobs. Request to work in new locations.
+                      </FormDescription>
+                    </div>
+                    <Dialog open={migrationDialogOpen} onOpenChange={setMigrationDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" data-testid="button-request-location">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Request New Location
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Request Location Migration</DialogTitle>
+                          <DialogDescription>
+                            Request approval to work in a new city. An admin will review your request.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <Form {...migrationForm}>
+                          <form onSubmit={migrationForm.handleSubmit((data) => migrationMutation.mutate(data))} className="space-y-4">
+                            <FormField
+                              control={migrationForm.control}
+                              name="requestedCity"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Select City</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger data-testid="select-migration-city">
+                                        <SelectValue placeholder="Choose a city" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {botswanaCities
+                                        .filter(city => {
+                                          const approved = (providerProfile?.approvedServiceAreas as string[]) || [];
+                                          return !approved.includes(city) && city !== providerProfile?.primaryCity;
+                                        })
+                                        .map((city) => (
+                                          <SelectItem key={city} value={city}>
+                                            {city}
+                                          </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={migrationForm.control}
+                              name="reason"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Reason for Request</FormLabel>
+                                  <FormControl>
+                                    <Textarea
+                                      placeholder="Explain why you want to work in this location..."
+                                      className="min-h-20"
+                                      data-testid="input-migration-reason"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <DialogFooter>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setMigrationDialogOpen(false)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                type="submit"
+                                disabled={migrationMutation.isPending}
+                                data-testid="button-submit-migration"
+                              >
+                                {migrationMutation.isPending ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Submitting...
+                                  </>
+                                ) : (
+                                  'Submit Request'
+                                )}
+                              </Button>
+                            </DialogFooter>
+                          </form>
+                        </Form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
+                  {/* Current Approved Areas */}
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="default" className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {providerProfile.primaryCity} (Primary)
+                    </Badge>
+                    {(providerProfile.approvedServiceAreas as string[] || [])
+                      .filter((city: string) => city !== providerProfile.primaryCity)
+                      .map((city: string) => (
+                        <Badge key={city} variant="secondary" className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {city}
+                        </Badge>
+                      ))}
+                  </div>
+
+                  {/* Migration Requests History */}
+                  <div className="space-y-2" data-testid="migration-requests-section">
+                    <p className="text-sm font-medium text-muted-foreground">Migration Requests</p>
+                    {!migrations ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        <span className="ml-2 text-sm text-muted-foreground">Loading...</span>
+                      </div>
+                    ) : migrations.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-2" data-testid="text-no-migrations">
+                        No migration requests yet. Request a new location to expand your service area.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {migrations.map((migration) => (
+                          <div
+                            key={migration.id}
+                            className="flex items-center justify-between gap-4 p-3 rounded-md border bg-muted/30"
+                            data-testid={`card-migration-${migration.id}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              {migration.status === 'pending' && (
+                                <Clock className="h-4 w-4 text-yellow-500" />
+                              )}
+                              {migration.status === 'approved' && (
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                              )}
+                              {migration.status === 'rejected' && (
+                                <XCircle className="h-4 w-4 text-red-500" />
+                              )}
+                              <div>
+                                <p className="text-sm font-medium" data-testid={`text-migration-city-${migration.id}`}>
+                                  {migration.requestedCity}
+                                </p>
+                                <p className="text-xs text-muted-foreground" data-testid={`text-migration-date-${migration.id}`}>
+                                  {new Date(migration.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            <Badge
+                              variant={
+                                migration.status === 'approved'
+                                  ? 'default'
+                                  : migration.status === 'rejected'
+                                  ? 'destructive'
+                                  : 'secondary'
+                              }
+                              data-testid={`badge-migration-status-${migration.id}`}
+                            >
+                              {migration.status}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
 
               <div className="flex gap-4">
