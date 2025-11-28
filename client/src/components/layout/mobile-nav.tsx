@@ -33,7 +33,7 @@ export function MobileNav() {
 
   const providerItems = [
     { href: '/jobs', icon: Home, label: 'Browse', testId: 'nav-home' },
-    { href: '/suppliers', icon: Building2, label: 'Suppliers', testId: 'nav-suppliers' },
+    { href: '/provider/applications', icon: Briefcase, label: 'Applications', testId: 'nav-applications' },
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', testId: 'nav-dashboard' },
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];

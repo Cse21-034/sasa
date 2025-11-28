@@ -27,6 +27,7 @@ import VerificationPage from "@/pages/verification";
 import SupplierDetail from "@/pages/supplier-detail";
 import SupplierDashboard from "@/pages/supplier/dashboard";
 import SupplierSettings from "@/pages/supplier/settings";
+import ProviderApplications from "@/pages/provider/applications";
 
 // Admin Imports
 import AdminDashboardHub from "@/pages/admin/index"; 
@@ -147,6 +148,9 @@ function Router() {
           </Route>
           <Route path="/dashboard">
             {() => <ProtectedRoute component={ProviderDashboard} path="/dashboard" />}
+          </Route>
+          <Route path="/provider/applications">
+            {() => <ProtectedRoute component={ProviderApplications} path="/provider/applications" />}
           </Route>
           <Route path="/messages">
             {() => <ProtectedRoute component={Messages} path="/messages" />}

@@ -1,6 +1,6 @@
 import type { Express } from 'express';
 import { ZodError } from 'zod';
-import { insertJobSchema, updateJobStatusSchema } from '@shared/schema';
+import { insertJobSchema, updateJobStatusSchema, insertJobApplicationSchema, selectProviderSchema } from '@shared/schema';
 import { storage } from '../storage';
 import { authMiddleware, type AuthRequest } from '../middleware/auth';
 
@@ -190,7 +190,8 @@ export function registerJobRoutes(app: Express, injectedVerifyAccess: any): void
 
   /**
    * POST /api/jobs/:id/accept
-   * Accept a job as a provider
+   * Accept a job as a provider (legacy - kept for backward compatibility)
+   * Note: New flow uses /api/jobs/:id/apply
    */
   app.post('/api/jobs/:id/accept', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
@@ -224,6 +225,194 @@ export function registerJobRoutes(app: Express, injectedVerifyAccess: any): void
       res.json(acceptedJob);
     } catch (error: any) {
       console.error('Accept job error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // =====================================================
+  // JOB APPLICATION ROUTES (Multi-provider selection system)
+  // =====================================================
+
+  /**
+   * POST /api/jobs/:id/apply
+   * Apply to a job as a provider (new multi-provider flow)
+   * Max 4 providers can apply to a single job
+   */
+  app.post('/api/jobs/:id/apply', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'provider') {
+        return res.status(403).json({ message: 'Only providers can apply for jobs' });
+      }
+
+      const job = await storage.getJob(req.params.id);
+      if (!job) {
+        return res.status(404).json({ message: 'Job not found' });
+      }
+
+      if (job.status !== 'open' && job.status !== 'pending_selection') {
+        return res.status(400).json({ message: 'This job is no longer accepting applications' });
+      }
+
+      const provider = await storage.getProvider(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: 'Provider profile not found' });
+      }
+
+      const approvedCities = (provider.approvedServiceAreas as string[]) || [provider.primaryCity];
+      if (!approvedCities.includes(job.city)) {
+        return res.status(403).json({ 
+          message: `This job is in ${job.city}. You can only apply for jobs in: ${approvedCities.join(', ')}.` 
+        });
+      }
+
+      const { message } = req.body;
+      const application = await storage.applyToJob(req.params.id, req.user!.id, message);
+      
+      if (!application) {
+        const hasApplied = await storage.hasProviderApplied(req.params.id, req.user!.id);
+        if (hasApplied) {
+          return res.status(400).json({ message: 'You have already applied to this job' });
+        }
+        return res.status(400).json({ message: 'This job has reached the maximum number of applicants (4)' });
+      }
+
+      res.status(201).json({ 
+        message: 'Application submitted successfully. Please wait for the requester to select a provider.',
+        application 
+      });
+    } catch (error: any) {
+      console.error('Apply to job error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  /**
+   * GET /api/jobs/:id/applications
+   * Get all applications for a job (requester only)
+   */
+  app.get('/api/jobs/:id/applications', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      const job = await storage.getJob(req.params.id);
+      if (!job) {
+        return res.status(404).json({ message: 'Job not found' });
+      }
+
+      if (job.requesterId !== req.user!.id && req.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Only the job requester can view applications' });
+      }
+
+      const applications = await storage.getJobApplications(req.params.id);
+      res.json(applications);
+    } catch (error: any) {
+      console.error('Get job applications error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  /**
+   * GET /api/jobs/:id/application-status
+   * Check if current provider has applied to this job
+   */
+  app.get('/api/jobs/:id/application-status', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'provider') {
+        return res.status(403).json({ message: 'Only providers can check application status' });
+      }
+
+      const hasApplied = await storage.hasProviderApplied(req.params.id, req.user!.id);
+      const applicationCount = await storage.getJobApplicationCount(req.params.id);
+      
+      res.json({ 
+        hasApplied, 
+        applicationCount,
+        maxApplications: 4,
+        canApply: !hasApplied && applicationCount < 4
+      });
+    } catch (error: any) {
+      console.error('Get application status error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  /**
+   * POST /api/jobs/:id/select-provider
+   * Select a provider from applications (requester only)
+   */
+  app.post('/api/jobs/:id/select-provider', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      const job = await storage.getJob(req.params.id);
+      if (!job) {
+        return res.status(404).json({ message: 'Job not found' });
+      }
+
+      if (job.requesterId !== req.user!.id) {
+        return res.status(403).json({ message: 'Only the job requester can select a provider' });
+      }
+
+      if (job.status !== 'pending_selection') {
+        return res.status(400).json({ message: 'This job is not in the selection phase' });
+      }
+
+      const validatedData = selectProviderSchema.parse(req.body);
+      const updatedJob = await storage.selectProvider(validatedData.applicationId, req.user!.id);
+      
+      if (!updatedJob) {
+        return res.status(400).json({ message: 'Failed to select provider. Application may not exist.' });
+      }
+
+      res.json({ 
+        message: 'Provider selected successfully. The job has been assigned.',
+        job: updatedJob 
+      });
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: error.issues.map(i => ({ field: i.path.join('.'), message: i.message }))
+        });
+      }
+      console.error('Select provider error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  /**
+   * GET /api/provider/applications
+   * Get all applications for the current provider
+   */
+  app.get('/api/provider/applications', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'provider') {
+        return res.status(403).json({ message: 'Only providers can view their applications' });
+      }
+
+      const applications = await storage.getProviderApplications(req.user!.id);
+      res.json(applications);
+    } catch (error: any) {
+      console.error('Get provider applications error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  /**
+   * DELETE /api/applications/:id
+   * Withdraw an application (provider only)
+   */
+  app.delete('/api/applications/:id', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'provider') {
+        return res.status(403).json({ message: 'Only providers can withdraw applications' });
+      }
+
+      const success = await storage.withdrawApplication(req.params.id, req.user!.id);
+      
+      if (!success) {
+        return res.status(400).json({ message: 'Application not found or cannot be withdrawn' });
+      }
+
+      res.json({ message: 'Application withdrawn successfully' });
+    } catch (error: any) {
+      console.error('Withdraw application error:', error);
       res.status(500).json({ message: error.message });
     }
   });

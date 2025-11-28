@@ -11,6 +11,7 @@ import {
   jobReports,
   serviceAreaMigrations,
   verificationSubmissions,
+  jobApplications,
   type User, 
   type InsertUser,
   type Provider,
@@ -35,6 +36,8 @@ import {
   type InsertCategory,
   type VerificationSubmission,
   type InsertVerificationSubmission,
+  type JobApplication,
+  type InsertJobApplication,
 } from "@shared/schema";
 import { db } from "./db"; // 🚨 CRITICAL FIX: Added missing 'db' import
 import { eq, and, sql, desc, asc, inArray, or } from "drizzle-orm"; // 🚨 FIX: Added 'or' operator
@@ -73,6 +76,16 @@ interface JobReportWithRelations extends JobReport {
     jobTitle: string;
     jobStatus: Job['status'];
 }
+
+// Job Application with Provider Details (for requester selection)
+type JobApplicationWithProvider = JobApplication & {
+  provider: User & {
+    ratingAverage?: string;
+    completedJobsCount?: number;
+    phone?: string;
+    profilePhotoUrl?: string;
+  };
+};
 
 export interface IStorage {
   // Users
@@ -138,6 +151,15 @@ export interface IStorage {
   acceptJob(jobId: string, providerId: string): Promise<Job | undefined>;
   setProviderCharge(jobId: string, charge: string): Promise<Job | undefined>;
   confirmPayment(jobId: string, amount: string): Promise<Job | undefined>;
+  
+  // Job Applications (Multi-provider selection system)
+  applyToJob(jobId: string, providerId: string, message?: string): Promise<JobApplication | undefined>;
+  getJobApplications(jobId: string): Promise<JobApplicationWithProvider[]>;
+  getProviderApplications(providerId: string): Promise<(JobApplication & { job: Job })[]>;
+  getJobApplicationCount(jobId: string): Promise<number>;
+  hasProviderApplied(jobId: string, providerId: string): Promise<boolean>;
+  selectProvider(applicationId: string, requesterId: string): Promise<Job | undefined>;
+  withdrawApplication(applicationId: string, providerId: string): Promise<boolean>;
 
   // Messages
    getMessages(jobId: string): Promise<MessageWithSender[]>;
@@ -822,6 +844,159 @@ export class DatabaseStorage implements IStorage {
       .where(eq(jobs.id, jobId))
       .returning();
     return updated || undefined;
+  }
+
+  // Job Applications (Multi-provider selection system)
+  async applyToJob(jobId: string, providerId: string, message?: string): Promise<JobApplication | undefined> {
+    const applicationCount = await this.getJobApplicationCount(jobId);
+    if (applicationCount >= 4) {
+      return undefined;
+    }
+    
+    const alreadyApplied = await this.hasProviderApplied(jobId, providerId);
+    if (alreadyApplied) {
+      return undefined;
+    }
+
+    const [application] = await db.insert(jobApplications).values({
+      jobId,
+      providerId,
+      message: message || null,
+      status: 'pending',
+    }).returning();
+
+    if (applicationCount === 0) {
+      await db.update(jobs)
+        .set({ status: 'pending_selection', updatedAt: new Date() })
+        .where(eq(jobs.id, jobId));
+    }
+
+    return application;
+  }
+
+  async getJobApplications(jobId: string): Promise<JobApplicationWithProvider[]> {
+    const results = await db
+      .select({
+        application: jobApplications,
+        provider: users,
+        providerProfile: providers,
+      })
+      .from(jobApplications)
+      .leftJoin(users, eq(jobApplications.providerId, users.id))
+      .leftJoin(providers, eq(jobApplications.providerId, providers.userId))
+      .where(eq(jobApplications.jobId, jobId))
+      .orderBy(asc(jobApplications.createdAt));
+
+    return results.map((r) => ({
+      ...r.application,
+      provider: {
+        ...r.provider!,
+        ratingAverage: r.providerProfile?.ratingAverage ?? '0',
+        completedJobsCount: r.providerProfile?.completedJobsCount ?? 0,
+      },
+    }));
+  }
+
+  async getProviderApplications(providerId: string): Promise<(JobApplication & { job: Job })[]> {
+    const results = await db
+      .select({
+        application: jobApplications,
+        job: jobs,
+      })
+      .from(jobApplications)
+      .leftJoin(jobs, eq(jobApplications.jobId, jobs.id))
+      .where(eq(jobApplications.providerId, providerId))
+      .orderBy(desc(jobApplications.createdAt));
+
+    return results.map((r) => ({
+      ...r.application,
+      job: r.job!,
+    }));
+  }
+
+  async getJobApplicationCount(jobId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(jobApplications)
+      .where(and(
+        eq(jobApplications.jobId, jobId),
+        eq(jobApplications.status, 'pending')
+      ));
+    return Number(result[0]?.count ?? 0);
+  }
+
+  async hasProviderApplied(jobId: string, providerId: string): Promise<boolean> {
+    const [existing] = await db
+      .select()
+      .from(jobApplications)
+      .where(and(
+        eq(jobApplications.jobId, jobId),
+        eq(jobApplications.providerId, providerId)
+      ));
+    return !!existing;
+  }
+
+  async selectProvider(applicationId: string, requesterId: string): Promise<Job | undefined> {
+    const [application] = await db
+      .select()
+      .from(jobApplications)
+      .where(eq(jobApplications.id, applicationId));
+
+    if (!application) return undefined;
+
+    const [job] = await db
+      .select()
+      .from(jobs)
+      .where(eq(jobs.id, application.jobId));
+
+    if (!job || job.requesterId !== requesterId) return undefined;
+
+    await db.update(jobApplications)
+      .set({ status: 'selected', updatedAt: new Date() })
+      .where(eq(jobApplications.id, applicationId));
+
+    await db.update(jobApplications)
+      .set({ status: 'rejected', updatedAt: new Date() })
+      .where(and(
+        eq(jobApplications.jobId, application.jobId),
+        sql`${jobApplications.id} != ${applicationId}`
+      ));
+
+    const [updatedJob] = await db.update(jobs)
+      .set({
+        providerId: application.providerId,
+        status: 'accepted',
+        updatedAt: new Date(),
+      })
+      .where(eq(jobs.id, application.jobId))
+      .returning();
+
+    return updatedJob;
+  }
+
+  async withdrawApplication(applicationId: string, providerId: string): Promise<boolean> {
+    const [application] = await db
+      .select()
+      .from(jobApplications)
+      .where(and(
+        eq(jobApplications.id, applicationId),
+        eq(jobApplications.providerId, providerId),
+        eq(jobApplications.status, 'pending')
+      ));
+
+    if (!application) return false;
+
+    await db.delete(jobApplications)
+      .where(eq(jobApplications.id, applicationId));
+
+    const remainingCount = await this.getJobApplicationCount(application.jobId);
+    if (remainingCount === 0) {
+      await db.update(jobs)
+        .set({ status: 'open', updatedAt: new Date() })
+        .where(eq(jobs.id, application.jobId));
+    }
+
+    return true;
   }
 
   // Messages

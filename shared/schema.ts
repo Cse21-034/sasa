@@ -21,12 +21,19 @@ export const urgencyEnum = pgEnum("urgency", ["normal", "emergency"]);
 export const providerTypeEnum = pgEnum("provider_type", ["individual", "company", "both"]);
 export const jobStatusEnum = pgEnum("job_status", [
   "open",
+  "pending_selection",
   "offered", 
   "accepted", 
   "enroute", 
   "onsite", 
   "completed", 
   "cancelled"
+]);
+
+export const jobApplicationStatusEnum = pgEnum("job_application_status", [
+  "pending",
+  "selected",
+  "rejected"
 ]);
 // 🆕 User Status Enum
 export const userStatusEnum = pgEnum("user_status", ["active", "blocked", "deactivated"]);
@@ -280,6 +287,17 @@ export const jobs = pgTable("jobs", {
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   });
 
+// Job Applications table (for multi-provider selection system)
+export const jobApplications = pgTable("job_applications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  jobId: uuid("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
+  providerId: uuid("provider_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: jobApplicationStatusEnum("status").default("pending").notNull(),
+  message: text("message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   providerProfile: one(providers, {
@@ -299,6 +317,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   jobReports: many(jobReports),
   migrationRequests: many(serviceAreaMigrations),
   verificationSubmissions: many(verificationSubmissions),
+  jobApplications: many(jobApplications),
 }));
 
 export const suppliersRelations = relations(suppliers, ({ one }) => ({
@@ -371,6 +390,18 @@ export const jobsRelations = relations(jobs, ({ one, many }) => ({
   ratings: many(ratings),
   feedback: many(jobFeedback),
   reports: many(jobReports),
+  applications: many(jobApplications),
+}));
+
+export const jobApplicationsRelations = relations(jobApplications, ({ one }) => ({
+  job: one(jobs, {
+    fields: [jobApplications.jobId],
+    references: [jobs.id],
+  }),
+  provider: one(users, {
+    fields: [jobApplications.providerId],
+    references: [users.id],
+  }),
 }));
 
 export const messagesRelations = relations(messages, ({ one }) => ({
@@ -669,7 +700,18 @@ export const updateProviderServiceAreaSchema = z.object({
 
 // Update Job Status Schema
 export const updateJobStatusSchema = z.object({
-  status: z.enum(["open", "offered", "accepted", "enroute", "onsite", "completed", "cancelled"]),
+  status: z.enum(["open", "pending_selection", "offered", "accepted", "enroute", "onsite", "completed", "cancelled"]),
+});
+
+// Job Application Schema
+export const insertJobApplicationSchema = z.object({
+  jobId: z.string().uuid(),
+  message: z.string().optional(),
+});
+
+// Select Provider Schema (for requester to choose a provider)
+export const selectProviderSchema = z.object({
+  applicationId: z.string().uuid(),
 });
 
 // 🆕 Schema for Admin Update User Status
@@ -744,3 +786,7 @@ export type UpdateUserStatus = z.infer<typeof updateUserStatusSchema>;
 export type SupplierPromotion = typeof supplierPromotions.$inferSelect;
 export type InsertSupplierPromotion = z.infer<typeof insertSupplierPromotionSchema>;
 export type UpdateSupplierProfile = z.infer<typeof updateSupplierProfileSchema>;
+
+export type JobApplication = typeof jobApplications.$inferSelect;
+export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
+export type SelectProvider = z.infer<typeof selectProviderSchema>;

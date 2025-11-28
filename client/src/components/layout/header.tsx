@@ -152,16 +152,28 @@ export function Header() {
                   </Link>
 
                   {user?.role === 'provider' && (
-                    <Link href="/dashboard">
-                      <Button 
-                        variant="ghost"
-                        className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors"
-                        data-testid="link-dashboard"
-                      >
-                        <LayoutDashboard className="h-4 w-4 mr-2" /> 
-                        Dashboard
-                      </Button>
-                    </Link>
+                    <>
+                      <Link href="/dashboard">
+                        <Button 
+                          variant="ghost"
+                          className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors"
+                          data-testid="link-dashboard"
+                        >
+                          <LayoutDashboard className="h-4 w-4 mr-2" /> 
+                          Dashboard
+                        </Button>
+                      </Link>
+                      <Link href="/provider/applications">
+                        <Button 
+                          variant="ghost"
+                          className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors"
+                          data-testid="link-applications"
+                        >
+                          <Briefcase className="h-4 w-4 mr-2" /> 
+                          Applications
+                        </Button>
+                      </Link>
+                    </>
                   )}
                   {user?.role === 'supplier' && (
                     <Link href="/supplier/dashboard">

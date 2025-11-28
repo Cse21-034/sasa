@@ -3,7 +3,8 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useRoute, useLocation } from 'wouter';
 import { 
   MapPin, Calendar, AlertCircle, MessageSquare, Star, CheckCircle2, 
-  ArrowLeft, Flag, DollarSign, Navigation, XCircle, ImageIcon 
+  ArrowLeft, Flag, DollarSign, Navigation, XCircle, ImageIcon, 
+  Clock, Users, Briefcase, Phone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -40,9 +41,27 @@ import {
 
 interface JobWithRelations extends Job {
   requester: any;
-  // NOTE: Added ratingAverage and completedJobsCount to provider for display
   provider: any & { ratingAverage?: string; completedJobsCount?: number };
   category: any;
+}
+
+interface JobApplication {
+  id: string;
+  jobId: string;
+  providerId: string;
+  status: 'pending' | 'selected' | 'rejected';
+  message: string | null;
+  createdAt: string;
+  provider: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    profilePhotoUrl: string | null;
+    isVerified: boolean;
+    ratingAverage?: string;
+    completedJobsCount?: number;
+  };
 }
 
 export default function JobDetail() {
@@ -58,9 +77,10 @@ export default function JobDetail() {
   const [amountPaid, setAmountPaid] = useState('');
   const [ratingComment, setRatingComment] = useState('');
   const [showReportDialog, setShowReportDialog] = useState(false);
-  // 👇 ADDED: State for image preview dialog
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState('');
+  const [showApplyDialog, setShowApplyDialog] = useState(false);
+  const [applicationMessage, setApplicationMessage] = useState('');
 
 
   const jobId = params?.id;
@@ -75,6 +95,27 @@ export default function JobDetail() {
     enabled: !!jobId,
   });
 
+  const { data: applications } = useQuery<JobApplication[]>({
+    queryKey: ['/api/jobs', jobId, 'applications'],
+    queryFn: async () => {
+      if (!jobId) return [];
+      const response = await apiRequest('GET', `/api/jobs/${jobId}/applications`);
+      return response.json();
+    },
+    enabled: !!jobId && !!user,
+  });
+
+  const { data: myApplication } = useQuery<JobApplication | null>({
+    queryKey: ['/api/jobs', jobId, 'my-application'],
+    queryFn: async () => {
+      if (!jobId) return null;
+      const response = await apiRequest('GET', `/api/jobs/${jobId}/my-application`);
+      if (response.status === 404) return null;
+      return response.json();
+    },
+    enabled: !!jobId && user?.role === 'provider',
+  });
+
   const acceptJobMutation = useMutation({
     mutationFn: async () => {
       if (!jobId) throw new Error('Job ID is missing');
@@ -86,6 +127,55 @@ export default function JobDetail() {
       toast({
         title: 'Job accepted!',
         description: 'You can now start working on this job.',
+      });
+    },
+  });
+
+  const applyToJobMutation = useMutation({
+    mutationFn: async (message?: string) => {
+      if (!jobId) throw new Error('Job ID is missing');
+      const res = await apiRequest('POST', `/api/jobs/${jobId}/apply`, { message });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['job', jobId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'my-application'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/provider/applications'] });
+      setShowApplyDialog(false);
+      setApplicationMessage('');
+      toast({
+        title: 'Application submitted!',
+        description: 'The requester will review your application and contact you if selected.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to apply',
+        description: error.message || 'Could not submit your application.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const selectProviderMutation = useMutation({
+    mutationFn: async (applicationId: string) => {
+      if (!jobId) throw new Error('Job ID is missing');
+      const res = await apiRequest('POST', `/api/jobs/${jobId}/select-provider`, { applicationId });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['job', jobId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'applications'] });
+      toast({
+        title: 'Provider selected!',
+        description: 'The provider has been assigned to your job.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to select provider',
+        description: error.message || 'Could not select the provider.',
+        variant: 'destructive',
       });
     },
   });
@@ -303,6 +393,7 @@ export default function JobDetail() {
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       open: 'bg-success/10 text-success border-success/20',
+      pending_selection: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
       accepted: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
       enroute: 'bg-warning/10 text-warning border-warning/20',
       onsite: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
@@ -311,6 +402,25 @@ export default function JobDetail() {
     };
     return colors[status] || '';
   };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      open: 'Open',
+      pending_selection: 'Reviewing Applicants',
+      accepted: 'Accepted',
+      enroute: 'En Route',
+      onsite: 'On Site',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
+    };
+    return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  const pendingApplications = applications?.filter(a => a.status === 'pending') || [];
+  const hasApplied = !!myApplication;
+  const canApply = isProvider && !hasApplied && !isAssignedProvider && 
+                   (job?.status === 'open' || job?.status === 'pending_selection') && 
+                   pendingApplications.length < 4;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -335,7 +445,8 @@ export default function JobDetail() {
                   </Badge>
                   <Badge variant="outline" className={`text-sm ${getStatusColor(job.status)}`}>
                     {job.status === 'completed' && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                    {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                    {job.status === 'pending_selection' && <Clock className="h-3 w-3 mr-1" />}
+                    {getStatusLabel(job.status)}
                   </Badge>
                   <Badge variant="outline" className="text-sm">{job.category?.name}</Badge>
                 </div>
@@ -364,20 +475,35 @@ export default function JobDetail() {
               </div>
               
               <div className="flex flex-col gap-2">
-                {isProvider && job.status === 'open' && !isAssignedProvider && (
+                {canApply && (
                   <Button
-                    onClick={() => acceptJobMutation.mutate()}
-                    disabled={acceptJobMutation.isPending}
+                    onClick={() => setShowApplyDialog(true)}
+                    disabled={applyToJobMutation.isPending}
                     className="w-full md:w-auto"
+                    data-testid="button-apply-job"
                   >
-                    Accept Job
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Apply for Job
                   </Button>
+                )}
+                {hasApplied && myApplication?.status === 'pending' && (
+                  <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 py-2 px-4">
+                    <Clock className="h-4 w-4 mr-2" />
+                    Application Pending
+                  </Badge>
+                )}
+                {pendingApplications.length >= 4 && isProvider && !hasApplied && !isAssignedProvider && (
+                  <Badge variant="secondary" className="bg-muted text-muted-foreground py-2 px-4">
+                    <Users className="h-4 w-4 mr-2" />
+                    Maximum Applicants Reached
+                  </Badge>
                 )}
                 {(isAssignedProvider || isRequester) && job.provider && (
                   <Button
                     onClick={() => setLocation(`/messages/${job.id}`)}
                     variant="outline"
                     className="w-full md:w-auto"
+                    data-testid="button-message"
                   >
                     <MessageSquare className="mr-2 h-4 w-4" />
                     Message {isRequester ? 'Provider' : 'Requester'}
@@ -564,6 +690,118 @@ export default function JobDetail() {
             </Card>
           )}
         </div>
+
+        {/* Job Applicants Section - For Requesters */}
+        {isRequester && (job.status === 'open' || job.status === 'pending_selection') && pendingApplications.length > 0 && (
+          <Card className="border-2 border-yellow-500/30">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Provider Applications ({pendingApplications.length}/4)
+              </CardTitle>
+              <CardDescription>
+                Review the providers who have applied for your job. Select the best fit based on their ratings, experience, and profile.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {pendingApplications.map((application) => (
+                  <div 
+                    key={application.id} 
+                    className="flex flex-col md:flex-row items-start gap-4 p-4 border rounded-lg"
+                    data-testid={`applicant-card-${application.id}`}
+                  >
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={application.provider.profilePhotoUrl || ''} />
+                      <AvatarFallback className="text-lg">
+                        {application.provider.name?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <p className="font-semibold text-lg">{application.provider.name}</p>
+                        {application.provider.isVerified && (
+                          <Badge variant="secondary" className="text-xs">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Verified
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {application.provider.ratingAverage && (
+                        <div className="mb-2">
+                          {renderStarRating(parseFloat(application.provider.ratingAverage))}
+                          {application.provider.completedJobsCount !== undefined && (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              ({application.provider.completedJobsCount} jobs completed)
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      
+                      {!application.provider.ratingAverage && (
+                        <div className="text-sm text-muted-foreground mb-2">
+                          New provider - No ratings yet
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                        {application.provider.phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4" />
+                            <span>{application.provider.phone}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          <span>Applied {new Date(application.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      
+                      {application.message && (
+                        <div className="mt-3 p-3 bg-muted/50 rounded-md text-sm">
+                          <p className="font-medium mb-1">Message:</p>
+                          <p className="text-muted-foreground">{application.message}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2 w-full md:w-auto">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            className="w-full"
+                            disabled={selectProviderMutation.isPending}
+                            data-testid={`button-select-provider-${application.id}`}
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Select Provider
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Select {application.provider.name}?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will assign {application.provider.name} to your job. 
+                              Other applicants will be notified that they were not selected.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => selectProviderMutation.mutate(application.id)}
+                            >
+                              Yes, Select This Provider
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Provider Charge Input - Update label and placeholder */}
         {isAssignedProvider && job.status !== 'cancelled' && !(job as any).providerCharge && (
@@ -805,7 +1043,47 @@ export default function JobDetail() {
         </Card>
       </div>
 
-      {/* 👇 ADDED: Image Preview Dialog */}
+      {/* Apply to Job Dialog */}
+      <Dialog open={showApplyDialog} onOpenChange={setShowApplyDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Apply for this Job</DialogTitle>
+            <DialogDescription>
+              Submit your application to work on "{job.title}". 
+              The requester will review your profile and decide who to select.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="application-message">Message (Optional)</Label>
+              <Textarea
+                id="application-message"
+                placeholder="Introduce yourself and explain why you're the best fit for this job..."
+                className="min-h-32 mt-2"
+                value={applicationMessage}
+                onChange={(e) => setApplicationMessage(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                A good message can help you stand out to the requester.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setShowApplyDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              disabled={applyToJobMutation.isPending}
+              onClick={() => applyToJobMutation.mutate(applicationMessage || undefined)}
+              data-testid="button-submit-application"
+            >
+              {applyToJobMutation.isPending ? 'Submitting...' : 'Submit Application'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Preview Dialog */}
       <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
         <DialogContent className="max-w-3xl sm:max-w-4xl p-0">
           <img 
