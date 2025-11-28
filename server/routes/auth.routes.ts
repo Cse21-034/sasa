@@ -19,7 +19,7 @@ export function registerAuthRoutes(app: Express): void {
   app.post('/api/auth/signup', async (req, res) => {
     try {
       const rawValidatedData = createUserRequestSchema.parse(req.body);
-      const { password, confirmPassword, primaryCity, ...userData } = rawValidatedData as any;
+      const { password, confirmPassword, primaryCity, companyRole, ...userData } = rawValidatedData as any;
       
       if (password !== confirmPassword) {
         return res.status(400).json({ message: "Passwords do not match." });
@@ -36,6 +36,7 @@ export function registerAuthRoutes(app: Express): void {
       const isCompany = userData.role === 'company';
       let supplierData: any = null;
       let companyData: any = null;
+      let isCompanyProvider = false;
       
       if (isSupplier) {
         const {
@@ -96,6 +97,8 @@ export function registerAuthRoutes(app: Express): void {
           yearsInBusiness,
         };
         
+        isCompanyProvider = companyRole === 'provider';
+        
         Object.keys(userData).forEach(key => {
           if (!(key in baseUserData)) {
             delete (userData as any)[key];
@@ -138,6 +141,16 @@ export function registerAuthRoutes(app: Express): void {
             ratingAverage: 0,
             completedJobsCount: 0,
           });
+          
+          if (isCompanyProvider && primaryCity) {
+            await storage.createProvider({
+              userId: user.id,
+              serviceCategories: [],
+              primaryCity,
+              approvedServiceAreas: [primaryCity],
+              serviceAreaRadiusMeters: 10000,
+            });
+          }
         }
       } catch (profileError: any) {
         await storage.deleteUser(user.id);

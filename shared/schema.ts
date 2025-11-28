@@ -570,10 +570,45 @@ export const updateSupplierProfileSchema = z.object({
   specialOffer: z.string().optional(),
 });
 
+// Company signup schema (FOR company requesters/service providers)
+export const companySignupSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string(),
+  role: z.literal('company'),
+  companyRole: z.enum(['requester', 'provider']), // Companies can request or provide services
+  companyName: z.string().min(2, 'Company name is required'),
+  registrationNumber: z.string().min(3, 'Registration number is required'),
+  taxNumber: z.string().optional(),
+  physicalAddress: z.string().min(5, 'Physical address is required'),
+  contactPerson: z.string().min(2, 'Contact person name is required'),
+  contactPosition: z.string().min(2, 'Position/role is required'),
+  companyEmail: z.string().email('Invalid company email'),
+  companyPhone: z.string().min(5, 'Company phone is required'),
+  companyWebsite: z.string().url().optional().or(z.literal('')),
+  industryType: z.string().min(2, 'Industry type is required'),
+  numberOfEmployees: z.number().optional(),
+  yearsInBusiness: z.number().optional(),
+  primaryCity: z.string().optional(), // Required for company providers
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
+}).refine((data) => {
+  if (data.companyRole === 'provider') {
+    return !!data.primaryCity;
+  }
+  return true;
+}, {
+  message: "City is required for company service providers",
+  path: ['primaryCity'],
+});
+
 // Schema for signup request from frontend
 export const createUserRequestSchema = z.union([
   individualSignupSchema,
   supplierSignupSchema,
+  companySignupSchema,
 ]);
 
 export const insertUserSchema = createInsertSchema(users).omit({

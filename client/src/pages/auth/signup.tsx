@@ -67,6 +67,7 @@ const companySignupSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
   role: z.literal('company'),
+  companyRole: z.enum(['requester', 'provider']),
   companyName: z.string().min(2, 'Company name is required'),
   registrationNumber: z.string().min(3, 'Registration number is required'),
   taxNumber: z.string().optional(),
@@ -75,13 +76,22 @@ const companySignupSchema = z.object({
   contactPosition: z.string().min(2, 'Position/role is required'),
   companyEmail: z.string().email('Invalid company email'),
   companyPhone: z.string().min(5, 'Company phone is required'),
-  companyWebsite: z.string().url().optional(),
+  companyWebsite: z.string().url().optional().or(z.literal('')),
   industryType: z.string().min(2, 'Industry type is required'),
   numberOfEmployees: z.string().optional(),
   yearsInBusiness: z.string().optional(),
+  primaryCity: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
+}).refine((data) => {
+  if (data.companyRole === 'provider') {
+    return !!data.primaryCity;
+  }
+  return true;
+}, {
+  message: "City is required for company service providers",
+  path: ['primaryCity'],
 });
 
 type IndividualSignupForm = z.infer<typeof individualSignupSchema>;
@@ -480,13 +490,88 @@ const OrganizationForm = ({ form, isLoading, onSubmit }: OrganizationFormProps) 
 // COMPANY FORM COMPONENT
 interface CompanyFormProps {
   form: UseFormReturn<CompanySignupForm>;
+  selectedCompanyRole: 'requester' | 'provider';
   isLoading: boolean;
   onSubmit: (data: SignupData) => void;
 }
 
-const CompanyForm = ({ form, isLoading, onSubmit }: CompanyFormProps) => (
+const CompanyForm = ({ form, selectedCompanyRole, isLoading, onSubmit }: CompanyFormProps) => (
   <Form {...form}>
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <FormField
+        control={form.control}
+        name="companyRole"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Your company wants to</FormLabel>
+            <FormControl>
+              <RadioGroup
+                onValueChange={field.onChange}
+                value={field.value}
+                className="grid grid-cols-2 gap-4"
+              >
+                <label
+                  htmlFor="company-requester"
+                  className={`flex flex-col items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover-elevate transition-all ${
+                    field.value === 'requester' ? 'border-primary bg-primary/5' : 'border-border'
+                  }`}
+                >
+                  <RadioGroupItem value="requester" id="company-requester" className="sr-only" />
+                  <UserCircle className="h-8 w-8" />
+                  <span className="font-medium text-sm">Find Services</span>
+                  <span className="text-xs text-muted-foreground text-center">Post jobs and hire service providers</span>
+                </label>
+                <label
+                  htmlFor="company-provider"
+                  className={`flex flex-col items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover-elevate transition-all ${
+                    field.value === 'provider' ? 'border-primary bg-primary/5' : 'border-border'
+                  }`}
+                >
+                  <RadioGroupItem value="provider" id="company-provider" className="sr-only" />
+                  <Wrench className="h-8 w-8" />
+                  <span className="font-medium text-sm">Offer Services</span>
+                  <span className="text-xs text-muted-foreground text-center">Accept jobs and provide services</span>
+                </label>
+              </RadioGroup>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {selectedCompanyRole === 'provider' && (
+        <FormField
+          control={form.control}
+          name="primaryCity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Service Area</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your service city" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {botswanaCities.map((city) => (
+                    <SelectItem key={city} value={city}>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        {city}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Your company will only see jobs in this city. You can apply to work in other cities later.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -816,6 +901,7 @@ export default function Signup() {
       password: '',
       confirmPassword: '',
       role: 'company',
+      companyRole: 'requester',
       companyName: '',
       registrationNumber: '',
       taxNumber: '',
@@ -828,10 +914,12 @@ export default function Signup() {
       industryType: '',
       numberOfEmployees: '',
       yearsInBusiness: '',
+      primaryCity: '',
     },
   });
   
   const selectedRole = individualForm.watch('role');
+  const selectedCompanyRole = companyForm.watch('companyRole');
 
   // FIX: Proper form reset when switching tabs
   const handleAccountTypeChange = (newType: 'individual' | 'organization' | 'company') => {
@@ -857,6 +945,7 @@ export default function Signup() {
         password: '',
         confirmPassword: '',
         role: 'company',
+        companyRole: 'requester',
         companyName: '',
         registrationNumber: '',
         taxNumber: '',
@@ -869,6 +958,7 @@ export default function Signup() {
         industryType: '',
         numberOfEmployees: '',
         yearsInBusiness: '',
+        primaryCity: '',
       });
     } else if (newType === 'organization') {
       individualForm.reset({
@@ -886,6 +976,7 @@ export default function Signup() {
         password: '',
         confirmPassword: '',
         role: 'company',
+        companyRole: 'requester',
         companyName: '',
         registrationNumber: '',
         taxNumber: '',
@@ -898,6 +989,7 @@ export default function Signup() {
         industryType: '',
         numberOfEmployees: '',
         yearsInBusiness: '',
+        primaryCity: '',
       });
     } else {
       // company type
@@ -1048,6 +1140,7 @@ export default function Signup() {
           ) : (
             <CompanyForm 
                 form={companyForm}
+                selectedCompanyRole={selectedCompanyRole}
                 isLoading={isLoading}
                 onSubmit={onSubmit}
             />
