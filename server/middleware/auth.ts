@@ -10,7 +10,9 @@ export interface AuthRequest extends Request {
     role: string;
     isVerified: boolean; 
     isIdentityVerified: boolean; 
-    status: 'active' | 'blocked' | 'deactivated'; // 🆕 Added
+    status: 'active' | 'blocked' | 'deactivated';
+    // 🔥 MAKE SURE this matches what you're putting in the token
+    isCompanyProvider?: boolean; // Optional flag for company providers
   };
 }
 
@@ -32,15 +34,21 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   }
 }
 
-// Update `generateToken` to include verification and status
+// 🔥 UPDATED: Ensure generateToken includes all fields from auth routes
 export function generateToken(payload: any): string {
   const tokenPayload = {
-      id: payload.id,
-      email: payload.email,
-      role: payload.role,
-      isVerified: payload.isVerified ?? false, 
-      isIdentityVerified: payload.isIdentityVerified ?? false, 
-      status: payload.status ?? 'active', // 🆕 Ensure status is included
+    id: payload.id,
+    email: payload.email,
+    role: payload.role,
+    isVerified: payload.isVerified ?? false, 
+    isIdentityVerified: payload.isIdentityVerified ?? false, 
+    status: payload.status ?? 'active',
+    // Include any additional fields passed (like isCompanyProvider)
+    ...payload
   };
+  
+  // Remove password hash if accidentally passed
+  delete tokenPayload.passwordHash;
+  
   return jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
 }
