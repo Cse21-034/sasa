@@ -44,7 +44,12 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
    */
   app.get("/api/provider/profile", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      if (req.user!.role !== "provider") {
+      // 🔥 FIX: Allow both individual providers and company providers
+      const providerProfile = await storage.getProvider(req.user!.id);
+      const isProvider = (req.user!.role === 'provider' && providerProfile) || 
+                        (req.user!.role === 'company' && providerProfile);
+      
+      if (!isProvider) {
         return res.status(403).json({ message: "Only providers can access this" })
       }
 
@@ -67,7 +72,12 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
    */
   app.get("/api/provider/stats", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      if (req.user!.role !== "provider") {
+      // 🔥 FIX: Allow both individual providers and company providers
+      const providerProfile = await storage.getProvider(req.user!.id);
+      const isProvider = (req.user!.role === 'provider' && providerProfile) || 
+                        (req.user!.role === 'company' && providerProfile);
+      
+      if (!isProvider) {
         return res.status(403).json({ message: "Only providers can access stats" })
       }
 
@@ -85,7 +95,12 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
    */
   app.get("/api/provider/recent-jobs", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      if (req.user!.role !== "provider") {
+      // 🔥 FIX: Allow both individual providers and company providers
+      const providerProfile = await storage.getProvider(req.user!.id);
+      const isProvider = (req.user!.role === 'provider' && providerProfile) || 
+                        (req.user!.role === 'company' && providerProfile);
+      
+      if (!isProvider) {
         return res.status(403).json({ message: "Only providers can access this" })
       }
 
@@ -104,7 +119,12 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
    */
   app.patch("/api/provider/categories", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      if (req.user!.role !== "provider") {
+      // 🔥 FIX: Allow both individual providers and company providers
+      const providerProfile = await storage.getProvider(req.user!.id);
+      const isProvider = (req.user!.role === 'provider' && providerProfile) || 
+                        (req.user!.role === 'company' && providerProfile);
+      
+      if (!isProvider) {
         return res.status(403).json({ message: "Only providers can update categories" })
       }
 
@@ -137,7 +157,12 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
    */
   app.post("/api/provider/migration-request", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      if (req.user!.role !== "provider") {
+      // 🔥 FIX: Allow both individual providers and company providers
+      const providerProfile = await storage.getProvider(req.user!.id);
+      const isProvider = (req.user!.role === 'provider' && providerProfile) || 
+                        (req.user!.role === 'company' && providerProfile);
+      
+      if (!isProvider) {
         return res.status(403).json({ message: "Only providers can request migrations" })
       }
 
@@ -175,7 +200,12 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
    */
   app.get("/api/provider/migrations", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      if (req.user!.role !== "provider") {
+      // 🔥 FIX: Allow both individual providers and company providers
+      const providerProfile = await storage.getProvider(req.user!.id);
+      const isProvider = (req.user!.role === 'provider' && providerProfile) || 
+                        (req.user!.role === 'company' && providerProfile);
+      
+      if (!isProvider) {
         return res.status(403).json({ message: "Only providers can view migrations" })
       }
 
@@ -193,7 +223,12 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
    */
   app.patch("/api/provider/service-area", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      if (req.user!.role !== "provider") {
+      // 🔥 FIX: Allow both individual providers and company providers
+      const providerProfile = await storage.getProvider(req.user!.id);
+      const isProvider = (req.user!.role === 'provider' && providerProfile) || 
+                        (req.user!.role === 'company' && providerProfile);
+      
+      if (!isProvider) {
         return res.status(403).json({ message: "Only providers can update service area" })
       }
 
