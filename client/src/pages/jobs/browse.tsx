@@ -20,8 +20,13 @@ export default function BrowseJobs() {
   const [sortBy, setSortBy] = useState<string>('recent');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  // 🔥 FIX: Update the query to include status filter
   const { data: jobs, isLoading: jobsLoading } = useQuery<(Job & { requester: any; category: Category })[]>({
-    queryKey: ['jobs', { category: selectedCategory, sort: sortBy }],
+    queryKey: ['jobs', { 
+      category: selectedCategory, 
+      sort: sortBy,
+      status: statusFilter // Add status to query key
+    }],
     queryFn: async () => {
       let url = '/api/jobs';
       const params = new URLSearchParams();
@@ -29,9 +34,16 @@ export default function BrowseJobs() {
         params.append('category', selectedCategory);
       }
       params.append('sort', sortBy);
+      
+      // 🔥 FIX: Add status filter to backend call
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter);
+      }
+      
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
+      console.log('Fetching jobs from:', url);
       const response = await apiRequest('GET', url);
       return response.json();
     },
@@ -41,17 +53,13 @@ export default function BrowseJobs() {
     queryKey: ['/api/categories'],
   });
 
+  // 🔥 FIX: Only do frontend search filtering, not status filtering
   const filteredJobs = jobs?.filter((job) => {
     const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.description.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'open' && job.status === 'open') ||
-      (statusFilter === 'completed' && job.status === 'completed') ||
-      (statusFilter === 'in-progress' && ['accepted', 'enroute', 'onsite'].includes(job.status)) ||
-      (statusFilter === 'pending' && job.status === 'open' && !job.providerId);
-    
-    return matchesSearch && matchesStatus;
+    // Remove status filtering here since backend handles it
+    return matchesSearch;
   });
 
   const pageTitle = user?.role === 'requester' ? 'My Jobs' : 'Browse Jobs';
@@ -103,7 +111,7 @@ export default function BrowseJobs() {
                   <Badge variant="secondary" className="ml-2">{statusCounts.all}</Badge>
                 </TabsTrigger>
                 <TabsTrigger value="open">
-                  {user?.role === 'provider' ? 'Available' : 'Pending'}
+                  {user?.role === 'provider' || user?.role === 'company' ? 'Available' : 'Pending'}
                   <Badge variant="secondary" className="ml-2">{statusCounts.open}</Badge>
                 </TabsTrigger>
                 <TabsTrigger value="in-progress">
@@ -118,7 +126,7 @@ export default function BrowseJobs() {
             </Tabs>
 
             {/* Additional Filters */}
-            {user?.role === 'provider' && (
+            {(user?.role === 'provider' || user?.role === 'company') && (
               <div className="flex items-center gap-2">
                 <Button
                   variant={sortBy === 'urgent' ? 'default' : 'outline'}
