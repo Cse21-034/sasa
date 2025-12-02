@@ -21,7 +21,12 @@ export async function apiRequest(
   }
 
   // Prepend API URL if not already present
-  const fullUrl = url.startsWith('http') ? url : `${config.apiUrl}${url}`; // <--- MODIFIED
+ // const fullUrl = url.startsWith('http') ? url : `${config.apiUrl}${url}`; // <--- MODIFIED
+const fullUrl = url.startsWith("http")
+  ? url
+  : `${config.apiUrl.replace(/\/$/, "")}/${url.replace(/^\//, "")}`;
+
+
 
   const res = await fetch(fullUrl, { // <--- MODIFIED
     method,
@@ -48,7 +53,11 @@ export const getQueryFn: <T>(options: {
     }
 
     const url = queryKey.join("/") as string;
-    const fullUrl = url.startsWith('http') ? url : `${config.apiUrl}${url}`; // <--- ADDED
+  //  const fullUrl = url.startsWith('http') ? url : `${config.apiUrl}${url}`; // <--- ADDED
+    
+const fullUrl = url.startsWith("http")
+  ? url
+  : `${config.apiUrl.replace(/\/$/, "")}/${url.replace(/^\//, "")}`;
 
     const res = await fetch(fullUrl, { // <--- MODIFIED
       headers,
