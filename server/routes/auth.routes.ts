@@ -6,16 +6,7 @@ import { storage } from '../storage';
 import { companyService } from '../services/company.service';
 import { generateToken } from '../middleware/auth';
 
-/**
- * SOLID Principle: Single Responsibility
- * This module handles ONLY authentication routes (signup, login)
- */
-
 export function registerAuthRoutes(app: Express): void {
-  /**
-   * POST /api/auth/signup
-   * Create a new user account (individual, supplier, or company)
-   */
   app.post('/api/auth/signup', async (req, res) => {
     try {
       const rawValidatedData = createUserRequestSchema.parse(req.body);
@@ -37,6 +28,14 @@ export function registerAuthRoutes(app: Express): void {
       let supplierData: any = null;
       let companyData: any = null;
       let isCompanyProvider = false;
+      
+      // 🔥 FIX: Map company role to valid enum values
+      let finalRole = userData.role;
+      if (isCompany) {
+        // Map "company" to either "requester" or "provider" based on companyRole
+        finalRole = companyRole === 'provider' ? 'provider' : 'requester';
+        isCompanyProvider = companyRole === 'provider';
+      }
       
       if (isSupplier) {
         const {
@@ -97,8 +96,6 @@ export function registerAuthRoutes(app: Express): void {
           yearsInBusiness,
         };
         
-        isCompanyProvider = companyRole === 'provider';
-        
         Object.keys(userData).forEach(key => {
           if (!(key in baseUserData)) {
             delete (userData as any)[key];
@@ -106,12 +103,26 @@ export function registerAuthRoutes(app: Express): void {
         });
       }
 
+      // 🔥 FIX: Create user with the mapped role
       const user = await storage.createUser({
         ...userData,
+        role: finalRole, // Use mapped role instead of "company"
         passwordHash,
       });
 
       try {
+        // 🔥 FIX: Always create company profile for company users
+        if (isCompany && companyData) {
+          await companyService.createCompany({
+            userId: user.id,
+            ...companyData,
+            isVerified: false,
+            ratingAverage: 0,
+            completedJobsCount: 0,
+          });
+        }
+        
+        // Create provider profile if needed (for company providers or individual providers)
         if (user.role === 'provider') {
           if (!primaryCity) {
             await storage.deleteUser(user.id);
@@ -127,30 +138,11 @@ export function registerAuthRoutes(app: Express): void {
             approvedServiceAreas: [primaryCity],
             serviceAreaRadiusMeters: 10000,
           });
-          
         } else if (user.role === 'supplier' && supplierData) {
           await storage.createSupplier({
             userId: user.id,
             ...supplierData,
           });
-        } else if (user.role === 'company' && companyData) {
-          await companyService.createCompany({
-            userId: user.id,
-            ...companyData,
-            isVerified: false,
-            ratingAverage: 0,
-            completedJobsCount: 0,
-          });
-          
-          if (isCompanyProvider && primaryCity) {
-            await storage.createProvider({
-              userId: user.id,
-              serviceCategories: [],
-              primaryCity,
-              approvedServiceAreas: [primaryCity],
-              serviceAreaRadiusMeters: 10000,
-            });
-          }
         }
       } catch (profileError: any) {
         await storage.deleteUser(user.id);
@@ -191,10 +183,6 @@ export function registerAuthRoutes(app: Express): void {
     }
   });
 
-  /**
-   * POST /api/auth/login
-   * Authenticate user and return JWT token
-   */
   app.post('/api/auth/login', async (req, res) => {
     try {
       const { email, password } = req.body;
