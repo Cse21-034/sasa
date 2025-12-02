@@ -38,7 +38,7 @@ export default function BrowseJobs() {
   });
 
   const { data: categories } = useQuery<Category[]>({
-    queryKey: ['categories'],
+    queryKey: ['/api/categories'],
   });
 
   const filteredJobs = jobs?.filter((job) => {
