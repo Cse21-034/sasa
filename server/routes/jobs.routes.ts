@@ -20,113 +20,154 @@ export function registerJobRoutes(app: Express, injectedVerifyAccess: any): void
    * GET /api/jobs
    * Get jobs based on user role (requester, provider, or admin)
    */
-  app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
-    try {
-      const { category, status, sort } = req.query;
-      
-      // Check if user has a provider profile
-      const providerProfile = await storage.getProvider(req.user!.id);
-      
-      // Determine if user should see provider view
-      const isProvider = req.user!.role === 'provider' || 
-                        (req.user!.role === 'company' && providerProfile);
-      
-      if (!isProvider && req.user!.role !== 'admin') {
-        // Requesters and company requesters (without provider profile) only see their own jobs
-        const params: any = { requesterId: req.user!.id };
-        if (category && category !== 'all') params.categoryId = category as string;
-        if (status) params.status = status as string;
-        
-        const jobs = await storage.getJobs(params);
-        return res.json(jobs);
-      }
-      
-      if (isProvider && providerProfile) {
-        // Provider view (individual or company provider)
-        const provider = providerProfile;
-        
-        // Determine provider type (company or individual)
-        const providerType = req.user!.role === 'company' ? 'company' : 'individual';
-        const approvedCities = (provider.approvedServiceAreas as string[]) || [provider.primaryCity];
-        const serviceCategories = (provider.serviceCategories as number[]) || [];
-
-        // Get open AND pending_selection jobs in approved cities
-        const openJobs = await storage.getJobsByCity(approvedCities);
-        
-        // Filter by service categories, status, AND allowedProviderType
-        const openJobsFiltered = openJobs.filter(j => {
-          // Include open jobs AND pending_selection jobs
-          const matchesStatus = j.status === 'open' || j.status === 'pending_selection';
-          const matchesCategory = serviceCategories.length === 0 || 
-            serviceCategories.includes(j.categoryId);
-          
-          // Filter by allowedProviderType
-          const jobProviderType = (j as any).allowedProviderType || 'both';
-          const matchesProviderType = jobProviderType === 'both' || 
-            jobProviderType === providerType;
-          
-          return matchesStatus && matchesCategory && matchesProviderType;
-        });
-        
-        // Get jobs assigned to this provider
-        const assignedJobs = await storage.getJobs({ providerId: req.user!.id });
-        
-        // Merge and deduplicate
-        const jobMap = new Map();
-        [...openJobsFiltered, ...assignedJobs].forEach(job => {
-          if (!jobMap.has(job.id)) {
-            jobMap.set(job.id, job);
-          }
-        });
-        
-        let jobs = Array.from(jobMap.values());
-
-        // Apply additional filters
-        if (category && category !== 'all') {
-          jobs = jobs.filter(j => j.categoryId === parseInt(category as string));
-        }
-        
-        if (status && status !== 'all') {
-          if (status === 'open' || status === 'browsing') {
-            jobs = jobs.filter(j => j.status === 'open' || j.status === 'pending_selection');
-          } else if (status === 'pending_selection') {
-            jobs = jobs.filter(j => j.status === 'pending_selection');
-          } else {
-            jobs = jobs.filter(j => j.status === status);
-          }
-        }
-
-        // Sort
-        if (sort === 'urgent') {
-          jobs = jobs.sort((a, b) => {
-            if (a.urgency === 'emergency' && b.urgency !== 'emergency') return -1;
-            if (a.urgency !== 'emergency' && b.urgency === 'emergency') return 1;
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          });
-        } else if (sort === 'recent') {
-          jobs = jobs.sort((a, b) => 
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        } else if (sort === 'distance') {
-          // For distance sorting, you would need provider location
-          // This is a placeholder - implement actual distance calculation if needed
-          jobs = jobs.sort((a, b) => 
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        }
-
-        return res.json(jobs);
-      }
-      
-      // Admin sees all jobs
-      const jobs = await storage.getJobs({});
-      res.json(jobs);
-    } catch (error: any) {
-      console.error('Get jobs error:', error);
-      res.status(500).json({ message: error.message });
+app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+  try {
+    console.log('=== JOBS API CALL ===');
+    console.log('User ID:', req.user!.id);
+    console.log('User Role:', req.user!.role);
+    console.log('Query params:', req.query);
+    
+    const { category, status, sort } = req.query;
+    
+    // Check if user has a provider profile
+    const providerProfile = await storage.getProvider(req.user!.id);
+    console.log('Provider Profile exists:', !!providerProfile);
+    if (providerProfile) {
+      console.log('Provider Details:', {
+        userId: providerProfile.userId,
+        companyName: providerProfile.companyName,
+        approvedServiceAreas: providerProfile.approvedServiceAreas,
+        primaryCity: providerProfile.primaryCity,
+        serviceCategories: providerProfile.serviceCategories,
+        isVerified: providerProfile.isVerified
+      });
     }
-  });
+    
+    // Determine if user should see provider view
+    const isProvider = req.user!.role === 'provider' || 
+                      (req.user!.role === 'company' && providerProfile);
+    
+    console.log('Is Provider:', isProvider);
+    
+    if (!isProvider && req.user!.role !== 'admin') {
+      console.log('Showing requester view');
+      const params: any = { requesterId: req.user!.id };
+      if (category && category !== 'all') params.categoryId = category as string;
+      if (status) params.status = status as string;
+      
+      const jobs = await storage.getJobs(params);
+      console.log('Found requester jobs:', jobs.length);
+      return res.json(jobs);
+    }
+    
+    if (isProvider && providerProfile) {
+      console.log('Showing provider view');
+      const provider = providerProfile;
+      
+      // Determine provider type (company or individual)
+      const providerType = req.user!.role === 'company' ? 'company' : 'individual';
+      const approvedCities = (provider.approvedServiceAreas as string[]) || [provider.primaryCity];
+      const serviceCategories = (provider.serviceCategories as number[]) || [];
 
+      console.log('Provider Type:', providerType);
+      console.log('Approved Cities:', approvedCities);
+      console.log('Service Categories:', serviceCategories);
+
+      // Get open AND pending_selection jobs in approved cities
+      const openJobs = await storage.getJobsByCity(approvedCities);
+      console.log('Open jobs in approved cities:', openJobs.length);
+      
+      // Filter by service categories, status, AND allowedProviderType
+      const openJobsFiltered = openJobs.filter(j => {
+        // Include open jobs AND pending_selection jobs
+        const matchesStatus = j.status === 'open' || j.status === 'pending_selection';
+        const matchesCategory = serviceCategories.length === 0 || 
+          serviceCategories.includes(j.categoryId);
+        
+        // Filter by allowedProviderType
+        const jobProviderType = (j as any).allowedProviderType || 'both';
+        const matchesProviderType = jobProviderType === 'both' || 
+          jobProviderType === providerType;
+        
+        const include = matchesStatus && matchesCategory && matchesProviderType;
+        
+        if (!include) {
+          console.log('Job filtered out:', {
+            jobId: j.id,
+            status: j.status,
+            categoryId: j.categoryId,
+            allowedProviderType: (j as any).allowedProviderType || 'both',
+            matchesStatus,
+            matchesCategory,
+            matchesProviderType
+          });
+        }
+        
+        return include;
+      });
+      
+      console.log('After filtering:', openJobsFiltered.length);
+      
+      // Get jobs assigned to this provider
+      const assignedJobs = await storage.getJobs({ providerId: req.user!.id });
+      console.log('Assigned jobs:', assignedJobs.length);
+      
+      // Merge and deduplicate
+      const jobMap = new Map();
+      [...openJobsFiltered, ...assignedJobs].forEach(job => {
+        if (!jobMap.has(job.id)) {
+          jobMap.set(job.id, job);
+        }
+      });
+      
+      let jobs = Array.from(jobMap.values());
+      console.log('Total jobs after merge:', jobs.length);
+
+      // Apply additional filters
+      if (category && category !== 'all') {
+        jobs = jobs.filter(j => j.categoryId === parseInt(category as string));
+        console.log('After category filter:', jobs.length);
+      }
+      
+      if (status && status !== 'all') {
+        if (status === 'open' || status === 'browsing') {
+          jobs = jobs.filter(j => j.status === 'open' || j.status === 'pending_selection');
+        } else if (status === 'pending_selection') {
+          jobs = jobs.filter(j => j.status === 'pending_selection');
+        } else {
+          jobs = jobs.filter(j => j.status === status);
+        }
+        console.log('After status filter:', jobs.length);
+      }
+
+      // Sort
+      if (sort === 'urgent') {
+        jobs = jobs.sort((a, b) => {
+          if (a.urgency === 'emergency' && b.urgency !== 'emergency') return -1;
+          if (a.urgency !== 'emergency' && b.urgency === 'emergency') return 1;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+      } else if (sort === 'recent') {
+        jobs = jobs.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      }
+
+      console.log('Final jobs to return:', jobs.length);
+      return res.json(jobs);
+    }
+    
+    // Admin sees all jobs
+    console.log('Showing admin view');
+    const jobs = await storage.getJobs({});
+    console.log('Admin jobs count:', jobs.length);
+    res.json(jobs);
+    
+  } catch (error: any) {
+    console.error('Get jobs error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
   /**
    * GET /api/jobs/:id
    * Get a single job by ID with access control
