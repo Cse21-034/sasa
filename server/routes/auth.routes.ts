@@ -29,12 +29,16 @@ export function registerAuthRoutes(app: Express): void {
       let companyData: any = null;
       let isCompanyProvider = false;
       
-      // 🔥 FIX: Map company role to valid enum values
-      let finalRole = userData.role;
+      // 🔥 CRITICAL FIX: Keep company users as 'company' role
+      let finalRole = userData.role; // Keep original role
+      let userRoleForProviderCheck = userData.role;
+      
       if (isCompany) {
-        // Map "company" to either "requester" or "provider" based on companyRole
-        finalRole = companyRole === 'provider' ? 'provider' : 'requester';
+        // Store companyRole for later use
         isCompanyProvider = companyRole === 'provider';
+        // Keep role as 'company' - don't change it
+        finalRole = 'company'; // Keep as 'company' role
+        userRoleForProviderCheck = isCompanyProvider ? 'provider' : 'requester';
       }
       
       if (isSupplier) {
@@ -103,15 +107,15 @@ export function registerAuthRoutes(app: Express): void {
         });
       }
 
-      // 🔥 FIX: Create user with the mapped role
+      // Create user with the correct role
       const user = await storage.createUser({
         ...userData,
-        role: finalRole, // Use mapped role instead of "company"
+        role: finalRole, // Use the correct role ('company' for company users)
         passwordHash,
       });
 
       try {
-        // 🔥 FIX: Always create company profile for company users
+        // Always create company profile for company users
         if (isCompany && companyData) {
           await companyService.createCompany({
             userId: user.id,
@@ -122,8 +126,9 @@ export function registerAuthRoutes(app: Express): void {
           });
         }
         
-        // Create provider profile if needed (for company providers or individual providers)
-        if (user.role === 'provider') {
+        // Create provider profile if needed
+        // Use userRoleForProviderCheck to determine if provider profile is needed
+        if (userRoleForProviderCheck === 'provider') {
           if (!primaryCity) {
             await storage.deleteUser(user.id);
             return res.status(400).json({ 
@@ -137,8 +142,10 @@ export function registerAuthRoutes(app: Express): void {
             primaryCity,
             approvedServiceAreas: [primaryCity],
             serviceAreaRadiusMeters: 10000,
+            // Add companyName to provider profile for company providers
+            ...(isCompany && companyData?.companyName ? { companyName: companyData.companyName } : {})
           });
-        } else if (user.role === 'supplier' && supplierData) {
+        } else if (isSupplier && supplierData) {
           await storage.createSupplier({
             userId: user.id,
             ...supplierData,
@@ -151,13 +158,16 @@ export function registerAuthRoutes(app: Express): void {
         });
       }
 
+      // Generate token with the correct role
       const token = generateToken({
         id: user.id,
         email: user.email,
-        role: user.role,
+        role: user.role, // Use user.role (which is 'company' for company users)
         isVerified: user.isVerified,
         isIdentityVerified: user.isIdentityVerified,
         status: user.status, 
+        // Store additional metadata for company providers
+        ...(isCompany && isCompanyProvider ? { isCompanyProvider: true } : {})
       });
 
       const { passwordHash: _, ...userWithoutPassword } = user;
@@ -208,13 +218,22 @@ export function registerAuthRoutes(app: Express): void {
       const updatedUser = await storage.updateUser(user.id, { lastLogin: new Date() });
       const userToUse = updatedUser || user;
 
+      // For company users, check if they have a provider profile
+      let isCompanyProvider = false;
+      if (userToUse.role === 'company') {
+        const providerProfile = await storage.getProvider(userToUse.id);
+        isCompanyProvider = !!providerProfile;
+      }
+
       const token = generateToken({
         id: userToUse.id,
         email: userToUse.email,
-        role: userToUse.role,
+        role: userToUse.role, // Keep original role
         isVerified: userToUse.isVerified,
         isIdentityVerified: userToUse.isIdentityVerified,
         status: userToUse.status, 
+        // Add company provider flag
+        ...(userToUse.role === 'company' && isCompanyProvider ? { isCompanyProvider: true } : {})
       });
 
       const { passwordHash: _, ...userWithoutPassword } = userToUse;
