@@ -12,6 +12,8 @@ import {
   serviceAreaMigrations,
   verificationSubmissions,
   jobApplications,
+  emailVerificationTokens,
+  passwordResetTokens,
   type User, 
   type InsertUser,
   type Provider,
@@ -132,9 +134,19 @@ export interface IStorage {
   // Service Area Migrations
   createServiceAreaMigration(migration: InsertServiceAreaMigration & { providerId: string }): Promise<ServiceAreaMigration>;
   getProviderMigrations(providerId: string): Promise<ServiceAreaMigration[]>;
-  getPendingMigrations(): Promise<ServiceAreaMigration[]>;
+  getPendingMigrations(): Promise<any[]>;
   approveMigration(migrationId: string, reviewerId: string, notes?: string): Promise<ServiceAreaMigration | undefined>;
   rejectMigration(migrationId: string, reviewerId: string, notes?: string): Promise<ServiceAreaMigration | undefined>;
+
+  // Email Verification
+  createEmailVerificationToken(userId: string, token: string, expiresAt: Date): Promise<void>;
+  getEmailVerificationToken(userId: string, token: string): Promise<{ id: string; userId: string; token: string; expiresAt: Date } | undefined>;
+  deleteEmailVerificationTokens(userId: string): Promise<void>;
+  
+  // Password Reset
+  createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void>;
+  getPasswordResetToken(userId: string, token: string): Promise<{ id: string; userId: string; token: string; expiresAt: Date } | undefined>;
+  deletePasswordResetTokens(userId: string): Promise<void>;
 
   // Jobs
   getJob(id: string): Promise<JobWithRelations | undefined>;
@@ -1491,6 +1503,66 @@ export class DatabaseStorage implements IStorage {
   async createCategory(insertCategory: InsertCategory): Promise<Category> {
     const [category] = await db.insert(categories).values(insertCategory).returning();
     return category;
+  }
+
+  // Email Verification Token Methods
+  async createEmailVerificationToken(userId: string, token: string, expiresAt: Date): Promise<void> {
+    await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.userId, userId));
+    await db.insert(emailVerificationTokens).values({
+      userId,
+      token,
+      expiresAt,
+    });
+  }
+
+  async getEmailVerificationToken(userId: string, token: string): Promise<{ id: string; userId: string; token: string; expiresAt: Date } | undefined> {
+    const [result] = await db
+      .select()
+      .from(emailVerificationTokens)
+      .where(and(eq(emailVerificationTokens.userId, userId), eq(emailVerificationTokens.token, token)));
+    
+    if (!result) return undefined;
+    
+    return {
+      id: result.id,
+      userId: result.userId,
+      token: result.token,
+      expiresAt: result.expiresAt,
+    };
+  }
+
+  async deleteEmailVerificationTokens(userId: string): Promise<void> {
+    await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.userId, userId));
+  }
+
+  // Password Reset Token Methods
+  async createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void> {
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
+    await db.insert(passwordResetTokens).values({
+      userId,
+      token,
+      expiresAt,
+    });
+  }
+
+  async getPasswordResetToken(userId: string, token: string): Promise<{ id: string; userId: string; token: string; expiresAt: Date } | undefined> {
+    const [result] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(and(eq(passwordResetTokens.userId, userId), eq(passwordResetTokens.token, token)));
+    
+    if (!result) return undefined;
+    
+    return {
+      id: result.id,
+      userId: result.userId,
+      token: result.token,
+      expiresAt: result.expiresAt,
+    };
+  }
+
+  async deletePasswordResetTokens(userId: string): Promise<void> {
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
   }
 }
 

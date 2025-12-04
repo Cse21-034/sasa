@@ -4,6 +4,7 @@ import { updateUserStatusSchema, updateVerificationStatusSchema, insertMessageSc
 import { storage } from "../storage"
 import { authMiddleware, generateToken, type AuthRequest } from "../middleware/auth"
 import { WebSocket } from "ws"
+import { emailService } from "../services/email.service"
 
 /**
  * SOLID Principle: Single Responsibility
@@ -191,9 +192,18 @@ export function registerAdminRoutes(app: Express, injectedClients: Map<string, W
         return res.status(404).json({ message: "Submission not found." })
       }
 
-      // Return the new full user object and token if approved/rejected
       const finalUser = await storage.getUser(updatedSubmission.userId)
       const { passwordHash: _, ...userWithoutPassword } = finalUser!
+
+      if (validatedData.status === 'approved') {
+        await emailService.sendDocumentApprovedEmail(finalUser!.email, finalUser!.name)
+      } else if (validatedData.status === 'rejected') {
+        await emailService.sendDocumentRejectedEmail(
+          finalUser!.email, 
+          finalUser!.name, 
+          validatedData.rejectionReason || 'Please ensure your documents are clear and valid.'
+        )
+      }
 
       res.json({
         message: `Submission ${updatedSubmission.status}`,

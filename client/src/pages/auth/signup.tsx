@@ -1064,6 +1064,15 @@ export default function Signup() {
     localStorage.setItem('user', JSON.stringify(result.user));
     setUser(result.user);
 
+    if (result.requiresEmailVerification) {
+      toast({
+        title: 'Verify your email',
+        description: 'Please check your email for a verification code.',
+      });
+      setLocation(`/verify-email?userId=${result.user.id}`);
+      return;
+    }
+
     toast({
       title: 'Account created!',
       description: `Welcome to JobTradeSasa${result.user.role === 'supplier' ? ', ' + (data as SupplierSignupForm).companyName : result.user.role === 'company' ? ', ' + (data as CompanySignupForm).companyName : ''}.`,

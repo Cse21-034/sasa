@@ -47,8 +47,6 @@ export const verificationStatusEnum = pgEnum("verification_status", ["pending", 
 
 export const messageTypeEnum = pgEnum("message_type", ["job_message", "admin_message", "system_notification"]);
 
-
-
 // Users table
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -60,12 +58,30 @@ export const users = pgTable("users", {
   profilePhotoUrl: text("profile_photo_url"),
   bio: text("bio"),
   isVerified: boolean("is_verified").default(false).notNull(),
-  isIdentityVerified: boolean("is_identity_verified").default(false).notNull(), 
+  isIdentityVerified: boolean("is_identity_verified").default(false).notNull(),
+  isEmailVerified: boolean("is_email_verified").default(false).notNull(),
   status: userStatusEnum("status").default("active").notNull(), 
-  // 🆕 NEW: lastLogin column added to force migration fix
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Email verification tokens table
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Password reset tokens table
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Suppliers table

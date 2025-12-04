@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import Landing from "@/pages/landing";
 import Login from "@/pages/auth/login";
 import Signup from "@/pages/auth/signup";
+import VerifyEmail from "@/pages/auth/verify-email";
+import ForgotPassword from "@/pages/auth/forgot-password";
 import BrowseJobs from "@/pages/jobs/browse";
 import PostJob from "@/pages/jobs/post";
 import JobDetail from "@/pages/jobs/detail";
@@ -111,6 +113,8 @@ function Router() {
           <Route path="/signup">
             {() => <PublicRoute component={Signup} />}
           </Route>
+          <Route path="/verify-email" component={VerifyEmail} />
+          <Route path="/forgot-password" component={ForgotPassword} />
 
           {/* Verification Routes */}
           <Route path="/verification">

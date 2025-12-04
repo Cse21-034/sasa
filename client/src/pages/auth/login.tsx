@@ -54,12 +54,20 @@ export default function Login() {
       localStorage.setItem('user', JSON.stringify(result.user));
       setUser(result.user);
 
+      if (result.requiresEmailVerification) {
+        toast({
+          title: 'Verify your email',
+          description: 'Please verify your email address to continue.',
+        });
+        setLocation(`/verify-email?userId=${result.user.id}`);
+        return;
+      }
+
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
       });
 
-      // Navigate based on role
       setLocation(result.user.role === 'provider' ? '/dashboard' : '/jobs');
     } catch (error: any) {
       console.error('Login failed:', error);
@@ -122,7 +130,14 @@ export default function Login() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <FormLabel>Password</FormLabel>
+                      <Link href="/forgot-password">
+                        <a className="text-sm text-primary hover:underline" data-testid="link-forgot-password">
+                          Forgot password?
+                        </a>
+                      </Link>
+                    </div>
                     <FormControl>
                       <Input
                         type="password"
