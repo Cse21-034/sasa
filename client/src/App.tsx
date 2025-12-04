@@ -37,7 +37,8 @@ import AdminReports from "@/pages/admin/reports";
 import AdminAnalytics from "@/pages/admin/analytics";
 import AdminMessages from "@/pages/admin/messages"; 
 import AdminChat from "@/pages/admin/messages"; 
-import AdminChatUserView from "@/pages/messages/admin-chat"; // Import the new component
+import AdminChatUserView from "@/pages/messages/admin-chat";
+import AdminMigrations from "@/pages/admin/migrations";
 
 
 function ProtectedRoute({ component: Component, path, ...rest }: any) {
@@ -131,6 +132,9 @@ function Router() {
           </Route>
           <Route path="/admin/analytics">
             {() => <AdminRoute component={AdminAnalytics} />} 
+          </Route>
+          <Route path="/admin/migrations">
+            {() => <AdminRoute component={AdminMigrations} />}
           </Route>
           {/* NEW ADMIN MESSAGING ROUTES - Leads to private chat with user */}
           <Route path="/admin/messages">

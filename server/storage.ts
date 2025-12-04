@@ -644,12 +644,30 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(serviceAreaMigrations.createdAt));
   }
 
-  async getPendingMigrations(): Promise<ServiceAreaMigration[]> {
-    return await db
-      .select()
+  async getPendingMigrations(): Promise<any[]> {
+    const results = await db
+      .select({
+        migration: serviceAreaMigrations,
+        user: users,
+        provider: providers,
+      })
       .from(serviceAreaMigrations)
+      .leftJoin(users, eq(serviceAreaMigrations.providerId, users.id))
+      .leftJoin(providers, eq(serviceAreaMigrations.providerId, providers.userId))
       .where(eq(serviceAreaMigrations.status, 'pending'))
       .orderBy(desc(serviceAreaMigrations.createdAt));
+
+    return results.map(r => ({
+      ...r.migration,
+      provider: r.user ? {
+        id: r.user.id,
+        name: r.user.name,
+        email: r.user.email,
+        profilePhotoUrl: r.user.profilePhotoUrl,
+        primaryCity: r.provider?.primaryCity,
+        approvedServiceAreas: r.provider?.approvedServiceAreas,
+      } : null,
+    }));
   }
 
   async approveMigration(migrationId: string, reviewerId: string, notes?: string): Promise<ServiceAreaMigration | undefined> {

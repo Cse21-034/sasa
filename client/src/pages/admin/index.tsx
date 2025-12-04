@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { 
   UserCheck, Users, FileText, TrendingUp, AlertCircle, Briefcase, Loader2, ArrowRight, 
-  LayoutDashboard, // Added previously
-  CheckCircle2 // 🚨 FIX: Added missing icon
+  LayoutDashboard,
+  CheckCircle2,
+  MapPin
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -27,11 +28,15 @@ const useAdminOverview = () => {
         const totalUsersRes = await apiRequest('GET', '/api/admin/users');
         const totalUsers = await totalUsersRes.json();
 
+        const migrationsRes = await apiRequest('GET', '/api/admin/migrations/pending');
+        const migrations = await migrationsRes.json();
+
         return {
             ...analytics,
             pendingVerificationCount: verification.length,
             unresolvedReportsCount: reports.length,
             totalUsersCount: totalUsers.length,
+            pendingMigrationsCount: migrations.length,
         }
     },
     refetchInterval: 60000, // Refresh every minute
@@ -75,6 +80,14 @@ export default function AdminDashboardHub() {
       path: '/admin/analytics',
       badge: `${stats?.completedJobs || 0} Completed`,
       badgeVariant: 'default' as const,
+    },
+    {
+      title: 'Migration Requests',
+      description: 'Review and approve provider requests to expand their service areas to new cities.',
+      icon: MapPin,
+      path: '/admin/migrations',
+      badge: stats?.pendingMigrationsCount > 0 ? `${stats.pendingMigrationsCount} Pending` : null,
+      badgeVariant: 'warning' as const,
     },
   ];
   

@@ -29,11 +29,12 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
     const providerProfile = await storage.getProvider(req.user!.id);
     const hasProviderProfile = !!providerProfile;
     
-    // Determine if this is a company
-    const isCompany = req.user!.role === 'company';
+    // Check if user has a company profile (company providers have role 'provider' but also have a company record)
+    const companyProfile = await companyService.getCompany(req.user!.id);
+    const hasCompanyProfile = !!companyProfile;
     
-    // Determine if this is a company acting as a provider
-    const isCompanyProvider = isCompany && hasProviderProfile;
+    // Determine if this is a company acting as a provider (has both provider AND company profiles)
+    const isCompanyProvider = hasProviderProfile && hasCompanyProfile;
     
     // Determine if user should see provider view (individual provider OR company provider)
     const shouldSeeProviderView = req.user!.role === 'provider' || isCompanyProvider;
@@ -143,7 +144,13 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
       // Check if user has a provider profile
       const providerProfile = await storage.getProvider(req.user!.id);
       const hasProviderProfile = !!providerProfile;
-      const isCompanyProvider = req.user!.role === 'company' && hasProviderProfile;
+      
+      // Check if user has a company profile (company providers have role 'provider' but also have a company record)
+      const companyProfile = await companyService.getCompany(req.user!.id);
+      const hasCompanyProfile = !!companyProfile;
+      
+      // Determine if this is a company acting as a provider
+      const isCompanyProvider = hasProviderProfile && hasCompanyProfile;
       const shouldSeeProviderView = req.user!.role === 'provider' || isCompanyProvider;
 
       // Requesters and company requesters (without provider profile) can only see their own jobs
