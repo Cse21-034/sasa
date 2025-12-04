@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 const FROM_EMAIL = 'JobTradeSasa <onboarding@resend.dev>';
 
@@ -13,6 +13,10 @@ export interface EmailOptions {
 export const emailService = {
   async sendVerificationEmail(to: string, name: string, verificationCode: string): Promise<boolean> {
     try {
+      if (!resend) {
+        console.log('Email service not configured. Would send verification email to:', to, 'Code:', verificationCode);
+        return true;
+      }
       const { error } = await resend.emails.send({
         from: FROM_EMAIL,
         to,
@@ -59,6 +63,10 @@ export const emailService = {
 
   async sendPasswordResetEmail(to: string, name: string, resetCode: string): Promise<boolean> {
     try {
+      if (!resend) {
+        console.log('Email service not configured. Would send password reset email to:', to, 'Code:', resetCode);
+        return true;
+      }
       const { error } = await resend.emails.send({
         from: FROM_EMAIL,
         to,
@@ -104,6 +112,10 @@ export const emailService = {
 
   async sendDocumentApprovedEmail(to: string, name: string): Promise<boolean> {
     try {
+      if (!resend) {
+        console.log('Email service not configured. Would send document approved email to:', to);
+        return true;
+      }
       const { error } = await resend.emails.send({
         from: FROM_EMAIL,
         to,
@@ -158,6 +170,10 @@ export const emailService = {
 
   async sendDocumentRejectedEmail(to: string, name: string, reason: string): Promise<boolean> {
     try {
+      if (!resend) {
+        console.log('Email service not configured. Would send document rejected email to:', to, 'Reason:', reason);
+        return true;
+      }
       const { error } = await resend.emails.send({
         from: FROM_EMAIL,
         to,
@@ -210,6 +226,10 @@ export const emailService = {
 
   async sendWelcomeEmail(to: string, name: string): Promise<boolean> {
     try {
+      if (!resend) {
+        console.log('Email service not configured. Would send welcome email to:', to);
+        return true;
+      }
       const { error } = await resend.emails.send({
         from: FROM_EMAIL,
         to,
