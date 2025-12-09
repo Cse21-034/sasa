@@ -1,11 +1,11 @@
-// client/src/pages/auth/signup.tsx - SIMPLIFIED VERSION
+// client/src/pages/auth/signup.tsx - CORRECTED VERSION
 
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Briefcase, Loader2, UserCircle, Wrench, Building2, MapPin, User, Users, Truck } from 'lucide-react';
+import { Briefcase, Loader2, UserCircle, Wrench, Building2, MapPin, User, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
@@ -99,958 +99,475 @@ type SupplierSignupForm = z.infer<typeof supplierSignupSchema>;
 type CompanySignupForm = z.infer<typeof companySignupSchema>;
 type SignupData = IndividualSignupForm | SupplierSignupForm | CompanySignupForm;
 
-// FIND SERVICE FORM COMPONENT (for both individual and company)
-interface FindServiceFormProps {
-  registerType: 'individual' | 'company';
-  setRegisterType: (type: 'individual' | 'company') => void;
+// INDIVIDUAL REGISTRATION FORM (used for both find and provide service)
+interface IndividualRegistrationFormProps {
+  form: UseFormReturn<IndividualSignupForm>;
   isLoading: boolean;
   onSubmit: (data: SignupData) => void;
-  individualForm: UseFormReturn<IndividualSignupForm>;
-  companyForm: UseFormReturn<CompanySignupForm>;
+  isProvider: boolean;
 }
 
-const FindServiceForm = ({ 
-  registerType, 
-  setRegisterType, 
-  isLoading, 
-  onSubmit, 
-  individualForm, 
-  companyForm 
-}: FindServiceFormProps) => {
-  const handleIndividualSubmit = (data: IndividualSignupForm) => {
-    onSubmit(data);
-  };
-
-  const handleCompanySubmit = (data: CompanySignupForm) => {
+const IndividualRegistrationForm = ({ form, isLoading, onSubmit, isProvider }: IndividualRegistrationFormProps) => {
+  const handleSubmit = (data: IndividualSignupForm) => {
     onSubmit(data);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Register Type Selection */}
-      <div className="space-y-4">
-        <FormLabel>Register as</FormLabel>
-        <RadioGroup
-          value={registerType}
-          onValueChange={(value) => setRegisterType(value as 'individual' | 'company')}
-          className="grid grid-cols-2 gap-4"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        {isProvider && (
+          <FormField
+            control={form.control}
+            name="primaryCity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Your City / Service Area</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your city" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {botswanaCities.map((city) => (
+                      <SelectItem key={city} value={city}>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          {city}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  You will only see jobs in this city. You can apply to work in other cities later.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Full Name</FormLabel>
+              <FormControl>
+                <Input placeholder="John Doe" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="you@example.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone (Optional)</FormLabel>
+                <FormControl>
+                  <Input type="tel" placeholder="+267 12345678" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="••••••••" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm Password</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="••••••••" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <Button
+          type="submit"
+          className="w-full h-12"
+          disabled={isLoading}
         >
-          <label
-            htmlFor="individual-find"
-            className={`flex flex-col items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover-elevate transition-all ${
-              registerType === 'individual' ? 'border-primary bg-primary/5' : 'border-border'
-            }`}
-          >
-            <RadioGroupItem value="individual" id="individual-find" className="sr-only" />
-            <User className="h-8 w-8" />
-            <span className="font-medium text-sm">Individual</span>
-            <span className="text-xs text-muted-foreground text-center">Register as an individual</span>
-          </label>
-          <label
-            htmlFor="company-find"
-            className={`flex flex-col items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover-elevate transition-all ${
-              registerType === 'company' ? 'border-primary bg-primary/5' : 'border-border'
-            }`}
-          >
-            <RadioGroupItem value="company" id="company-find" className="sr-only" />
-            <Building2 className="h-8 w-8" />
-            <span className="font-medium text-sm">Company</span>
-            <span className="text-xs text-muted-foreground text-center">Register as a company</span>
-          </label>
-        </RadioGroup>
-      </div>
-
-      {/* Individual Registration Form */}
-      {registerType === 'individual' && (
-        <Form {...individualForm}>
-          <form onSubmit={individualForm.handleSubmit(handleIndividualSubmit)} className="space-y-4">
-            <FormField
-              control={individualForm.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={individualForm.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={individualForm.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="tel" placeholder="+267 12345678" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={individualForm.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={individualForm.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full h-12"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                'Create Individual Account'
-              )}
-            </Button>
-          </form>
-        </Form>
-      )}
-
-      {/* Company Registration Form */}
-      {registerType === 'company' && (
-        <Form {...companyForm}>
-          <form onSubmit={companyForm.handleSubmit(handleCompanySubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Your Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Your Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="companyName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="ABC Corporation Ltd" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="registrationNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Registration Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="REG123456" {...field} />
-                    </FormControl>
-                    <FormDescription>Your company registration number</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="taxNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tax Number (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="TAX123456" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="industryType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Industry Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select industry" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="construction">Construction</SelectItem>
-                        <SelectItem value="technology">Technology</SelectItem>
-                        <SelectItem value="consulting">Consulting</SelectItem>
-                        <SelectItem value="logistics">Logistics</SelectItem>
-                        <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                        <SelectItem value="retail">Retail</SelectItem>
-                        <SelectItem value="services">Services</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={companyForm.control}
-              name="physicalAddress"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Physical Address</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="123 Business Ave, Gaborone" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="contactPerson"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contact Person</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Jane Smith" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="contactPosition"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Position/Role</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Director" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="companyEmail"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="info@company.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="companyPhone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Phone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="+267 XX XXX XXXX" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="companyWebsite"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Website (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="url" placeholder="https://example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="numberOfEmployees"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Number of Employees (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="50" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="yearsInBusiness"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Years in Business (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="5" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormDescription className="text-sm">
-              Your documents will need to be verified before you can post jobs. Verification typically takes 24-48 hours.
-            </FormDescription>
-
-            <Button
-              type="submit"
-              className="w-full h-12"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                'Create Company Account'
-              )}
-            </Button>
-          </form>
-        </Form>
-      )}
-    </div>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating account...
+            </>
+          ) : (
+            `Create ${isProvider ? 'Service Provider' : 'Individual'} Account`
+          )}
+        </Button>
+      </form>
+    </Form>
   );
 };
 
-// PROVIDE SERVICE FORM COMPONENT (for both individual and company)
-interface ProvideServiceFormProps {
-  registerType: 'individual' | 'company';
-  setRegisterType: (type: 'individual' | 'company') => void;
+// COMPANY REGISTRATION FORM (used for both find and provide service)
+interface CompanyRegistrationFormProps {
+  form: UseFormReturn<CompanySignupForm>;
   isLoading: boolean;
   onSubmit: (data: SignupData) => void;
-  individualForm: UseFormReturn<IndividualSignupForm>;
-  companyForm: UseFormReturn<CompanySignupForm>;
+  isProvider: boolean;
 }
 
-const ProvideServiceForm = ({ 
-  registerType, 
-  setRegisterType, 
-  isLoading, 
-  onSubmit, 
-  individualForm, 
-  companyForm 
-}: ProvideServiceFormProps) => {
-  const handleIndividualSubmit = (data: IndividualSignupForm) => {
-    onSubmit(data);
-  };
-
-  const handleCompanySubmit = (data: CompanySignupForm) => {
+const CompanyRegistrationForm = ({ form, isLoading, onSubmit, isProvider }: CompanyRegistrationFormProps) => {
+  const handleSubmit = (data: CompanySignupForm) => {
     onSubmit(data);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Register Type Selection */}
-      <div className="space-y-4">
-        <FormLabel>Register as</FormLabel>
-        <RadioGroup
-          value={registerType}
-          onValueChange={(value) => setRegisterType(value as 'individual' | 'company')}
-          className="grid grid-cols-2 gap-4"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        {isProvider && (
+          <FormField
+            control={form.control}
+            name="primaryCity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company Service Area</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your service city" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {botswanaCities.map((city) => (
+                      <SelectItem key={city} value={city}>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          {city}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  Your company will only see jobs in this city. You can apply to work in other cities later.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Your Full Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="John Doe" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Your Email</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="you@example.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="companyName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="ABC Corporation Ltd" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="registrationNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Registration Number</FormLabel>
+                <FormControl>
+                  <Input placeholder="REG123456" {...field} />
+                </FormControl>
+                <FormDescription>Your company registration number</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="taxNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tax Number (Optional)</FormLabel>
+                <FormControl>
+                  <Input placeholder="TAX123456" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="industryType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Industry Type</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select industry" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="construction">Construction</SelectItem>
+                    <SelectItem value="technology">Technology</SelectItem>
+                    <SelectItem value="consulting">Consulting</SelectItem>
+                    <SelectItem value="logistics">Logistics</SelectItem>
+                    <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                    <SelectItem value="retail">Retail</SelectItem>
+                    <SelectItem value="services">Services</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="physicalAddress"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Physical Address</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="123 Business Ave, Gaborone" 
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="contactPerson"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Contact Person</FormLabel>
+                <FormControl>
+                  <Input placeholder="Jane Smith" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="contactPosition"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Position/Role</FormLabel>
+                <FormControl>
+                  <Input placeholder="Director" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="companyEmail"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company Email</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="info@company.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="companyPhone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company Phone</FormLabel>
+                <FormControl>
+                  <Input placeholder="+267 XX XXX XXXX" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="companyWebsite"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company Website (Optional)</FormLabel>
+                <FormControl>
+                  <Input type="url" placeholder="https://example.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="numberOfEmployees"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Number of Employees (Optional)</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="50" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="yearsInBusiness"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Years in Business (Optional)</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="5" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="••••••••" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm Password</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="••••••••" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormDescription className="text-sm">
+          Your documents will need to be verified before you can {isProvider ? 'provide services' : 'post jobs'}. Verification typically takes 24-48 hours.
+        </FormDescription>
+
+        <Button
+          type="submit"
+          className="w-full h-12"
+          disabled={isLoading}
         >
-          <label
-            htmlFor="individual-provide"
-            className={`flex flex-col items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover-elevate transition-all ${
-              registerType === 'individual' ? 'border-primary bg-primary/5' : 'border-border'
-            }`}
-          >
-            <RadioGroupItem value="individual" id="individual-provide" className="sr-only" />
-            <User className="h-8 w-8" />
-            <span className="font-medium text-sm">Individual</span>
-            <span className="text-xs text-muted-foreground text-center">Register as an individual service provider</span>
-          </label>
-          <label
-            htmlFor="company-provide"
-            className={`flex flex-col items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover-elevate transition-all ${
-              registerType === 'company' ? 'border-primary bg-primary/5' : 'border-border'
-            }`}
-          >
-            <RadioGroupItem value="company" id="company-provide" className="sr-only" />
-            <Building2 className="h-8 w-8" />
-            <span className="font-medium text-sm">Company</span>
-            <span className="text-xs text-muted-foreground text-center">Register as a company service provider</span>
-          </label>
-        </RadioGroup>
-      </div>
-
-      {/* City Selection for Service Providers */}
-      {registerType === 'individual' && (
-        <FormField
-          control={individualForm.control}
-          name="primaryCity"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Your City / Service Area</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your city" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {botswanaCities.map((city) => (
-                    <SelectItem key={city} value={city}>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        {city}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                You will only see jobs in this city. You can apply to work in other cities later.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating account...
+            </>
+          ) : (
+            `Create ${isProvider ? 'Service Company' : 'Company'} Account`
           )}
-        />
-      )}
-
-      {registerType === 'company' && (
-        <FormField
-          control={companyForm.control}
-          name="primaryCity"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Company Service Area</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your service city" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {botswanaCities.map((city) => (
-                    <SelectItem key={city} value={city}>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        {city}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                Your company will only see jobs in this city. You can apply to work in other cities later.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      )}
-
-      {/* Individual Registration Form */}
-      {registerType === 'individual' && (
-        <Form {...individualForm}>
-          <form onSubmit={individualForm.handleSubmit(handleIndividualSubmit)} className="space-y-4">
-            <FormField
-              control={individualForm.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={individualForm.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={individualForm.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="tel" placeholder="+267 12345678" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={individualForm.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={individualForm.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full h-12"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                'Create Service Provider Account'
-              )}
-            </Button>
-          </form>
-        </Form>
-      )}
-
-      {/* Company Registration Form */}
-      {registerType === 'company' && (
-        <Form {...companyForm}>
-          <form onSubmit={companyForm.handleSubmit(handleCompanySubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Your Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Your Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="companyName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="ABC Corporation Ltd" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="registrationNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Registration Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="REG123456" {...field} />
-                    </FormControl>
-                    <FormDescription>Your company registration number</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="taxNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tax Number (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="TAX123456" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="industryType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Industry Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select industry" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="construction">Construction</SelectItem>
-                        <SelectItem value="technology">Technology</SelectItem>
-                        <SelectItem value="consulting">Consulting</SelectItem>
-                        <SelectItem value="logistics">Logistics</SelectItem>
-                        <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                        <SelectItem value="retail">Retail</SelectItem>
-                        <SelectItem value="services">Services</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={companyForm.control}
-              name="physicalAddress"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Physical Address</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="123 Business Ave, Gaborone" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="contactPerson"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contact Person</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Jane Smith" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="contactPosition"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Position/Role</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Director" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="companyEmail"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="info@company.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="companyPhone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Phone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="+267 XX XXX XXXX" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="companyWebsite"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Website (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="url" placeholder="https://example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="numberOfEmployees"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Number of Employees (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="50" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="yearsInBusiness"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Years in Business (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="5" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={companyForm.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={companyForm.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormDescription className="text-sm">
-              Your documents will need to be verified before you can provide services. Verification typically takes 24-48 hours.
-            </FormDescription>
-
-            <Button
-              type="submit"
-              className="w-full h-12"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                'Create Service Company Account'
-              )}
-            </Button>
-          </form>
-        </Form>
-      )}
-    </div>
+        </Button>
+      </form>
+    </Form>
   );
 };
 
@@ -1061,75 +578,139 @@ interface SupplierFormProps {
   onSubmit: (data: SignupData) => void;
 }
 
-const SupplierForm = ({ form, isLoading, onSubmit }: SupplierFormProps) => (
-  <Form {...form}>
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+const SupplierForm = ({ form, isLoading, onSubmit }: SupplierFormProps) => {
+  const handleSubmit = (data: SupplierSignupForm) => {
+    onSubmit(data);
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="companyName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="ABC Suppliers Ltd" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="industryType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Industry/Service Type</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="hardware">Hardware Supplies</SelectItem>
+                    <SelectItem value="plumbing">Plumbing Supplies</SelectItem>
+                    <SelectItem value="electrical">Electrical Supplies</SelectItem>
+                    <SelectItem value="construction">Construction Materials</SelectItem>
+                    <SelectItem value="tools">Tools & Equipment</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <FormField
           control={form.control}
-          name="companyName"
+          name="physicalAddress"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Company Name</FormLabel>
+              <FormLabel>Physical Address</FormLabel>
               <FormControl>
-                <Input placeholder="ABC Suppliers Ltd" {...field} />
+                <Input 
+                  placeholder="123 Main St, Gaborone" 
+                  {...field} 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="industryType"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Industry/Service Type</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="contactPerson"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Contact Person</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
+                  <Input placeholder="John Doe" {...field} />
                 </FormControl>
-                <SelectContent>
-                  <SelectItem value="hardware">Hardware Supplies</SelectItem>
-                  <SelectItem value="plumbing">Plumbing Supplies</SelectItem>
-                  <SelectItem value="electrical">Electrical Supplies</SelectItem>
-                  <SelectItem value="construction">Construction Materials</SelectItem>
-                  <SelectItem value="tools">Tools & Equipment</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-      <FormField
-        control={form.control}
-        name="physicalAddress"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Physical Address</FormLabel>
-            <FormControl>
-              <Input 
-                placeholder="123 Main St, Gaborone" 
-                {...field} 
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+          <FormField
+            control={form.control}
+            name="contactPosition"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Position/Role</FormLabel>
+                <FormControl>
+                  <Input placeholder="Manager" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-      <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="companyEmail"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company Email</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="info@company.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="companyPhone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company Phone</FormLabel>
+                <FormControl>
+                  <Input type="tel" placeholder="+267 12345678" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
         <FormField
           control={form.control}
-          name="contactPerson"
+          name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Contact Person</FormLabel>
+              <FormLabel>Your Full Name</FormLabel>
               <FormControl>
                 <Input placeholder="John Doe" {...field} />
               </FormControl>
@@ -1137,43 +718,13 @@ const SupplierForm = ({ form, isLoading, onSubmit }: SupplierFormProps) => (
             </FormItem>
           )}
         />
-
+        
         <FormField
           control={form.control}
-          name="contactPosition"
+          name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Position/Role</FormLabel>
-              <FormControl>
-                <Input placeholder="Manager" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name="companyEmail"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Company Email</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="info@company.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="companyPhone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Company Phone</FormLabel>
+              <FormLabel>Phone (Optional)</FormLabel>
               <FormControl>
                 <Input type="tel" placeholder="+267 12345678" {...field} />
               </FormControl>
@@ -1181,97 +732,69 @@ const SupplierForm = ({ form, isLoading, onSubmit }: SupplierFormProps) => (
             </FormItem>
           )}
         />
-      </div>
-      
-      <FormField
-        control={form.control}
-        name="name"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Your Full Name</FormLabel>
-            <FormControl>
-              <Input placeholder="John Doe" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      
-      <FormField
-        control={form.control}
-        name="phone"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Phone (Optional)</FormLabel>
-            <FormControl>
-              <Input type="tel" placeholder="+267 12345678" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
 
-      <FormField
-        control={form.control}
-        name="email"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Your Email</FormLabel>
-            <FormControl>
-              <Input type="email" placeholder="you@example.com" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <div className="grid grid-cols-2 gap-4">
         <FormField
           control={form.control}
-          name="password"
+          name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Your Email</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <Input type="email" placeholder="you@example.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="confirmPassword"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Confirm Password</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="••••••••" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm Password</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="••••••••" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <Button
+          type="submit"
+          className="w-full h-12"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating account...
+            </>
+          ) : (
+            'Create Supplier Account'
           )}
-        />
-      </div>
-      
-      <Button
-        type="submit"
-        className="w-full h-12"
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Creating account...
-          </>
-        ) : (
-          'Create Supplier Account'
-        )}
-      </Button>
-    </form>
-  </Form>
-);
+        </Button>
+      </form>
+    </Form>
+  );
+};
 
 // MAIN SIGNUP COMPONENT
 export default function Signup() {
@@ -1516,6 +1039,11 @@ export default function Signup() {
         role: mainTab === 'find-service' ? 'requester' : 'provider', 
         primaryCity: '',
       });
+      if (mainTab === 'find-service') {
+        companyForm.setValue('companyRole', 'requester');
+      } else if (mainTab === 'provide-service') {
+        companyForm.setValue('companyRole', 'provider');
+      }
     }
   };
 
@@ -1638,26 +1166,83 @@ export default function Signup() {
             </TabsList>
           </Tabs>
 
-          {/* Render appropriate form based on main tab */}
-          {mainTab === 'find-service' && (
-            <FindServiceForm 
-              registerType={registerType}
-              setRegisterType={handleRegisterTypeChange}
+          {/* Register Type Selection for Find Service and Provide Service */}
+          {(mainTab === 'find-service' || mainTab === 'provide-service') && (
+            <div className="mb-6 space-y-4">
+              <FormLabel>Register as</FormLabel>
+              <RadioGroup
+                value={registerType}
+                onValueChange={(value) => handleRegisterTypeChange(value as 'individual' | 'company')}
+                className="grid grid-cols-2 gap-4"
+              >
+                <label
+                  htmlFor={`individual-${mainTab}`}
+                  className={`flex flex-col items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover-elevate transition-all ${
+                    registerType === 'individual' ? 'border-primary bg-primary/5' : 'border-border'
+                  }`}
+                >
+                  <RadioGroupItem value="individual" id={`individual-${mainTab}`} className="sr-only" />
+                  <User className="h-8 w-8" />
+                  <span className="font-medium text-sm">Individual</span>
+                  <span className="text-xs text-muted-foreground text-center">
+                    {mainTab === 'find-service' 
+                      ? 'Register as an individual' 
+                      : 'Register as an individual service provider'}
+                  </span>
+                </label>
+                <label
+                  htmlFor={`company-${mainTab}`}
+                  className={`flex flex-col items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover-elevate transition-all ${
+                    registerType === 'company' ? 'border-primary bg-primary/5' : 'border-border'
+                  }`}
+                >
+                  <RadioGroupItem value="company" id={`company-${mainTab}`} className="sr-only" />
+                  <Building2 className="h-8 w-8" />
+                  <span className="font-medium text-sm">Company</span>
+                  <span className="text-xs text-muted-foreground text-center">
+                    {mainTab === 'find-service'
+                      ? 'Register as a company'
+                      : 'Register as a company service provider'}
+                  </span>
+                </label>
+              </RadioGroup>
+            </div>
+          )}
+
+          {/* Render appropriate form based on main tab and register type */}
+          {mainTab === 'find-service' && registerType === 'individual' && (
+            <IndividualRegistrationForm 
+              form={individualForm}
               isLoading={isLoading}
               onSubmit={onSubmit}
-              individualForm={individualForm}
-              companyForm={companyForm}
+              isProvider={false}
             />
           )}
 
-          {mainTab === 'provide-service' && (
-            <ProvideServiceForm 
-              registerType={registerType}
-              setRegisterType={handleRegisterTypeChange}
+          {mainTab === 'find-service' && registerType === 'company' && (
+            <CompanyRegistrationForm 
+              form={companyForm}
               isLoading={isLoading}
               onSubmit={onSubmit}
-              individualForm={individualForm}
-              companyForm={companyForm}
+              isProvider={false}
+            />
+          )}
+
+          {mainTab === 'provide-service' && registerType === 'individual' && (
+            <IndividualRegistrationForm 
+              form={individualForm}
+              isLoading={isLoading}
+              onSubmit={onSubmit}
+              isProvider={true}
+            />
+          )}
+
+          {mainTab === 'provide-service' && registerType === 'company' && (
+            <CompanyRegistrationForm 
+              form={companyForm}
+              isLoading={isLoading}
+              onSubmit={onSubmit}
+              isProvider={true}
             />
           )}
 
