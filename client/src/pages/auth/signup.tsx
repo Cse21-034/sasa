@@ -1010,12 +1010,14 @@ export default function Signup() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-2xl border-2">
         <CardHeader className="space-y-4">
-          <div className="flex justify-center">
-            <div className="flex items-center gap-2">
-              <Briefcase className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold">JobTradeSasa</span>
-            </div>
-          </div>
+        <div className="flex justify-center">
+  <img 
+    src="/image.png" 
+    alt="JobTradeSasa Logo" 
+    className="h-14 w-auto object-contain"
+  />
+</div>
+
           <CardTitle className="text-2xl text-center">Create an Account</CardTitle>
           <CardDescription className="text-center">
             Join our community of service providers and requesters
