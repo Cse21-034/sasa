@@ -93,16 +93,16 @@ export function Header() {
         
         {/* Logo Section with improved spacing */}
         <div className="flex items-center gap-8">
-          <Link href="/">
-            <div className="flex items-center gap-4 hover:opacity-90 transition-opacity rounded-xl px-4 py-2 cursor-pointer group">
-            <img 
-  src="/image.png" 
-  alt="JobTradeSasa" 
-  className="h-20 lg:h-24 w-auto object-contain drop-shadow-lg"
-/>
-              
-            </div>
-          </Link>
+        <Link href="/">
+  <div className="flex items-center gap-4 hover:opacity-90 transition-opacity rounded-xl px-4 py-2 cursor-pointer group">
+    <img 
+      src="/image.png" 
+      alt="JobTradeSasa" 
+      className="h-12 lg:h-16 w-auto object-contain drop-shadow-lg"
+    />
+  </div>
+</Link>
+
 
           {/* Landing Page Desktop Navigation */}
           {isLandingPage && !isAuthenticated && (
