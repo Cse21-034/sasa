@@ -95,19 +95,12 @@ export function Header() {
         <div className="flex items-center gap-8">
           <Link href="/">
             <div className="flex items-center gap-4 hover:opacity-90 transition-opacity rounded-xl px-4 py-2 cursor-pointer group">
-              <img 
-                src="/image.png" 
-                alt="JobTradeSasa" 
-                className="h-14 w-14 object-contain drop-shadow-lg"
-              />
-              <div className="flex flex-col">
-                <span className="text-2xl font-bold text-white tracking-tight"> 
-                  JobTradeSasa
-                </span>
-                <span className="text-xs text-orange-300 -mt-1 font-medium">
-                  Find. Connect. Hire.
-                </span>
-              </div>
+            <img 
+  src="/image.png" 
+  alt="JobTradeSasa" 
+  className="h-20 lg:h-24 w-auto object-contain drop-shadow-lg"
+/>
+              
             </div>
           </Link>
 
