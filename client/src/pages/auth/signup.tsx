@@ -1,11 +1,11 @@
-// client/src/pages/auth/signup.tsx - FIXED VERSION
+// client/src/pages/auth/signup.tsx - REARRANGED VERSION
 
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Briefcase, Loader2, UserCircle, Wrench, Building2, MapPin } from 'lucide-react';
+import { Briefcase, Loader2, UserCircle, Wrench, Building2, MapPin, User, Users, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
@@ -115,7 +115,7 @@ const IndividualForm = ({ form, selectedRole, isLoading, onSubmit }: IndividualF
         name="role"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>I want to</FormLabel>
+            <FormLabel>Register as</FormLabel>
             <FormControl>
               <RadioGroup
                 onValueChange={field.onChange}
@@ -131,6 +131,7 @@ const IndividualForm = ({ form, selectedRole, isLoading, onSubmit }: IndividualF
                   <RadioGroupItem value="requester" id="requester" className="sr-only" />
                   <UserCircle className="h-8 w-8" />
                   <span className="font-medium text-sm">Find Services</span>
+                  <span className="text-xs text-muted-foreground text-center">Post jobs and hire service providers</span>
                 </label>
                 <label
                   htmlFor="provider"
@@ -141,6 +142,7 @@ const IndividualForm = ({ form, selectedRole, isLoading, onSubmit }: IndividualF
                   <RadioGroupItem value="provider" id="provider" className="sr-only" />
                   <Wrench className="h-8 w-8" />
                   <span className="font-medium text-sm">Offer Services</span>
+                  <span className="text-xs text-muted-foreground text-center">Accept jobs and provide services</span>
                 </label>
               </RadioGroup>
             </FormControl>
@@ -270,7 +272,7 @@ const IndividualForm = ({ form, selectedRole, isLoading, onSubmit }: IndividualF
   </Form>
 );
 
-// ORGANIZATION FORM COMPONENT
+// ORGANIZATION FORM COMPONENT (Supplier)
 interface OrganizationFormProps {
   form: UseFormReturn<SupplierSignupForm>;
   isLoading: boolean;
@@ -480,14 +482,14 @@ const OrganizationForm = ({ form, isLoading, onSubmit }: OrganizationFormProps) 
             Creating account...
           </>
         ) : (
-          'Create Account'
+          'Create Supplier Account'
         )}
       </Button>
     </form>
   </Form>
 );
 
-// COMPANY FORM COMPONENT
+// COMPANY FORM COMPONENT (for both requester and provider)
 interface CompanyFormProps {
   form: UseFormReturn<CompanySignupForm>;
   selectedCompanyRole: 'requester' | 'provider';
@@ -503,7 +505,7 @@ const CompanyForm = ({ form, selectedCompanyRole, isLoading, onSubmit }: Company
         name="companyRole"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Your company wants to</FormLabel>
+            <FormLabel>Register as</FormLabel>
             <FormControl>
               <RadioGroup
                 onValueChange={field.onChange}
@@ -856,7 +858,8 @@ export default function Signup() {
   const { setUser } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [accountType, setAccountType] = useState<'individual' | 'organization' | 'company'>('individual');
+  const [mainTab, setMainTab] = useState<'find-service' | 'provide-service' | 'supplier'>('find-service');
+  const [subTab, setSubTab] = useState<'individual' | 'company'>('individual');
 
   const individualForm = useForm<IndividualSignupForm>({
     resolver: zodResolver(individualSignupSchema),
@@ -921,9 +924,14 @@ export default function Signup() {
   const selectedRole = individualForm.watch('role');
   const selectedCompanyRole = companyForm.watch('companyRole');
 
-  // FIX: Proper form reset when switching tabs
-  const handleAccountTypeChange = (newType: 'individual' | 'organization' | 'company') => {
-    if (newType === 'individual') {
+  // Handle main tab change
+  const handleMainTabChange = (tab: 'find-service' | 'provide-service' | 'supplier') => {
+    setMainTab(tab);
+    
+    // Set appropriate sub tab based on main tab
+    if (tab === 'find-service') {
+      setSubTab('individual');
+      // Reset forms
       supplierForm.reset({
         name: '', 
         email: '', 
@@ -960,7 +968,48 @@ export default function Signup() {
         yearsInBusiness: '',
         primaryCity: '',
       });
-    } else if (newType === 'organization') {
+    } else if (tab === 'provide-service') {
+      setSubTab('individual');
+      // Reset forms
+      supplierForm.reset({
+        name: '', 
+        email: '', 
+        phone: '', 
+        password: '', 
+        confirmPassword: '',
+        role: 'supplier', 
+        companyName: '', 
+        physicalAddress: '', 
+        contactPerson: '',
+        contactPosition: '', 
+        companyEmail: '', 
+        companyPhone: '', 
+        industryType: '',
+      });
+      companyForm.reset({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'company',
+        companyRole: 'provider',
+        companyName: '',
+        registrationNumber: '',
+        taxNumber: '',
+        physicalAddress: '',
+        contactPerson: '',
+        contactPosition: '',
+        companyEmail: '',
+        companyPhone: '',
+        companyWebsite: '',
+        industryType: '',
+        numberOfEmployees: '',
+        yearsInBusiness: '',
+        primaryCity: '',
+      });
+    } else if (tab === 'supplier') {
+      // For supplier tab, we don't need subtabs
+      // Reset other forms
       individualForm.reset({
         name: '', 
         email: '', 
@@ -990,112 +1039,224 @@ export default function Signup() {
         numberOfEmployees: '',
         yearsInBusiness: '',
         primaryCity: '',
-      });
-    } else {
-      // company type
-      individualForm.reset({
-        name: '', 
-        email: '', 
-        phone: '', 
-        password: '', 
-        confirmPassword: '',
-        role: 'requester', 
-        primaryCity: '',
-      });
-      supplierForm.reset({
-        name: '', 
-        email: '', 
-        phone: '', 
-        password: '', 
-        confirmPassword: '',
-        role: 'supplier', 
-        companyName: '', 
-        physicalAddress: '', 
-        contactPerson: '',
-        contactPosition: '', 
-        companyEmail: '', 
-        companyPhone: '', 
-        industryType: '',
       });
     }
-    setAccountType(newType);
   };
 
- const onSubmit = async (data: SignupData) => {
-  setIsLoading(true);
-  try {
-    // 🔧 FIX: Clean up the payload based on account type
-    let payload: any = {
-      ...data,
-      role: accountType === 'organization' ? 'supplier' : accountType === 'company' ? 'company' : (data as IndividualSignupForm).role,
-    };
-
-    // 🔧 FIX: Remove primaryCity if it's empty or if user is a requester
-    if (accountType === 'individual') {
-      const individualData = data as IndividualSignupForm;
-      
-      // Remove primaryCity for requesters OR if it's empty
-      if (individualData.role === 'requester' || !individualData.primaryCity) {
-        delete payload.primaryCity;
+  // Handle sub tab change
+  const handleSubTabChange = (tab: 'individual' | 'company') => {
+    setSubTab(tab);
+    // Reset forms when switching between individual and company
+    if (tab === 'individual') {
+      if (mainTab === 'find-service') {
+        companyForm.reset({
+          name: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          role: 'company',
+          companyRole: 'requester',
+          companyName: '',
+          registrationNumber: '',
+          taxNumber: '',
+          physicalAddress: '',
+          contactPerson: '',
+          contactPosition: '',
+          companyEmail: '',
+          companyPhone: '',
+          companyWebsite: '',
+          industryType: '',
+          numberOfEmployees: '',
+          yearsInBusiness: '',
+          primaryCity: '',
+        });
+        individualForm.setValue('role', 'requester');
+      } else if (mainTab === 'provide-service') {
+        companyForm.reset({
+          name: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          role: 'company',
+          companyRole: 'provider',
+          companyName: '',
+          registrationNumber: '',
+          taxNumber: '',
+          physicalAddress: '',
+          contactPerson: '',
+          contactPosition: '',
+          companyEmail: '',
+          companyPhone: '',
+          companyWebsite: '',
+          industryType: '',
+          numberOfEmployees: '',
+          yearsInBusiness: '',
+          primaryCity: '',
+        });
+        individualForm.setValue('role', 'provider');
+      }
+    } else if (tab === 'company') {
+      if (mainTab === 'find-service') {
+        individualForm.reset({
+          name: '', 
+          email: '', 
+          phone: '', 
+          password: '', 
+          confirmPassword: '',
+          role: 'requester', 
+          primaryCity: '',
+        });
+        companyForm.setValue('companyRole', 'requester');
+      } else if (mainTab === 'provide-service') {
+        individualForm.reset({
+          name: '', 
+          email: '', 
+          phone: '', 
+          password: '', 
+          confirmPassword: '',
+          role: 'provider', 
+          primaryCity: '',
+        });
+        companyForm.setValue('companyRole', 'provider');
       }
     }
+  };
 
-    // 🔧 FIX: Convert company fields to proper types
-    if (accountType === 'company') {
-      const companyData = data as CompanySignupForm;
-      if (companyData.numberOfEmployees) {
-        payload.numberOfEmployees = parseInt(companyData.numberOfEmployees);
+  const onSubmit = async (data: SignupData) => {
+    setIsLoading(true);
+    try {
+      // Determine account type based on mainTab and subTab
+      let accountType: 'individual' | 'organization' | 'company' = 'individual';
+      if (mainTab === 'supplier') {
+        accountType = 'organization';
+      } else if (subTab === 'company') {
+        accountType = 'company';
       }
-      if (companyData.yearsInBusiness) {
-        payload.yearsInBusiness = parseInt(companyData.yearsInBusiness);
+
+      let payload: any = {
+        ...data,
+        role: accountType === 'organization' ? 'supplier' : accountType === 'company' ? 'company' : (data as IndividualSignupForm).role,
+      };
+
+      // Remove primaryCity if it's empty or if user is a requester
+      if (accountType === 'individual') {
+        const individualData = data as IndividualSignupForm;
+        
+        // Remove primaryCity for requesters OR if it's empty
+        if (individualData.role === 'requester' || !individualData.primaryCity) {
+          delete payload.primaryCity;
+        }
       }
-    }
 
-    console.log('Sending signup payload:', { 
-      role: payload.role, 
-      hasCity: !!payload.primaryCity,
-      keys: Object.keys(payload) 
-    });
+      // Convert company fields to proper types
+      if (accountType === 'company') {
+        const companyData = data as CompanySignupForm;
+        if (companyData.numberOfEmployees) {
+          payload.numberOfEmployees = parseInt(companyData.numberOfEmployees);
+        }
+        if (companyData.yearsInBusiness) {
+          payload.yearsInBusiness = parseInt(companyData.yearsInBusiness);
+        }
+      }
 
-    const response = await apiRequest('POST', '/api/auth/signup', payload);
-    const result = await response.json();
-    
-    localStorage.setItem('token', result.token);
-    localStorage.setItem('user', JSON.stringify(result.user));
-    setUser(result.user);
-
-    if (result.requiresEmailVerification) {
-      toast({
-        title: 'Verify your email',
-        description: 'Please check your email for a verification code.',
+      console.log('Sending signup payload:', { 
+        role: payload.role, 
+        hasCity: !!payload.primaryCity,
+        keys: Object.keys(payload) 
       });
-      setLocation(`/verify-email?userId=${result.user.id}`);
-      return;
+
+      const response = await apiRequest('POST', '/api/auth/signup', payload);
+      const result = await response.json();
+      
+      localStorage.setItem('token', result.token);
+      localStorage.setItem('user', JSON.stringify(result.user));
+      setUser(result.user);
+
+      if (result.requiresEmailVerification) {
+        toast({
+          title: 'Verify your email',
+          description: 'Please check your email for a verification code.',
+        });
+        setLocation(`/verify-email?userId=${result.user.id}`);
+        return;
+      }
+
+      toast({
+        title: 'Account created!',
+        description: `Welcome to JobTradeSasa${result.user.role === 'supplier' ? ', ' + (data as SupplierSignupForm).companyName : result.user.role === 'company' ? ', ' + (data as CompanySignupForm).companyName : ''}.`,
+      });
+
+      setLocation(result.user.role === 'provider' || result.user.role === 'company' ? '/dashboard' : '/jobs');
+    } catch (error: any) {
+      let message = error.message || 'An unknown error occurred.';
+      if (message.startsWith('400:')) {
+        message = message.substring(message.indexOf(':') + 1).trim();
+      }
+
+      console.error('Signup error:', { message, error });
+
+      toast({
+        title: 'Signup failed',
+        description: message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    toast({
-      title: 'Account created!',
-      description: `Welcome to JobTradeSasa${result.user.role === 'supplier' ? ', ' + (data as SupplierSignupForm).companyName : result.user.role === 'company' ? ', ' + (data as CompanySignupForm).companyName : ''}.`,
-    });
-
-    setLocation(result.user.role === 'provider' || result.user.role === 'company' ? '/dashboard' : '/jobs');
-  } catch (error: any) {
-    let message = error.message || 'An unknown error occurred.';
-    if (message.startsWith('400:')) {
-      message = message.substring(message.indexOf(':') + 1).trim();
+  // Determine which form to render based on mainTab and subTab
+  const renderForm = () => {
+    if (mainTab === 'supplier') {
+      return (
+        <OrganizationForm 
+          form={supplierForm}
+          isLoading={isLoading}
+          onSubmit={onSubmit}
+        />
+      );
+    } else if (mainTab === 'find-service') {
+      if (subTab === 'individual') {
+        return (
+          <IndividualForm 
+            form={individualForm}
+            selectedRole={'requester'}
+            isLoading={isLoading}
+            onSubmit={onSubmit}
+          />
+        );
+      } else {
+        return (
+          <CompanyForm 
+            form={companyForm}
+            selectedCompanyRole={'requester'}
+            isLoading={isLoading}
+            onSubmit={onSubmit}
+          />
+        );
+      }
+    } else if (mainTab === 'provide-service') {
+      if (subTab === 'individual') {
+        return (
+          <IndividualForm 
+            form={individualForm}
+            selectedRole={'provider'}
+            isLoading={isLoading}
+            onSubmit={onSubmit}
+          />
+        );
+      } else {
+        return (
+          <CompanyForm 
+            form={companyForm}
+            selectedCompanyRole={'provider'}
+            isLoading={isLoading}
+            onSubmit={onSubmit}
+          />
+        );
+      }
     }
-
-    console.error('Signup error:', { message, error }); // 🔧 Better error logging
-
-    toast({
-      title: 'Signup failed',
-      description: message,
-      variant: 'destructive',
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
@@ -1113,47 +1274,71 @@ export default function Signup() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={accountType} onValueChange={(v) => handleAccountTypeChange(v as any)} className="mb-6">
+          {/* Main Tabs */}
+          <Tabs value={mainTab} onValueChange={(v) => handleMainTabChange(v as any)} className="mb-6">
             <TabsList className="grid w-full grid-cols-3 h-12">
-              <TabsTrigger value="individual" className="text-xs sm:text-sm">
+              <TabsTrigger value="find-service" className="text-xs sm:text-sm">
                 <UserCircle className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Individual</span>
-                <span className="sm:hidden">Person</span>
+                <span className="hidden sm:inline">Find Service</span>
+                <span className="sm:hidden">Find</span>
               </TabsTrigger>
-              <TabsTrigger value="organization" className="text-xs sm:text-sm">
-                <Building2 className="h-4 w-4 mr-1 sm:mr-2" />
+              <TabsTrigger value="provide-service" className="text-xs sm:text-sm">
+                <Wrench className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Provide Service</span>
+                <span className="sm:hidden">Provide</span>
+              </TabsTrigger>
+              <TabsTrigger value="supplier" className="text-xs sm:text-sm">
+                <Truck className="h-4 w-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Supplier</span>
                 <span className="sm:hidden">Supp.</span>
               </TabsTrigger>
-              <TabsTrigger value="company" className="text-xs sm:text-sm">
-                <Briefcase className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Company</span>
-                <span className="sm:hidden">Co.</span>
-              </TabsTrigger>
             </TabsList>
           </Tabs>
-          
-          {accountType === 'individual' ? (
-            <IndividualForm 
-                form={individualForm}
-                selectedRole={selectedRole}
-                isLoading={isLoading}
-                onSubmit={onSubmit}
-            />
-          ) : accountType === 'organization' ? (
-            <OrganizationForm 
-                form={supplierForm}
-                isLoading={isLoading}
-                onSubmit={onSubmit}
-            />
-          ) : (
-            <CompanyForm 
-                form={companyForm}
-                selectedCompanyRole={selectedCompanyRole}
-                isLoading={isLoading}
-                onSubmit={onSubmit}
-            />
+
+          {/* Sub Tabs for Find Service and Provide Service */}
+          {(mainTab === 'find-service' || mainTab === 'provide-service') && (
+            <div className="mb-6">
+              <div className="flex justify-center mb-4">
+                <Tabs value={subTab} onValueChange={(v) => handleSubTabChange(v as any)} className="w-full max-w-md">
+                  <TabsList className="grid w-full grid-cols-2 h-10">
+                    <TabsTrigger value="individual" className="text-xs sm:text-sm">
+                      <User className="h-3 w-3 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Individual</span>
+                      <span className="sm:hidden">Indiv.</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="company" className="text-xs sm:text-sm">
+                      <Users className="h-3 w-3 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Company</span>
+                      <span className="sm:hidden">Co.</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+              <p className="text-center text-sm text-muted-foreground mb-2">
+                {mainTab === 'find-service' 
+                  ? 'Looking to hire service providers'
+                  : 'Looking to offer services'}
+              </p>
+            </div>
           )}
+
+          {/* Sub Tab for Supplier */}
+          {mainTab === 'supplier' && (
+            <div className="mb-6">
+              <div className="flex justify-center mb-2">
+                <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg">
+                  <Truck className="h-5 w-5 text-primary" />
+                  <span className="font-medium">Suppliers & Vendors</span>
+                </div>
+              </div>
+              <p className="text-center text-sm text-muted-foreground mb-4">
+                Register your business to supply materials, tools, or services
+              </p>
+            </div>
+          )}
+
+          {/* Render appropriate form */}
+          {renderForm()}
 
           <div className="mt-6 text-center text-sm">
             <p className="text-muted-foreground">
