@@ -1029,12 +1029,12 @@ export default function Signup() {
             <TabsList className="grid w-full grid-cols-3 h-12">
               <TabsTrigger value="find-service" className="text-xs sm:text-sm">
                 <UserCircle className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Find Service</span>
+                <span className="hidden sm:inline">User</span>
                 <span className="sm:hidden">Find</span>
               </TabsTrigger>
               <TabsTrigger value="provide-service" className="text-xs sm:text-sm">
                 <Wrench className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Provide Service</span>
+                <span className="hidden sm:inline">Service provider</span>
                 <span className="sm:hidden">Provide</span>
               </TabsTrigger>
               <TabsTrigger value="supplier" className="text-xs sm:text-sm">
