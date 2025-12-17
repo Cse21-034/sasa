@@ -30,6 +30,7 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:5000',
+    'https://sasa-weld.vercel.app',
     'https://sasa-indol.vercel.app' // NOTE: Replace with your actual Vercel domain
   ],
   credentials: true
