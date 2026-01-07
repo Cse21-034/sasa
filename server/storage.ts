@@ -1516,6 +1516,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(supplierPromotions.isActive, true))
       .orderBy(desc(suppliers.featured), desc(supplierPromotions.createdAt));
 
+    console.log("Found active promotions:", results.length);
     return results.map(r => ({
       ...r.promotion,
       supplier: {
