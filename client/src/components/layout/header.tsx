@@ -178,9 +178,9 @@ export function Header() {
                       <Button 
                         variant="ghost"
                         className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors"
-                        data-testid="link-supplier-promotions"
+                        data-testid="link-supplier-dashboard"
                       >
-                        <Tag className="h-4 w-4 mr-2" /> Promotions
+                        <LayoutDashboard className="h-4 w-4 mr-2" /> Dashboard
                       </Button>
                     </Link>
                   )}
