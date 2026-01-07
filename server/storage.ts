@@ -148,6 +148,9 @@ export interface IStorage {
   getPasswordResetToken(userId: string, token: string): Promise<{ id: string; userId: string; token: string; expiresAt: Date } | undefined>;
   deletePasswordResetTokens(userId: string): Promise<void>;
 
+  // Promotions
+  getActivePromotions(): Promise<any[]>;
+
   // Jobs
   getJob(id: string): Promise<JobWithRelations | undefined>;
   getJobs(params: {
@@ -1498,6 +1501,28 @@ export class DatabaseStorage implements IStorage {
   // Categories
   async getCategories(): Promise<Category[]> {
     return await db.select().from(categories);
+  }
+
+  async getActivePromotions(): Promise<any[]> {
+    const results = await db
+      .select({
+        promotion: supplierPromotions,
+        supplier: suppliers,
+        user: users,
+      })
+      .from(supplierPromotions)
+      .innerJoin(suppliers, eq(supplierPromotions.supplierId, suppliers.userId))
+      .innerJoin(users, eq(suppliers.userId, users.id))
+      .where(eq(supplierPromotions.isActive, true))
+      .orderBy(desc(suppliers.featured), desc(supplierPromotions.createdAt));
+
+    return results.map(r => ({
+      ...r.promotion,
+      supplier: {
+        ...r.supplier,
+        user: r.user
+      }
+    }));
   }
 
   async createCategory(insertCategory: InsertCategory): Promise<Category> {

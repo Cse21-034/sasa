@@ -27,6 +27,7 @@ import Suppliers from "@/pages/suppliers";
 import NotFound from "@/pages/not-found";
 import VerificationPage from "@/pages/verification";
 import SupplierDetail from "@/pages/supplier-detail";
+import PromotionsPage from "@/pages/promotions";
 import SupplierDashboard from "@/pages/supplier/dashboard";
 import SupplierSettings from "@/pages/supplier/settings";
 import ProviderApplications from "@/pages/provider/applications";
@@ -115,6 +116,7 @@ function Router() {
           </Route>
           <Route path="/verify-email" component={VerifyEmail} />
           <Route path="/forgot-password" component={ForgotPassword} />
+          <Route path="/promotions" component={PromotionsPage} />
 
           {/* Verification Routes */}
           <Route path="/verification">

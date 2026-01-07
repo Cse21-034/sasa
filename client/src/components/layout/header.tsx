@@ -125,6 +125,11 @@ export function Header() {
               >
                 Suppliers
               </a>
+              <Link href="/promotions">
+                <a className="px-4 py-2 text-white/90 hover:text-orange-300 transition-colors rounded-lg hover:bg-white/5">
+                  Promotions
+                </a>
+              </Link>
             </nav>
           )}
 
@@ -187,6 +192,16 @@ export function Header() {
                       data-testid="link-suppliers"
                     >
                       <ShoppingBag className="h-4 w-4 mr-2" /> Suppliers
+                    </Button>
+                  </Link>
+
+                  <Link href="/promotions">
+                    <Button 
+                      variant="ghost" 
+                      className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors"
+                      data-testid="link-promotions"
+                    >
+                      <Tag className="h-4 w-4 mr-2" /> Promotions
                     </Button>
                   </Link>
 
