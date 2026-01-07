@@ -188,5 +188,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes (needs clients for WebSocket messaging)
   registerAdminRoutes(app, clients)
 
+  // Promotions Routes
+  app.get("/api/promotions/active", async (req, res) => {
+    try {
+      const activePromotions = await storage.getActivePromotions();
+      res.json(activePromotions);
+    } catch (error: any) {
+      console.error("Get active promotions error:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch promotions" });
+    }
+  });
+
   return httpServer
 }
