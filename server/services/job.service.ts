@@ -7,7 +7,7 @@
 import { db } from "../db";
 import { jobs, users, categories, providers as providersTable } from "@shared/schema";
 import type { Job, InsertJob } from "@shared/schema";
-import { eq, and, or, desc, inArray } from "drizzle-orm";
+import { eq, and, or, desc, inArray, lt, isNull } from "drizzle-orm";
 
 type JobWithRelations = Job & {
   requester: any;
@@ -31,7 +31,7 @@ export class JobService {
       .from(jobs)
       .leftJoin(users, eq(jobs.requesterId, users.id))
       .leftJoin(categories, eq(jobs.categoryId, categories.id))
-      .where(eq(jobs.id, id));
+      .where(and(eq(jobs.id, id), or(isNull(jobs.expiryDate), lt(jobs.expiryDate, new Date()))));
 
     if (!jobSelect) return undefined;
 
@@ -85,6 +85,9 @@ export class JobService {
     if (params.providerId) conditions.push(eq(jobs.providerId, params.providerId));
     if (params.city) conditions.push(eq(jobs.city, params.city));
 
+    // Filter out expired jobs (if expiryDate is set and is in the past)
+    conditions.push(or(isNull(jobs.expiryDate), lt(jobs.expiryDate, new Date())));
+
     const results = await db
       .select({
         job: jobs,
@@ -121,7 +124,7 @@ export class JobService {
       .from(jobs)
       .leftJoin(users, eq(jobs.requesterId, users.id))
       .leftJoin(categories, eq(jobs.categoryId, categories.id))
-      .where(inArray(jobs.city, cities))
+      .where(and(inArray(jobs.city, cities), or(isNull(jobs.expiryDate), lt(jobs.expiryDate, new Date()))))
       .orderBy(desc(jobs.createdAt));
 
     return results.map((r) => ({
@@ -165,6 +168,9 @@ export class JobService {
     if (cities && cities.length > 0) {
       conditions.push(inArray(jobs.city, cities));
     }
+
+    // Filter out expired jobs
+    conditions.push(or(isNull(jobs.expiryDate), lt(jobs.expiryDate, new Date())));
 
     const results = await db
       .select({

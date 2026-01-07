@@ -42,6 +42,8 @@ export default function PostJob() {
       region: '',
       urgency: 'normal' as const,
       preferredTime: undefined,
+      startDate: undefined,
+      expiryDate: undefined,
       photos: [],
       budgetMin: '',
       budgetMax: '',
@@ -573,6 +575,51 @@ export default function PostJob() {
                   </FormItem>
                 )}
               />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Job Start Date</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          className="h-12"
+                          {...field}
+                          value={field.value ? new Date(field.value).toISOString().slice(0, 10) : ''}
+                          onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="expiryDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Job Expiry Date</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          className="h-12"
+                          {...field}
+                          value={field.value ? new Date(field.value).toISOString().slice(0, 10) : ''}
+                          onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Job will be automatically hidden after this date
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <div className="flex gap-4">
                 <Button

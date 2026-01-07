@@ -291,6 +291,8 @@ export const jobs = pgTable("jobs", {
     region: text("region"),
     urgency: urgencyEnum("urgency").default("normal").notNull(),
     preferredTime: timestamp("preferred_time"),
+    startDate: timestamp("start_date"),
+    expiryDate: timestamp("expiry_date"),
     status: jobStatusEnum("status").default("open").notNull(),
     budgetMin: numeric("budget_min", { precision: 10, scale: 2 }),
     budgetMax: numeric("budget_max", { precision: 10, scale: 2 }),

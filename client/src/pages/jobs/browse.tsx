@@ -202,6 +202,22 @@ export default function BrowseJobs() {
                         <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         <span className="text-muted-foreground truncate">{job.address || 'Location not specified'}</span>
                       </div>
+                      {job.expiryDate && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className={`h-4 w-4 flex-shrink-0 ${
+                            new Date(job.expiryDate).getTime() - new Date().getTime() < 86400000 
+                              ? 'text-red-500 animate-pulse' 
+                              : 'text-muted-foreground'
+                          }`} />
+                          <span className={`${
+                            new Date(job.expiryDate).getTime() - new Date().getTime() < 86400000 
+                              ? 'text-red-500 font-bold' 
+                              : 'text-muted-foreground'
+                          }`}>
+                            Expires: {new Date(job.expiryDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between gap-2">
                         <Badge variant="outline" className="text-xs">
                           {job.category?.name || 'Uncategorized'}
