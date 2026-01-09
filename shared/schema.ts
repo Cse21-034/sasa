@@ -61,6 +61,7 @@ export const users = pgTable("users", {
   isIdentityVerified: boolean("is_identity_verified").default(false).notNull(),
   isEmailVerified: boolean("is_email_verified").default(false).notNull(),
   status: userStatusEnum("status").default("active").notNull(), 
+  preferredLanguage: text("preferred_language").default("en").notNull(),
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

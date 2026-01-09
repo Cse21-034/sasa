@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { User, Mail, Phone, Loader2, Camera, Wrench, MapPin, Clock, CheckCircle, XCircle, Plus } from 'lucide-react';
+import { User, Mail, Phone, Loader2, Camera, Wrench, MapPin, Clock, CheckCircle, XCircle, Plus, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useTranslation } from 'react-i18next';
 import type { Category, ServiceAreaMigration } from '@shared/schema';
 
 // Botswana cities for migration request
@@ -34,6 +35,7 @@ const profileSchema = z.object({
   bio: z.string().optional(),
   profilePhotoUrl: z.string().optional(),
   serviceCategories: z.array(z.number()).optional(),
+  preferredLanguage: z.string().default('en'),
 });
 
 type ProfileForm = z.infer<typeof profileSchema>;
@@ -48,6 +50,7 @@ type MigrationRequestForm = z.infer<typeof migrationRequestSchema>;
 
 export default function Profile() {
   const { user, setUser } = useAuth();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -121,6 +124,7 @@ export default function Profile() {
       bio: user?.bio || '',
       profilePhotoUrl: user?.profilePhotoUrl || '',
       serviceCategories: providerProfile?.serviceCategories || [],
+      preferredLanguage: user?.preferredLanguage || 'en',
     },
   });
 
@@ -128,6 +132,9 @@ export default function Profile() {
   useState(() => {
     if (providerProfile?.serviceCategories) {
       form.setValue('serviceCategories', providerProfile.serviceCategories);
+    }
+    if (user?.preferredLanguage) {
+      i18n.changeLanguage(user.preferredLanguage);
     }
   });
 
@@ -139,8 +146,12 @@ export default function Profile() {
         phone: data.phone,
         bio: data.bio,
         profilePhotoUrl: data.profilePhotoUrl,
+        preferredLanguage: data.preferredLanguage,
       });
       const updatedUser = await res.json();
+
+      // Update local i18n language immediately
+      i18n.changeLanguage(data.preferredLanguage);
 
       // If provider, update service categories
       if (user?.role === 'provider' && data.serviceCategories) {
@@ -227,8 +238,8 @@ export default function Profile() {
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <Card className="border-2">
         <CardHeader>
-          <CardTitle className="text-3xl">Profile Settings</CardTitle>
-          <CardDescription>Manage your account information</CardDescription>
+          <CardTitle className="text-3xl">{t('Profile Settings')}</CardTitle>
+          <CardDescription>{t('Manage your account information')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-8 flex flex-col items-center gap-4">
@@ -272,7 +283,7 @@ export default function Profile() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>{t('Full Name')}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -290,7 +301,7 @@ export default function Profile() {
               />
 
               <div>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>{t('Email')}</FormLabel>
                 <div className="relative mt-2">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
@@ -300,7 +311,7 @@ export default function Profile() {
                     data-testid="input-email-disabled"
                   />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('Email cannot be changed')}</p>
               </div>
 
               <FormField
@@ -308,7 +319,7 @@ export default function Profile() {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
+                    <FormLabel>{t('Phone Number')}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -331,7 +342,7 @@ export default function Profile() {
                 name="bio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Bio</FormLabel>
+                    <FormLabel>{t('Bio')}</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Tell us about yourself..."
@@ -340,6 +351,36 @@ export default function Profile() {
                         {...field}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="preferredLanguage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Language Settings')}</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-12">
+                          <div className="flex items-center gap-2">
+                            <Languages className="h-5 w-5 text-muted-foreground" />
+                            <SelectValue placeholder={t('Select your preferred language')} />
+                          </div>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="en">{t('English')}</SelectItem>
+                        <SelectItem value="tn">{t('Setswana')}</SelectItem>
+                        <SelectItem value="fr">{t('French')}</SelectItem>
+                        <SelectItem value="es">{t('Spanish')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {t('Select your preferred language')}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -355,7 +396,7 @@ export default function Profile() {
                       <div className="mb-4">
                         <FormLabel className="text-base flex items-center gap-2">
                           <Wrench className="h-5 w-5" />
-                          Service Categories
+                          {t('Service Categories')}
                         </FormLabel>
                         <FormDescription>
                           Select the types of jobs you want to receive. Only jobs in these categories will be shown to you.
