@@ -165,10 +165,11 @@ export default function Profile() {
     onSuccess: (updatedUser) => {
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.setItem('i18nextLng', updatedUser.preferredLanguage);
       queryClient.invalidateQueries({ queryKey: ['/api/provider/profile'] });
       toast({
-        title: 'Profile updated',
-        description: 'Your profile has been updated successfully.',
+        title: t('Profile updated'),
+        description: t('Your profile has been updated successfully.'),
       });
     },
     onError: (error: Error) => {

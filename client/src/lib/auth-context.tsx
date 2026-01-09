@@ -6,6 +6,7 @@ interface ExtendedUser extends User {
   isVerified: boolean;
   isIdentityVerified: boolean;
   status: 'active' | 'blocked' | 'deactivated';
+  preferredLanguage: string;
   lastLogin?: Date | string | null;
 }
 
@@ -31,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isVerified: parsedUser.isVerified ?? false, 
           isIdentityVerified: parsedUser.isIdentityVerified ?? false,
           status: parsedUser.status ?? 'active',
+          preferredLanguage: parsedUser.preferredLanguage ?? 'en',
           lastLogin: parsedUser.lastLogin ?? null,
         });
       } catch (error) {
