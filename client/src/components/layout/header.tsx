@@ -125,24 +125,70 @@ export function Header() {
           {/* Authenticated Desktop Navigation */}
           {isAuthenticated && (
             <nav className="hidden lg:flex items-center gap-2">
-              {user?.role !== 'admin' && (
+              {user?.role === 'requester' && (
                 <>
                   <Link href="/jobs">
                     <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
                       <Briefcase className="h-4 w-4 mr-2" />
-                      {user?.role === 'requester' ? t('My Jobs') : t('Browse Jobs')}
+                      {t('My Jobs')}
                     </Button>
                   </Link>
-                  {user?.role === 'provider' && (
-                    <>
-                      <Link href="/dashboard">
-                        <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
-                          <LayoutDashboard className="h-4 w-4 mr-2" /> 
-                          {t('Dashboard')}
-                        </Button>
-                      </Link>
-                    </>
-                  )}
+                  <Link href="/suppliers">
+                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                      <ShoppingBag className="h-4 w-4 mr-2" />
+                      {t('Suppliers & Organizations')}
+                    </Button>
+                  </Link>
+                  <Link href="/messages">
+                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                      <MessageSquare className="h-4 w-4 mr-2" /> 
+                      {t('Messages')}
+                    </Button>
+                  </Link>
+                </>
+              )}
+              {user?.role === 'provider' && (
+                <>
+                  <Link href="/jobs">
+                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                      <Briefcase className="h-4 w-4 mr-2" />
+                      {t('Browse Jobs')}
+                    </Button>
+                  </Link>
+                  <Link href="/suppliers">
+                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                      <ShoppingBag className="h-4 w-4 mr-2" />
+                      {t('Suppliers & Organizations')}
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard">
+                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                      <LayoutDashboard className="h-4 w-4 mr-2" /> 
+                      {t('Dashboard')}
+                    </Button>
+                  </Link>
+                  <Link href="/messages">
+                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                      <MessageSquare className="h-4 w-4 mr-2" /> 
+                      {t('Messages')}
+                    </Button>
+                  </Link>
+                </>
+              )}
+              {user?.role === 'supplier' && (
+                <>
+                  <Link href="/suppliers">
+                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                      <ShoppingBag className="h-4 w-4 mr-2" />
+                      {t('Browse')}
+                    </Button>
+                  </Link>
+                  <Link href="/supplier/dashboard">
+                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                      <Tag className="h-4 w-4 mr-2" /> 
+                      {t('Promotions')}
+                    </Button>
+                  </Link>
                   <Link href="/messages">
                     <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
                       <MessageSquare className="h-4 w-4 mr-2" /> 
