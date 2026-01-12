@@ -47,6 +47,9 @@ export const verificationStatusEnum = pgEnum("verification_status", ["pending", 
 
 export const messageTypeEnum = pgEnum("message_type", ["job_message", "admin_message", "system_notification"]);
 
+// 🆕 Notification Type Enum
+export const notificationTypeEnum = pgEnum("notification_type", ["job_posted", "job_accepted", "application_received", "application_accepted", "application_rejected"]);
+
 // Users table
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -317,6 +320,19 @@ export const jobApplications = pgTable("job_applications", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// 🆕 Notifications table
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  recipientId: uuid("recipient_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  jobId: uuid("job_id").references(() => jobs.id, { onDelete: "cascade" }),
+  type: notificationTypeEnum("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  isRead: boolean("is_read").default(false).notNull(),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   providerProfile: one(providers, {
@@ -337,6 +353,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   migrationRequests: many(serviceAreaMigrations),
   verificationSubmissions: many(verificationSubmissions),
   jobApplications: many(jobApplications),
+  notifications: many(notifications),
 }));
 
 export const suppliersRelations = relations(suppliers, ({ one }) => ({
@@ -420,6 +437,18 @@ export const jobApplicationsRelations = relations(jobApplications, ({ one }) => 
   provider: one(users, {
     fields: [jobApplications.providerId],
     references: [users.id],
+  }),
+}));
+
+// 🆕 Notifications Relations
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  recipient: one(users, {
+    fields: [notifications.recipientId],
+    references: [users.id],
+  }),
+  job: one(jobs, {
+    fields: [notifications.jobId],
+    references: [jobs.id],
   }),
 }));
 
@@ -844,3 +873,15 @@ export type UpdateSupplierProfile = z.infer<typeof updateSupplierProfileSchema>;
 export type JobApplication = typeof jobApplications.$inferSelect;
 export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
 export type SelectProvider = z.infer<typeof selectProviderSchema>;
+
+// 🆕 Notification Schema
+export const insertNotificationSchema = z.object({
+  recipientId: z.string().uuid(),
+  jobId: z.string().uuid().optional(),
+  type: z.enum(["job_posted", "job_accepted", "application_received", "application_accepted", "application_rejected"]),
+  title: z.string().min(1),
+  message: z.string().min(1),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;

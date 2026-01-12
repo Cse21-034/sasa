@@ -4,6 +4,7 @@ import { insertJobSchema, updateJobStatusSchema, insertJobApplicationSchema, sel
 import { storage } from '../storage';
 import { authMiddleware, type AuthRequest } from '../middleware/auth';
 import { companyService } from '../services/company.service';
+import { notificationService } from '../services/notification.service';
 
 /**
  * SOLID Principle: Single Responsibility
@@ -205,6 +206,19 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
         ...validatedData,
         requesterId: req.user!.id,
       });
+
+      // 🆕 Send notifications to relevant providers
+      const notifiedCount = await notificationService.notifyProvidersOfNewJob({
+        jobId: job.id,
+        jobTitle: job.title,
+        jobCity: job.city,
+        categoryId: job.categoryId,
+        allowedProviderType: job.allowedProviderType as any,
+        jobDescription: job.description,
+        urgency: job.urgency,
+      });
+
+      console.log(`✅ Job posted successfully. Notifications sent to ${notifiedCount.length} providers in ${job.city}`);
 
       res.status(201).json(job);
     } catch (error: any) {

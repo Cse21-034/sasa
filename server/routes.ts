@@ -14,6 +14,7 @@ import {
   registerAdminRoutes,
   registerMessagingRoutes,
   registerMiscRoutes,
+  registerNotificationRoutes,
 } from "./routes/index"
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -181,6 +182,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Misc routes (profile, categories, ratings, payments, feedback, reports)
   registerMiscRoutes(app, verifyAccess)
+
+  // Notification routes
+  registerNotificationRoutes(app, verifyAccess)
 
   // Messaging routes (needs both verifyAccess and clients for WebSocket)
   registerMessagingRoutes(app, verifyAccess, clients)

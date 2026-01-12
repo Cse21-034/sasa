@@ -13,6 +13,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { NotificationPanel } from '@/components/notifications-panel';
 import { useAuth } from '@/lib/auth-context';
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -167,6 +168,9 @@ export function Header() {
 
           {isAuthenticated ? (
             <>
+              {/* 🆕 Notification Panel */}
+              <NotificationPanel />
+
               {user?.role === 'requester' && (
                 <Link href="/post-job">
                   <Button className="hidden sm:flex bg-orange-500 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:bg-orange-600">
