@@ -173,25 +173,26 @@ export function registerMessagingRoutes(
         ...validatedData,
         senderId: req.user!.id,
       })
-      console.log(`✓ Message created with id: ${message.id}`)
+      console.log(`✓ Message created with id: ${message.id} - receiver: ${message.receiverId}`)
 
       // Send notification to receiver
-      if (validatedData.receiverId) {
-        console.log(`🔔 Attempting to send notification to receiver: ${validatedData.receiverId}`)
+      // Note: receiverId might be determined by storage.createMessage from jobId
+      if (message.receiverId) {
+        console.log(`🔔 Attempting to send notification to receiver: ${message.receiverId}`)
         const senderUser = await storage.getUser(req.user!.id)
         if (senderUser) {
           console.log(`📧 Creating notification: "${validatedData.messageText}" from ${senderUser.name}`)
           await notificationService.notifyRecipientOfMessage(
-            validatedData.receiverId,
+            message.receiverId,
             senderUser.name,
             validatedData.messageText || 'Sent a message',
           )
-          console.log(`✅ Notification sent successfully to ${validatedData.receiverId}`)
+          console.log(`✅ Notification sent successfully to ${message.receiverId}`)
         } else {
           console.warn(`⚠️ Sender user not found: ${req.user!.id}`)
         }
       } else {
-        console.warn(`⚠️ No receiverId provided in message`)
+        console.warn(`⚠️ No receiverId determined for message`)
       }
 
       res.status(201).json(message)

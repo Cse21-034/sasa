@@ -100,7 +100,6 @@ const resources = {
       "Clear all": "Clear all",
       
       // Messages
-      "Messages": "Messages",
       "No messages": "No messages",
       "Start a conversation": "Start a conversation",
       "Type a message...": "Type a message...",
@@ -254,7 +253,6 @@ const resources = {
       "Clear all": "Tlosa lela",
       
       // Messages
-      "Messages": "Melaetsa",
       "No messages": "Ga go na melaetsa",
       "Start a conversation": "Simolola puisano",
       "Type a message...": "Kwala melaetsa...",
