@@ -200,14 +200,16 @@ export class NotificationService {
     messagePreview: string
   ): Promise<void> {
     try {
+      console.log(`🔔 [NotificationService] Creating message notification for ${recipientId} from ${senderName}`)
       await db.insert(notifications).values({
         recipientId: recipientId,
         type: 'message_received',
         title: `New message from ${senderName}`,
         message: messagePreview,
-      });
+      })
+      console.log(`✅ [NotificationService] Message notification created successfully`)
     } catch (error) {
-      console.error('Error notifying recipient of message:', error);
+      console.error('❌ [NotificationService] Error notifying recipient of message:', error);
     }
   }
 }

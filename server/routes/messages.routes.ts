@@ -79,14 +79,20 @@ export function registerMessagingRoutes(
         messageType: "admin_message",
       })
 
+      console.log(`💬 Admin message created from ${req.user!.id}, sending notification to admin ${adminUser.id}`)
+
       // Send notification to admin
       const senderUser = await storage.getUser(req.user!.id)
       if (senderUser) {
+        console.log(`📧 Creating notification for admin: "New message from ${senderUser.name}"`)
         await notificationService.notifyRecipientOfMessage(
           adminUser.id,
           senderUser.name,
           messageText,
         )
+        console.log(`✅ Notification sent to admin ${adminUser.id}`)
+      } else {
+        console.warn(`⚠️ Sender user not found: ${req.user!.id}`)
       }
 
       // Notify Admin via WebSocket (if client is open)
@@ -159,22 +165,33 @@ export function registerMessagingRoutes(
    */
   app.post("/api/messages", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
+      console.log(`📬 POST /api/messages called - Body:`, JSON.stringify(req.body))
       const validatedData = insertMessageSchema.parse(req.body)
+      console.log(`✓ Message validation passed - receiverId: ${validatedData.receiverId}`)
+      
       const message = await storage.createMessage({
         ...validatedData,
         senderId: req.user!.id,
       })
+      console.log(`✓ Message created with id: ${message.id}`)
 
       // Send notification to receiver
       if (validatedData.receiverId) {
+        console.log(`🔔 Attempting to send notification to receiver: ${validatedData.receiverId}`)
         const senderUser = await storage.getUser(req.user!.id)
         if (senderUser) {
+          console.log(`📧 Creating notification: "${validatedData.messageText}" from ${senderUser.name}`)
           await notificationService.notifyRecipientOfMessage(
             validatedData.receiverId,
             senderUser.name,
             validatedData.messageText || 'Sent a message',
           )
+          console.log(`✅ Notification sent successfully to ${validatedData.receiverId}`)
+        } else {
+          console.warn(`⚠️ Sender user not found: ${req.user!.id}`)
         }
+      } else {
+        console.warn(`⚠️ No receiverId provided in message`)
       }
 
       res.status(201).json(message)

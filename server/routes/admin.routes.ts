@@ -3,6 +3,7 @@ import { ZodError } from "zod"
 import { updateUserStatusSchema, updateVerificationStatusSchema, insertMessageSchema } from "@shared/schema"
 import { storage } from "../storage"
 import { authMiddleware, generateToken, type AuthRequest } from "../middleware/auth"
+import { notificationService } from "../services/notification.service"
 import { WebSocket } from "ws"
 import { emailService } from "../services/email.service"
 
@@ -347,6 +348,7 @@ export function registerAdminRoutes(app: Express, injectedClients: Map<string, W
     }
 
     try {
+      console.log(`📬 POST /api/admin/messages called - Admin sending message`)
       const validatedData = insertMessageSchema.partial().parse(req.body)
 
       if (!validatedData.receiverId) {
@@ -358,6 +360,22 @@ export function registerAdminRoutes(app: Express, injectedClients: Map<string, W
         senderId: req.user!.id,
         messageType: "admin_message",
       })
+      console.log(`✓ Message created with id: ${message.id}`)
+
+      // Send notification to receiver
+      console.log(`🔔 Attempting to send notification to receiver: ${validatedData.receiverId}`)
+      const senderUser = await storage.getUser(req.user!.id)
+      if (senderUser) {
+        console.log(`📧 Creating notification: "Message from Admin"`)
+        await notificationService.notifyRecipientOfMessage(
+          validatedData.receiverId,
+          "Admin Support",
+          validatedData.messageText || 'Sent a message',
+        )
+        console.log(`✅ Notification sent successfully to ${validatedData.receiverId}`)
+      } else {
+        console.warn(`⚠️ Sender user not found: ${req.user!.id}`)
+      }
 
       if (clients.has(validatedData.receiverId)) {
         const receiverWs = clients.get(validatedData.receiverId)
