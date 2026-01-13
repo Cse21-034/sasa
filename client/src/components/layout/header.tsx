@@ -158,7 +158,7 @@ export function Header() {
                   <Link href="/suppliers">
                     <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
                       <ShoppingBag className="h-4 w-4 mr-2" />
-                      {t('Suppliers & Organizations')}
+                      {t('Suppliers')}
                     </Button>
                   </Link>
                   <Link href="/dashboard">
