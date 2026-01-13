@@ -9,7 +9,7 @@
 
 import { db } from "../db";
 import { providers, users, notifications, companies } from "@shared/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 type JobNotificationPayload = {
   jobId: string;
@@ -34,6 +34,8 @@ export class NotificationService {
       const notifiedProviderIds: string[] = [];
 
       // Get all active providers with this service category
+      // Use SQL for JSONB contains check - the @> operator checks if array contains value
+      const categoryArray = JSON.stringify([jobPayload.categoryId]);
       const relevantProviders = await db
         .select({
           userId: providers.userId,
@@ -41,7 +43,9 @@ export class NotificationService {
           primaryCity: providers.primaryCity,
         })
         .from(providers)
-        .where(inArray(providers.serviceCategories, [jobPayload.categoryId]));
+        .where(
+          sql`(${providers.serviceCategories}::jsonb) @> (${categoryArray}::jsonb)`
+        );
 
       if (relevantProviders.length === 0) {
         return [];
