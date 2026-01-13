@@ -163,8 +163,14 @@ export function Header() {
                   </Link>
                   <Link href="/dashboard">
                     <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
-                      <LayoutDashboard className="h-4 w-4 mr-2" /> 
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
                       {t('Dashboard')}
+                    </Button>
+                  </Link>
+                  <Link href="/provider/applications">
+                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                      <FileText className="h-4 w-4 mr-2" />
+                      {t('Applications')}
                     </Button>
                   </Link>
                   <Link href="/messages">
