@@ -190,6 +190,26 @@ export class NotificationService {
       console.error('Error notifying provider of rejection:', error);
     }
   }
+
+  /**
+   * Notify recipient when a new message is received
+   */
+  async notifyRecipientOfMessage(
+    recipientId: string,
+    senderName: string,
+    messagePreview: string
+  ): Promise<void> {
+    try {
+      await db.insert(notifications).values({
+        recipientId: recipientId,
+        type: 'message_received',
+        title: `New message from ${senderName}`,
+        message: messagePreview,
+      });
+    } catch (error) {
+      console.error('Error notifying recipient of message:', error);
+    }
+  }
 }
 
 export const notificationService = new NotificationService();

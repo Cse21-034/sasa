@@ -48,7 +48,7 @@ export const verificationStatusEnum = pgEnum("verification_status", ["pending", 
 export const messageTypeEnum = pgEnum("message_type", ["job_message", "admin_message", "system_notification"]);
 
 // 🆕 Notification Type Enum
-export const notificationTypeEnum = pgEnum("notification_type", ["job_posted", "job_accepted", "application_received", "application_accepted", "application_rejected"]);
+export const notificationTypeEnum = pgEnum("notification_type", ["job_posted", "job_accepted", "application_received", "application_accepted", "application_rejected", "message_received"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -892,7 +892,7 @@ export type SelectProvider = z.infer<typeof selectProviderSchema>;
 export const insertNotificationSchema = z.object({
   recipientId: z.string().uuid(),
   jobId: z.string().uuid().optional(),
-  type: z.enum(["job_posted", "job_accepted", "application_received", "application_accepted", "application_rejected"]),
+  type: z.enum(["job_posted", "job_accepted", "application_received", "application_accepted", "application_rejected", "message_received"]),
   title: z.string().min(1),
   message: z.string().min(1),
 });

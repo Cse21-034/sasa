@@ -1,6 +1,6 @@
 import { Bell, X, Check, Trash2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNotifications } from '@/hooks/use-notifications';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'wouter';
@@ -8,8 +8,39 @@ import { Link } from 'wouter';
 export function NotificationPanel() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+  const [playedNotificationIds, setPlayedNotificationIds] = useState<Set<string>>(new Set());
 
   const unreadNotifications = notifications.filter(n => !n.isRead);
+
+  // Play sound for new unread notifications
+  useEffect(() => {
+    unreadNotifications.forEach(notification => {
+      if (!playedNotificationIds.has(notification.id)) {
+        playNotificationSound();
+        setPlayedNotificationIds((prev: Set<string>) => new Set([...prev, notification.id]));
+      }
+    });
+  }, [unreadNotifications, playedNotificationIds]);
+
+  const playNotificationSound = () => {
+    // Create a simple beep sound using Web Audio API
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Set frequency and duration
+    oscillator.frequency.value = 800; // Frequency in Hz
+    oscillator.type = 'sine';
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -21,6 +52,8 @@ export function NotificationPanel() {
         return '✅';
       case 'application_rejected':
         return '❌';
+      case 'message_received':
+        return '💬';
       default:
         return '🔔';
     }
@@ -36,6 +69,8 @@ export function NotificationPanel() {
         return 'bg-green-50 border-green-200';
       case 'application_rejected':
         return 'bg-red-50 border-red-200';
+      case 'message_received':
+        return 'bg-orange-50 border-orange-200';
       default:
         return 'bg-gray-50 border-gray-200';
     }
@@ -124,7 +159,7 @@ export function NotificationPanel() {
 
                         {/* Delete Button */}
                         <button
-                          onClick={(e) => {
+                          onClick={(e: React.MouseEvent) => {
                             e.preventDefault();
                             e.stopPropagation();
                             deleteNotification(notification.id);

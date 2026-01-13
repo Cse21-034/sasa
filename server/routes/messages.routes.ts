@@ -3,6 +3,7 @@ import { ZodError } from "zod"
 import { insertMessageSchema } from "@shared/schema"
 import { storage } from "../storage"
 import { authMiddleware, type AuthRequest } from "../middleware/auth"
+import { notificationService } from "../services/notification.service"
 import { WebSocket } from "ws"
 
 /**
@@ -77,6 +78,16 @@ export function registerMessagingRoutes(
         receiverId: adminUser.id, // Explicitly target the Admin
         messageType: "admin_message",
       })
+
+      // Send notification to admin
+      const senderUser = await storage.getUser(req.user!.id)
+      if (senderUser) {
+        await notificationService.notifyRecipientOfMessage(
+          adminUser.id,
+          senderUser.name,
+          messageText,
+        )
+      }
 
       // Notify Admin via WebSocket (if client is open)
       if (clients.has(adminUser.id)) {
@@ -153,6 +164,18 @@ export function registerMessagingRoutes(
         ...validatedData,
         senderId: req.user!.id,
       })
+
+      // Send notification to receiver
+      if (validatedData.receiverId) {
+        const senderUser = await storage.getUser(req.user!.id)
+        if (senderUser) {
+          await notificationService.notifyRecipientOfMessage(
+            validatedData.receiverId,
+            senderUser.name,
+            validatedData.messageText || 'Sent a message',
+          )
+        }
+      }
 
       res.status(201).json(message)
     } catch (error: any) {
