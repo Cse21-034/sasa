@@ -56,9 +56,10 @@ export class AnalyticsService {
 
     const totalJobs = providerJobs.length;
     const completedJobs = providerJobs.filter(j => j.status === 'completed').length;
+    // 🔥 FIXED: Use amountPaid (what requester actually paid) instead of providerCharge (what provider quoted)
     const totalEarnings = providerJobs
-      .filter(j => j.providerCharge)
-      .reduce((sum, j) => sum + parseFloat(j.providerCharge || '0'), 0);
+      .filter(j => j.amountPaid)
+      .reduce((sum, j) => sum + parseFloat(j.amountPaid || '0'), 0);
 
     const providerRatings = await db.select().from(ratings).where(eq(ratings.toUserId, providerId));
 

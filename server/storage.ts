@@ -861,6 +861,23 @@ export class DatabaseStorage implements IStorage {
       .set({ ...data, updatedAt: new Date() })
       .where(eq(jobs.id, id))
       .returning();
+    
+    // 🔥 FIXED: When a job is marked as completed, increment provider's completedJobsCount
+    if (updated && data.status === 'completed' && updated.providerId) {
+      const currentProvider = await db
+        .select()
+        .from(providers)
+        .where(eq(providers.userId, updated.providerId));
+      
+      if (currentProvider.length > 0) {
+        const newCount = (currentProvider[0].completedJobsCount || 0) + 1;
+        await db
+          .update(providers)
+          .set({ completedJobsCount: newCount })
+          .where(eq(providers.userId, updated.providerId));
+      }
+    }
+    
     return updated || undefined;
   }
 
@@ -1407,13 +1424,19 @@ export class DatabaseStorage implements IStorage {
   async createRating(insertRating: InsertRating & { fromUserId: string }): Promise<Rating> {
     const [rating] = await db.insert(ratings).values(insertRating).returning();
 
+    console.log(`⭐ Rating created: ${insertRating.fromUserId} rated ${insertRating.toUserId} with ${insertRating.rating} stars for job ${insertRating.jobId}`);
+
     const providerRatings = await db
       .select()
       .from(ratings)
       .where(eq(ratings.toUserId, insertRating.toUserId));
 
+    console.log(`   Total ratings for provider ${insertRating.toUserId}: ${providerRatings.length}`);
+
     const avgRating =
       providerRatings.reduce((sum, r) => sum + r.rating, 0) / providerRatings.length;
+
+    console.log(`   Updating provider rating to: ${avgRating.toFixed(2)}`);
 
     await db
       .update(providers)
@@ -1491,16 +1514,24 @@ export class DatabaseStorage implements IStorage {
 
     const totalJobs = providerJobs.length;
     const completedJobs = providerJobs.filter(j => j.status === 'completed').length;
+    // 🔥 FIXED: Use amountPaid (what requester actually paid) instead of providerCharge (what provider quoted)
     const totalEarnings = providerJobs
-      .filter(j => j.providerCharge)
-      .reduce((sum, j) => sum + parseFloat(j.providerCharge || '0'), 0);
+      .filter(j => j.amountPaid)
+      .reduce((sum, j) => sum + parseFloat(j.amountPaid || '0'), 0);
 
     const providerRatings = await db.select().from(ratings).where(eq(ratings.toUserId, providerId));
+
+    console.log(`📊 Provider Stats for ${providerId}: Found ${providerRatings.length} ratings`);
+    if (providerRatings.length > 0) {
+      console.log(`   Ratings: ${providerRatings.map(r => r.rating).join(', ')}`);
+    }
 
     const avgRating =
       providerRatings.length > 0
         ? providerRatings.reduce((sum, r) => sum + r.rating, 0) / providerRatings.length
         : 0;
+
+    console.log(`   Average Rating: ${avgRating.toFixed(1)}`);
 
     return {
       totalEarnings,
