@@ -9,6 +9,7 @@ import {
   confirmPaymentSchema,
 } from "@shared/schema"
 import { storage } from "../storage"
+import { notificationService } from "../services"
 import { authMiddleware, generateToken, type AuthRequest } from "../middleware/auth"
 
 /**
@@ -236,8 +237,16 @@ export function registerMiscRoutes(app: Express, injectedVerifyAccess: any): voi
       const validatedData = insertJobReportSchema.parse(req.body)
       const report = await storage.createJobReport({
         ...validatedData,
+        jobId: req.params.id,
         reporterId: req.user!.id,
       })
+
+      // Notify admin
+      await notificationService.createAdminNotification({
+        title: "New Job Report",
+        message: `A job has been reported by a user. Reason: ${validatedData.reason}`,
+        type: 'new_report'
+      });
 
       res.json(report)
     } catch (error: any) {

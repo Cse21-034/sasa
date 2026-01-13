@@ -207,11 +207,41 @@ export class NotificationService {
         title: `New message from ${senderName}`,
         message: messagePreview,
       })
-      console.log(`✅ [NotificationService] Message notification created successfully`)
-    } catch (error) {
-      console.error('❌ [NotificationService] Error notifying recipient of message:', error);
-    }
-  }
-}
-
-export const notificationService = new NotificationService();
+            console.log(`✅ [NotificationService] Message notification created successfully`)
+          } catch (error) {
+            console.error('❌ [NotificationService] Error notifying recipient of message:', error);
+          }
+        }
+      
+        async createAdminNotification(payload: {
+          title: string;
+          message: string;
+          type: 'new_report' | 'new_verification' | 'new_migration';
+        }): Promise<void> {
+          try {
+            const adminUsers = await db
+              .select({ id: users.id })
+              .from(users)
+              .where(eq(users.role, 'admin'));
+      
+            if (adminUsers.length === 0) {
+              console.warn('No admin users found to send a notification to.');
+              return;
+            }
+      
+            const notificationInserts = adminUsers.map((admin) => ({
+              recipientId: admin.id,
+              type: payload.type,
+              title: payload.title,
+              message: payload.message,
+            }));
+      
+            await db.insert(notifications).values(notificationInserts);
+          } catch (error) {
+            console.error('Error creating admin notification:', error);
+          }
+        }
+      }
+      
+      export const notificationService = new NotificationService();
+      

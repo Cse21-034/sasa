@@ -2,6 +2,7 @@ import type { Express } from "express"
 import { ZodError } from "zod"
 import { insertVerificationSubmissionSchema } from "@shared/schema"
 import { storage } from "../storage"
+import { notificationService } from '../services';
 import { authMiddleware, generateToken, type AuthRequest } from "../middleware/auth"
 
 /**
@@ -42,20 +43,51 @@ export function registerVerificationRoutes(app: Express): void {
         const finalUser = await storage.getUser(req.user!.id) // Get user with final status
         const { passwordHash: _, ...userWithoutPassword } = finalUser!
 
-        // Overwrite token data on the client immediately for seamless flow
+
+
+      // Overwrite token data on the client immediately for seamless flow
+
         return res.status(200).json({
+
           message: "Identity Verified Automatically. Access Granted.",
+
           submission: approvedSubmission,
+
           user: userWithoutPassword,
+
           token: generateToken(userWithoutPassword), // Resend new token with updated status
+
         })
+
       }
 
+
+
+      // For providers/suppliers, notify admin that a submission needs review
+
+      if (updatedUser!.role === 'provider' || updatedUser!.role === 'supplier') {
+
+        await notificationService.createAdminNotification({
+
+          title: 'New Verification Submission',
+
+          message: `A ${updatedUser!.role} has submitted documents for ${validatedData.type} verification.`,
+
+          type: 'new_verification',
+
+        });
+
+      }
+
+
+
       res.status(201).json({
+
         message: `${validatedData.type} submission received. Status is pending.`,
+
         submission,
-      })
-    } catch (error: any) {
+
+      })    } catch (error: any) {
       if (error instanceof ZodError) {
         return res.status(400).json({
           message: "Validation failed",

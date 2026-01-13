@@ -2,6 +2,7 @@ import type { Express } from "express"
 import { ZodError } from "zod"
 import { insertServiceAreaMigrationSchema, updateProviderServiceAreaSchema } from "@shared/schema"
 import { storage } from "../storage"
+import { notificationService } from '../services';
 import { authMiddleware, type AuthRequest } from "../middleware/auth"
 
 /**
@@ -155,6 +156,13 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
         ...validatedData,
         providerId: req.user!.id,
       })
+      
+      // Notify admin
+      await notificationService.createAdminNotification({
+        title: "New Migration Request",
+        message: `${req.user!.name} requested migration to ${validatedData.requestedCity}.`,
+        type: 'new_migration'
+      });
 
       res.status(201).json(migration)
     } catch (error: any) {

@@ -42,6 +42,24 @@ export function NotificationPanel() {
     oscillator.stop(audioContext.currentTime + 0.5);
   };
 
+  const getNotificationLink = (notification: any) => {
+    switch (notification.type) {
+      case 'new_report':
+        return '/admin/reports';
+      case 'new_verification':
+        return '/admin/verification';
+      case 'new_migration':
+        return '/admin/migrations';
+      case 'job_posted':
+      case 'application_received':
+      case 'application_accepted':
+      case 'application_rejected':
+        return notification.jobId ? `/jobs/${notification.jobId}` : '#';
+      default:
+        return '#';
+    }
+  };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'job_posted':
@@ -54,6 +72,12 @@ export function NotificationPanel() {
         return '❌';
       case 'message_received':
         return '💬';
+      case 'new_report':
+        return '🚩';
+      case 'new_verification':
+        return '📄';
+      case 'new_migration':
+        return '✈️';
       default:
         return '🔔';
     }
@@ -71,6 +95,12 @@ export function NotificationPanel() {
         return 'bg-red-50 border-red-200';
       case 'message_received':
         return 'bg-orange-50 border-orange-200';
+      case 'new_report':
+        return 'bg-red-50 border-red-200';
+      case 'new_verification':
+        return 'bg-yellow-50 border-yellow-200';
+      case 'new_migration':
+        return 'bg-blue-50 border-blue-200';
       default:
         return 'bg-gray-50 border-gray-200';
     }
@@ -120,7 +150,7 @@ export function NotificationPanel() {
                 {notifications.map((notification) => (
                   <Link
                     key={notification.id}
-                    href={notification.jobId ? `/jobs/${notification.jobId}` : '#'}
+                    href={getNotificationLink(notification)}
                   >
                     <a
                       onClick={() => {
