@@ -185,8 +185,8 @@ export function Header() {
                   </Link>
                   <Link href="/supplier/dashboard">
                     <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
-                      <Tag className="h-4 w-4 mr-2" /> 
-                      {t('Promotions')}
+                      <LayoutDashboard className="h-4 w-4 mr-2" /> 
+                      {t('Dashboard')}
                     </Button>
                   </Link>
                   <Link href="/messages">
@@ -204,6 +204,12 @@ export function Header() {
                   </Button>
                 </Link>
               )}
+              <Link href="/promotions">
+                <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                  <Tag className="h-4 w-4 mr-2" />
+                  {t('Promotions')}
+                </Button>
+              </Link>
             </nav>
           )}
         </div>
