@@ -212,6 +212,29 @@ export class NotificationService {
             console.error('❌ [NotificationService] Error notifying recipient of message:', error);
           }
         }
+
+  /**
+   * Generic notification method for recipients
+   */
+  async notifyRecipient(
+    recipientId: string,
+    type: 'category_request_approved' | 'category_request_rejected' | 'job_posted' | 'message_received' | 'application_accepted' | 'application_rejected',
+    title: string,
+    message: string,
+    jobId?: string
+  ): Promise<void> {
+    try {
+      await db.insert(notifications).values({
+        recipientId,
+        jobId,
+        type,
+        title,
+        message,
+      })
+    } catch (error) {
+      console.error('Error notifying recipient:', error)
+    }
+  }
       
         async createAdminNotification(payload: {
           title: string;

@@ -135,6 +135,7 @@ export function registerAuthRoutes(app: Express): void {
             });
           }
           
+          // 🆕 Create provider profile
           await storage.createProvider({
             userId: user.id,
             registeredCategories: serviceCategories || [],
@@ -143,6 +144,16 @@ export function registerAuthRoutes(app: Express): void {
             approvedServiceAreas: [primaryCity],
             serviceAreaRadiusMeters: 10000,
           });
+
+          // 🆕 Create pending category verifications for each registered category
+          // At signup, all categories are pending and require admin verification
+          for (const categoryId of serviceCategories || []) {
+            await storage.createProviderCategoryVerification(
+              user.id,
+              categoryId,
+              [] // Documents will be uploaded in next step
+            );
+          }
         } else if (user.role === 'supplier' && supplierData) {
           await storage.createSupplier({
             userId: user.id,

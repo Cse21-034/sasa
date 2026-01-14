@@ -1,9 +1,9 @@
 import type { Express } from "express"
 import { ZodError } from "zod"
-import { updateUserStatusSchema, updateVerificationStatusSchema, insertMessageSchema } from "@shared/schema"
+import { updateUserStatusSchema, updateVerificationStatusSchema, insertMessageSchema, updateProviderCategoryVerificationStatusSchema } from "@shared/schema"
 import { storage } from "../storage"
 import { authMiddleware, generateToken, type AuthRequest } from "../middleware/auth"
-import { notificationService } from "../services/notification.service"
+import { notificationService, verificationService } from "../services/notification.service"
 import { WebSocket } from "ws"
 import { emailService } from "../services/email.service"
 
@@ -492,6 +492,102 @@ export function registerAdminRoutes(app: Express, injectedClients: Map<string, W
       }
       console.error("Admin send message error:", error)
       res.status(400).json({ message: error.message })
+    }
+  })
+
+  // ==================== ADMIN PROVIDER CATEGORY VERIFICATION ====================
+
+  /**
+   * GET /api/admin/provider-category-verifications
+   * List all pending provider category verifications for review
+   */
+  app.get("/api/admin/provider-category-verifications", authMiddleware, async (req: AuthRequest, res) => {
+    if (req.user!.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" })
+    }
+
+    try {
+      const verifications = await verificationService.getPendingProviderCategoryVerifications()
+      res.json(verifications)
+    } catch (error: any) {
+      console.error("Get category verifications error:", error)
+      res.status(500).json({ message: error.message })
+    }
+  })
+
+  /**
+   * PATCH /api/admin/provider-category-verifications/:providerId/:categoryId
+   * Approve or reject a provider's category verification
+   */
+  app.patch("/api/admin/provider-category-verifications/:providerId/:categoryId", authMiddleware, async (req: AuthRequest, res) => {
+    if (req.user!.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" })
+    }
+
+    try {
+      const { providerId, categoryId } = req.params
+      const categoryIdNum = parseInt(categoryId, 10)
+
+      if (isNaN(categoryIdNum)) {
+        return res.status(400).json({ message: "Invalid category ID" })
+      }
+
+      const validatedData = updateProviderCategoryVerificationStatusSchema.parse(req.body)
+
+      let updated
+
+      if (validatedData.status === 'approved') {
+        updated = await verificationService.approveCategoryVerification(
+          providerId,
+          categoryIdNum,
+          req.user!.id
+        )
+      } else {
+        if (!validatedData.rejectionReason) {
+          return res.status(400).json({ message: "Rejection reason is required when rejecting" })
+        }
+        updated = await verificationService.rejectCategoryVerification(
+          providerId,
+          categoryIdNum,
+          req.user!.id,
+          validatedData.rejectionReason
+        )
+      }
+
+      if (!updated) {
+        return res.status(404).json({ message: "Provider category verification not found" })
+      }
+
+      // Get category and provider info for notification
+      const category = await storage.getCategory(categoryIdNum)
+      const provider = await storage.getUser(providerId)
+
+      if (validatedData.status === 'approved') {
+        await notificationService.notifyRecipient(
+          providerId,
+          'category_request_approved',
+          `Category Verification Approved`,
+          `Your verification for the "${category?.name}" category has been approved! You can now accept jobs in this category.`
+        )
+      } else {
+        await notificationService.notifyRecipient(
+          providerId,
+          'category_request_rejected',
+          'Category Verification Rejected',
+          `Your verification for the "${category?.name}" category was rejected. Reason: ${validatedData.rejectionReason}`
+        )
+      }
+
+      res.json({ message: `Category verification ${validatedData.status} successfully`, verification: updated })
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: error.issues.map((i) => ({ field: i.path.join("."), message: i.message })),
+        })
+      }
+      console.error("Update category verification error:", error)
+      res.status(500).json({ message: error.message })
     }
   })
 }

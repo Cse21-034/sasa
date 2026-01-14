@@ -12,6 +12,7 @@ import {
   serviceAreaMigrations,
   verificationSubmissions,
   categoryAdditionRequests,
+  providerCategoryVerifications,
   jobApplications,
   notifications,
   emailVerificationTokens,
@@ -42,6 +43,8 @@ import {
   type InsertVerificationSubmission,
   type CategoryAdditionRequest,
   type InsertCategoryAdditionRequest,
+  type ProviderCategoryVerification,
+  type InsertProviderCategoryVerification,
   type JobApplication,
   type InsertJobApplication,
   type Notification,
@@ -249,6 +252,20 @@ export interface IStorage {
     reviewerId: string, 
     rejectionReason?: string
   ): Promise<CategoryAdditionRequest | undefined>;
+
+  // Provider Category Verifications
+  createProviderCategoryVerification(providerId: string, categoryId: number, documents: { name: string; url: string }[]): Promise<ProviderCategoryVerification>;
+  getProviderCategoryVerifications(providerId: string): Promise<ProviderCategoryVerification[]>;
+  getProviderCategoryVerification(providerId: string, categoryId: number): Promise<ProviderCategoryVerification | undefined>;
+  getApprovedCategoriesForProvider(providerId: string): Promise<number[]>;
+  getAllPendingCategoryVerifications(): Promise<(ProviderCategoryVerification & { provider: User; category: Category })[]>;
+  updateProviderCategoryVerificationStatus(
+    providerId: string,
+    categoryId: number,
+    status: 'approved' | 'rejected',
+    reviewerId: string,
+    rejectionReason?: string
+  ): Promise<ProviderCategoryVerification | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -560,6 +577,114 @@ export class DatabaseStorage implements IStorage {
     }
 
     return updated;
+  }
+
+  // 🆕 Provider Category Verifications
+  async createProviderCategoryVerification(
+    providerId: string,
+    categoryId: number,
+    documents: { name: string; url: string }[]
+  ): Promise<ProviderCategoryVerification> {
+    const [created] = await db
+      .insert(providerCategoryVerifications)
+      .values({
+        providerId,
+        categoryId,
+        documents,
+        status: 'pending',
+      })
+      .returning();
+    return created;
+  }
+
+  async getProviderCategoryVerifications(providerId: string): Promise<ProviderCategoryVerification[]> {
+    const verifications = await db
+      .select()
+      .from(providerCategoryVerifications)
+      .where(eq(providerCategoryVerifications.providerId, providerId));
+    return verifications;
+  }
+
+  async getProviderCategoryVerification(
+    providerId: string,
+    categoryId: number
+  ): Promise<ProviderCategoryVerification | undefined> {
+    const [verification] = await db
+      .select()
+      .from(providerCategoryVerifications)
+      .where(
+        and(
+          eq(providerCategoryVerifications.providerId, providerId),
+          eq(providerCategoryVerifications.categoryId, categoryId)
+        )
+      );
+    return verification || undefined;
+  }
+
+  async getApprovedCategoriesForProvider(providerId: string): Promise<number[]> {
+    const approvedVerifications = await db
+      .select({ categoryId: providerCategoryVerifications.categoryId })
+      .from(providerCategoryVerifications)
+      .where(
+        and(
+          eq(providerCategoryVerifications.providerId, providerId),
+          eq(providerCategoryVerifications.status, 'approved')
+        )
+      );
+    return approvedVerifications.map((v) => v.categoryId);
+  }
+
+  async getAllPendingCategoryVerifications(): Promise<
+    (ProviderCategoryVerification & { provider: User; category: Category })[]
+  > {
+    const verifications = await db
+      .select({
+        id: providerCategoryVerifications.id,
+        providerId: providerCategoryVerifications.providerId,
+        categoryId: providerCategoryVerifications.categoryId,
+        status: providerCategoryVerifications.status,
+        documents: providerCategoryVerifications.documents,
+        rejectionReason: providerCategoryVerifications.rejectionReason,
+        reviewedBy: providerCategoryVerifications.reviewedBy,
+        reviewedAt: providerCategoryVerifications.reviewedAt,
+        createdAt: providerCategoryVerifications.createdAt,
+        updatedAt: providerCategoryVerifications.updatedAt,
+        provider: users,
+        category: categories,
+      })
+      .from(providerCategoryVerifications)
+      .innerJoin(users, eq(providerCategoryVerifications.providerId, users.id))
+      .innerJoin(categories, eq(providerCategoryVerifications.categoryId, categories.id))
+      .where(eq(providerCategoryVerifications.status, 'pending'));
+
+    return verifications as any;
+  }
+
+  async updateProviderCategoryVerificationStatus(
+    providerId: string,
+    categoryId: number,
+    status: 'approved' | 'rejected',
+    reviewerId: string,
+    rejectionReason?: string
+  ): Promise<ProviderCategoryVerification | undefined> {
+    const [updated] = await db
+      .update(providerCategoryVerifications)
+      .set({
+        status,
+        reviewedBy: reviewerId,
+        reviewedAt: new Date(),
+        rejectionReason: status === 'rejected' ? rejectionReason : null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(providerCategoryVerifications.providerId, providerId),
+          eq(providerCategoryVerifications.categoryId, categoryId)
+        )
+      )
+      .returning();
+
+    return updated || undefined;
   }
 
   // Providers

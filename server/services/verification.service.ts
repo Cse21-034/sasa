@@ -5,8 +5,8 @@
  */
 
 import { db } from "../db";
-import { verificationSubmissions, users } from "@shared/schema";
-import type { VerificationSubmission, InsertVerificationSubmission } from "@shared/schema";
+import { verificationSubmissions, users, providerCategoryVerifications, categories } from "@shared/schema";
+import type { VerificationSubmission, InsertVerificationSubmission, ProviderCategoryVerification } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 interface SubmissionWithUser extends VerificationSubmission {
@@ -108,6 +108,120 @@ export class VerificationService {
       .where(eq(verificationSubmissions.id, id))
       .returning();
 
+    return updated || undefined;
+  }
+
+  // 🆕 Provider Category Verification Methods
+  /**
+   * Submit verification documents for a provider category
+   * @param providerId - Provider user ID
+   * @param categoryId - Category ID
+   * @param documents - Verification documents
+   * @returns Updated verification record
+   */
+  async submitCategoryVerificationDocuments(
+    providerId: string,
+    categoryId: number,
+    documents: { name: string; url: string }[]
+  ): Promise<ProviderCategoryVerification | undefined> {
+    const [updated] = await db
+      .update(providerCategoryVerifications)
+      .set({
+        documents,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(providerCategoryVerifications.providerId, providerId),
+          eq(providerCategoryVerifications.categoryId, categoryId)
+        )
+      )
+      .returning();
+    return updated || undefined;
+  }
+
+  /**
+   * Get all pending provider category verifications for admin review
+   * @returns Array of pending category verifications with provider and category details
+   */
+  async getPendingProviderCategoryVerifications(): Promise<
+    (ProviderCategoryVerification & { provider: any; category: any })[]
+  > {
+    const results = await db
+      .select()
+      .from(providerCategoryVerifications)
+      .leftJoin(users, eq(providerCategoryVerifications.providerId, users.id))
+      .leftJoin(categories, eq(providerCategoryVerifications.categoryId, categories.id))
+      .where(eq(providerCategoryVerifications.status, 'pending'))
+      .orderBy(desc(providerCategoryVerifications.createdAt));
+
+    return results.map((r) => ({
+      ...r.provider_category_verifications,
+      provider: r.users,
+      category: r.categories,
+    })) as any;
+  }
+
+  /**
+   * Approve a provider's category verification
+   * @param providerId - Provider user ID
+   * @param categoryId - Category ID
+   * @param adminId - Admin user ID
+   * @returns Updated verification record
+   */
+  async approveCategoryVerification(
+    providerId: string,
+    categoryId: number,
+    adminId: string
+  ): Promise<ProviderCategoryVerification | undefined> {
+    const [updated] = await db
+      .update(providerCategoryVerifications)
+      .set({
+        status: 'approved',
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(providerCategoryVerifications.providerId, providerId),
+          eq(providerCategoryVerifications.categoryId, categoryId)
+        )
+      )
+      .returning();
+    return updated || undefined;
+  }
+
+  /**
+   * Reject a provider's category verification
+   * @param providerId - Provider user ID
+   * @param categoryId - Category ID
+   * @param adminId - Admin user ID
+   * @param rejectionReason - Reason for rejection
+   * @returns Updated verification record
+   */
+  async rejectCategoryVerification(
+    providerId: string,
+    categoryId: number,
+    adminId: string,
+    rejectionReason: string
+  ): Promise<ProviderCategoryVerification | undefined> {
+    const [updated] = await db
+      .update(providerCategoryVerifications)
+      .set({
+        status: 'rejected',
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        rejectionReason,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(providerCategoryVerifications.providerId, providerId),
+          eq(providerCategoryVerifications.categoryId, categoryId)
+        )
+      )
+      .returning();
     return updated || undefined;
   }
 }

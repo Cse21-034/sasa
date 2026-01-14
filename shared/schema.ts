@@ -53,6 +53,9 @@ export const notificationTypeEnum = pgEnum("notification_type", ["job_posted", "
 // 🆕 Category Request Status Enum
 export const categoryRequestStatusEnum = pgEnum("category_request_status", ["pending", "approved", "rejected"]);
 
+// 🆕 Provider Category Verification Status Enum
+export const providerCategoryVerificationStatusEnum = pgEnum("provider_category_verification_status", ["pending", "approved", "rejected"]);
+
 // Users table
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -303,6 +306,26 @@ export const categoryAdditionRequests = pgTable("category_addition_requests", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// 🆕 Provider Category Verification table
+// Tracks verification status of each provider-category combination
+export const providerCategoryVerifications = pgTable("provider_category_verifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  providerId: uuid("provider_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  categoryId: integer("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+  // Status: pending (signup), approved (verified), rejected (failed verification)
+  status: providerCategoryVerificationStatusEnum("status").default("pending").notNull(),
+  // Documents uploaded for this category verification
+  documents: jsonb("documents").$type<{ name: string; url: string }[]>().default([]).notNull(),
+  // For rejection cases
+  rejectionReason: text("rejection_reason"),
+  // Admin who reviewed this
+  reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+  reviewedAt: timestamp("reviewed_at"),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Jobs table (defined later due to referencing other tables)
 export const jobs = pgTable("jobs", {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -378,6 +401,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   migrationRequests: many(serviceAreaMigrations),
   verificationSubmissions: many(verificationSubmissions),
   categoryAdditionRequests: many(categoryAdditionRequests),
+  providerCategoryVerifications: many(providerCategoryVerifications),
   jobApplications: many(jobApplications),
   notifications: many(notifications),
 }));
@@ -552,6 +576,22 @@ export const categoryAdditionRequestsRelations = relations(categoryAdditionReque
   }),
   reviewer: one(users, {
     fields: [categoryAdditionRequests.reviewedBy],
+    references: [users.id],
+  }),
+}));
+
+// 🆕 Provider Category Verifications Relations
+export const providerCategoryVerificationsRelations = relations(providerCategoryVerifications, ({ one }) => ({
+  provider: one(users, {
+    fields: [providerCategoryVerifications.providerId],
+    references: [users.id],
+  }),
+  category: one(categories, {
+    fields: [providerCategoryVerifications.categoryId],
+    references: [categories.id],
+  }),
+  reviewer: one(users, {
+    fields: [providerCategoryVerifications.reviewedBy],
     references: [users.id],
   }),
 }));
@@ -871,6 +911,20 @@ export const updateVerificationStatusSchema = z.object({
   rejectionReason: z.string().optional(),
 });
 
+// 🆕 Schema for Provider Category Verification Submission (during signup or category addition)
+export const insertProviderCategoryVerificationSchema = z.object({
+  categoryId: z.number().int().positive(),
+  documents: z.array(z.object({
+    name: z.string().max(255, "File name is too long"),
+    url: z.string().min(10, "Document URL/Base64 is required"),
+  })).min(1, "At least one verification document is required"),
+});
+
+// 🆕 Schema for Admin Review of Provider Category Verification
+export const updateProviderCategoryVerificationStatusSchema = z.object({
+  status: z.enum(['approved', 'rejected']),
+  rejectionReason: z.string().optional(),
+});
 
 // ============ TYPES ============
 
@@ -917,6 +971,11 @@ export type ConfirmPayment = z.infer<typeof confirmPaymentSchema>;
 export type VerificationSubmission = typeof verificationSubmissions.$inferSelect;
 export type InsertVerificationSubmission = z.infer<typeof insertVerificationSubmissionSchema>;
 export type UpdateUserStatus = z.infer<typeof updateUserStatusSchema>;
+
+// 🆕 Provider Category Verification Types
+export type ProviderCategoryVerification = typeof providerCategoryVerifications.$inferSelect;
+export type InsertProviderCategoryVerification = z.infer<typeof insertProviderCategoryVerificationSchema>;
+export type UpdateProviderCategoryVerificationStatus = z.infer<typeof updateProviderCategoryVerificationStatusSchema>;
 
 // 🆕 Category Addition Request Schema
 export const insertCategoryAdditionRequestSchema = z.object({

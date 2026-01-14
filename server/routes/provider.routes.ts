@@ -1,8 +1,8 @@
 import type { Express } from "express"
 import { ZodError } from "zod"
-import { insertServiceAreaMigrationSchema, updateProviderServiceAreaSchema } from "@shared/schema"
+import { insertServiceAreaMigrationSchema, updateProviderServiceAreaSchema, insertProviderCategoryVerificationSchema } from "@shared/schema"
 import { storage } from "../storage"
-import { notificationService } from '../services';
+import { notificationService, verificationService } from '../services';
 import { authMiddleware, type AuthRequest } from "../middleware/auth"
 
 /**
@@ -225,6 +225,107 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
         })
       }
       console.error("Update service area error:", error)
+      res.status(500).json({ message: error.message })
+    }
+  })
+
+  // ==================== CATEGORY VERIFICATION ROUTES ====================
+
+  /**
+   * GET /api/provider/category-verifications
+   * Get current provider's category verification statuses
+   */
+  app.get("/api/provider/category-verifications", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== "provider") {
+        return res.status(403).json({ message: "Only providers can view their verifications" })
+      }
+
+      const verifications = await storage.getProviderCategoryVerifications(req.user!.id)
+      res.json(verifications)
+    } catch (error: any) {
+      console.error("Get category verifications error:", error)
+      res.status(500).json({ message: error.message })
+    }
+  })
+
+  /**
+   * POST /api/provider/category-verifications/:categoryId/submit-documents
+   * Submit verification documents for a category
+   */
+  app.post("/api/provider/category-verifications/:categoryId/submit-documents", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== "provider") {
+        return res.status(403).json({ message: "Only providers can submit verification documents" })
+      }
+
+      const { categoryId } = req.params
+      const categoryIdNum = parseInt(categoryId, 10)
+
+      if (isNaN(categoryIdNum)) {
+        return res.status(400).json({ message: "Invalid category ID" })
+      }
+
+      const validatedData = insertProviderCategoryVerificationSchema.parse({
+        categoryId: categoryIdNum,
+        documents: req.body.documents,
+      })
+
+      // Check if provider has this category verification pending
+      const existingVerification = await storage.getProviderCategoryVerification(
+        req.user!.id,
+        categoryIdNum
+      )
+
+      if (!existingVerification) {
+        return res.status(404).json({ message: "Category verification not found for this provider" })
+      }
+
+      // Submit documents via the verification service
+      const updated = await verificationService.submitCategoryVerificationDocuments(
+        req.user!.id,
+        categoryIdNum,
+        validatedData.documents
+      )
+
+      if (!updated) {
+        return res.status(500).json({ message: "Failed to submit documents" })
+      }
+
+      // Notify admins about document submission
+      await notificationService.createAdminNotification({
+        title: "Category Verification Documents Submitted",
+        message: `Provider ${req.user!.name} submitted verification documents for a category.`,
+        type: 'new_verification'
+      })
+
+      res.json({ message: "Documents submitted successfully", verification: updated })
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: error.issues.map((i) => ({ field: i.path.join("."), message: i.message })),
+        })
+      }
+      console.error("Submit documents error:", error)
+      res.status(500).json({ message: error.message })
+    }
+  })
+
+  /**
+   * GET /api/provider/approved-categories
+   * Get all approved categories for current provider
+   */
+  app.get("/api/provider/approved-categories", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== "provider") {
+        return res.status(403).json({ message: "Only providers can view their approved categories" })
+      }
+
+      const approvedCategories = await storage.getApprovedCategoriesForProvider(req.user!.id)
+      res.json({ approvedCategories })
+    } catch (error: any) {
+      console.error("Get approved categories error:", error)
       res.status(500).json({ message: error.message })
     }
   })

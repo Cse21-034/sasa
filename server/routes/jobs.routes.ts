@@ -58,17 +58,28 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
       const providerType = isCompanyProvider ? 'company' : 'individual';
 
       const approvedCities = (provider.approvedServiceAreas as string[]) || [provider.primaryCity];
-      const serviceCategories = (provider.serviceCategories as number[]) || [];
+      
+      // 🆕 Only fetch APPROVED categories for this provider
+      // This ensures providers can ONLY see jobs in categories they are verified for
+      const approvedCategories = await storage.getApprovedCategoriesForProvider(req.user!.id);
+
+      // If provider has no approved categories, return empty list with message
+      if (approvedCategories.length === 0) {
+        return res.json({
+          jobs: [],
+          message: 'Your category verifications are pending admin review. Once approved, you will see available jobs.',
+        });
+      }
 
       // Get open AND pending_selection jobs in approved cities
       const openJobs = await storage.getJobsByCity(approvedCities);
       
-      // 🔥 Filter by service categories, status, AND allowedProviderType
+      // 🔥 Filter by APPROVED categories, status, AND allowedProviderType
       const openJobsFiltered = openJobs.filter(j => {
         // Include open jobs AND pending_selection jobs
         const matchesStatus = j.status === 'open' || j.status === 'pending_selection';
-        const matchesCategory = serviceCategories.length === 0 || 
-          serviceCategories.includes(j.categoryId);
+        // CRITICAL: Only show jobs in APPROVED categories
+        const matchesCategory = approvedCategories.includes(j.categoryId);
         
         // 🔥 Filter by allowedProviderType
         const jobProviderType = (j as any).allowedProviderType || 'both';
@@ -333,6 +344,14 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
       if (!approvedCities.includes(job.city)) {
         return res.status(403).json({ 
           message: `This job is in ${job.city}. You can only apply for jobs in: ${approvedCities.join(', ')}.` 
+        });
+      }
+
+      // 🆕 CRITICAL: Check if provider has APPROVED verification for this job's category
+      const approvedCategories = await storage.getApprovedCategoriesForProvider(req.user!.id);
+      if (!approvedCategories.includes(job.categoryId)) {
+        return res.status(403).json({ 
+          message: 'You are not verified to accept jobs in this category. Please complete category verification first.' 
         });
       }
 
