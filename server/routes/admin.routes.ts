@@ -3,7 +3,7 @@ import { ZodError } from "zod"
 import { updateUserStatusSchema, updateVerificationStatusSchema, insertMessageSchema, updateProviderCategoryVerificationStatusSchema } from "@shared/schema"
 import { storage } from "../storage"
 import { authMiddleware, generateToken, type AuthRequest } from "../middleware/auth"
-import { notificationService, verificationService } from "../services/notification.service"
+import { notificationService, verificationService } from "../services"
 import { WebSocket } from "ws"
 import { emailService } from "../services/email.service"
 
