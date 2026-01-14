@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest } from '@/lib/queryClient';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CategorySelector } from '@/components/category-selector';
 import { botswanaCities } from '@shared/schema';
 
 // Individual signup schema (NO physical address)
@@ -107,9 +108,11 @@ interface IndividualFormProps {
   onSubmit: (data: SignupData) => void;
   userType: 'individual' | 'company';
   onUserTypeChange: (type: 'individual' | 'company') => void;
+  selectedCategories: number[];
+  onCategoriesChange: (categories: number[]) => void;
 }
 
-const IndividualForm = ({ form, selectedRole, isLoading, onSubmit, userType, onUserTypeChange }: IndividualFormProps) => (
+const IndividualForm = ({ form, selectedRole, isLoading, onSubmit, userType, onUserTypeChange, selectedCategories, onCategoriesChange }: IndividualFormProps) => (
   <Form {...form}>
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       {/* User Type Selection */}
@@ -173,6 +176,14 @@ const IndividualForm = ({ form, selectedRole, isLoading, onSubmit, userType, onU
               <FormMessage />
             </FormItem>
           )}
+        />
+      )}
+
+      {selectedRole === 'provider' && (
+        <CategorySelector
+          selectedCategories={selectedCategories}
+          onCategoriesChange={onCategoriesChange}
+          required={true}
         />
       )}
 
@@ -270,9 +281,11 @@ interface CompanyFormProps {
   selectedCompanyRole: 'requester' | 'provider';
   isLoading: boolean;
   onSubmit: (data: SignupData) => void;
+  selectedCategories?: number[];
+  onCategoriesChange?: (categories: number[]) => void;
 }
 
-const CompanyForm = ({ form, selectedCompanyRole, isLoading, onSubmit }: CompanyFormProps) => (
+const CompanyForm = ({ form, selectedCompanyRole, isLoading, onSubmit, selectedCategories = [], onCategoriesChange }: CompanyFormProps) => (
   <Form {...form}>
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       {selectedCompanyRole === 'provider' && (
@@ -305,6 +318,14 @@ const CompanyForm = ({ form, selectedCompanyRole, isLoading, onSubmit }: Company
               <FormMessage />
             </FormItem>
           )}
+        />
+      )}
+
+      {selectedCompanyRole === 'provider' && onCategoriesChange && (
+        <CategorySelector
+          selectedCategories={selectedCategories}
+          onCategoriesChange={onCategoriesChange}
+          required={true}
         />
       )}
 
@@ -812,6 +833,7 @@ export default function Signup() {
   const [mainTab, setMainTab] = useState<'find-service' | 'provide-service' | 'supplier'>('find-service');
   const [requesterUserType, setRequesterUserType] = useState<'individual' | 'company'>('individual');
   const [providerUserType, setProviderUserType] = useState<'individual' | 'company'>('individual');
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
 
   const individualRequesterForm = useForm<IndividualSignupForm>({
     resolver: zodResolver(individualSignupSchema),
@@ -931,10 +953,25 @@ export default function Signup() {
       } else if (mainTab === 'provide-service') {
         if (providerUserType === 'individual') {
           payload.role = 'provider';
+          // Add selected categories for providers
+          payload.serviceCategories = selectedCategories;
         } else {
           payload.role = 'company';
           payload.companyRole = 'provider';
+          // Add selected categories for company providers
+          payload.serviceCategories = selectedCategories;
         }
+      }
+
+      // Validate that providers have selected categories
+      if ((payload.role === 'provider' || (payload.role === 'company' && payload.companyRole === 'provider')) && (!selectedCategories || selectedCategories.length === 0)) {
+        setIsLoading(false);
+        toast({
+          title: 'Validation Error',
+          description: 'Please select at least one service category',
+          variant: 'destructive',
+        });
+        return;
       }
 
       // Clean up primaryCity if empty or if user is a requester
@@ -959,6 +996,7 @@ export default function Signup() {
       console.log('Sending signup payload:', { 
         role: payload.role, 
         hasCity: !!payload.primaryCity,
+        serviceCategories: payload.serviceCategories,
         keys: Object.keys(payload) 
       });
 
@@ -1079,6 +1117,8 @@ export default function Signup() {
                   onSubmit={onSubmit}
                   userType={providerUserType}
                   onUserTypeChange={setProviderUserType}
+                  selectedCategories={selectedCategories}
+                  onCategoriesChange={setSelectedCategories}
                 />
               ) : (
                 <CompanyForm 
@@ -1086,6 +1126,8 @@ export default function Signup() {
                   selectedCompanyRole="provider"
                   isLoading={isLoading}
                   onSubmit={onSubmit}
+                  selectedCategories={selectedCategories}
+                  onCategoriesChange={setSelectedCategories}
                 />
               )}
             </>

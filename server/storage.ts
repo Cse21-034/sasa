@@ -11,6 +11,7 @@ import {
   jobReports,
   serviceAreaMigrations,
   verificationSubmissions,
+  categoryAdditionRequests,
   jobApplications,
   notifications,
   emailVerificationTokens,
@@ -39,6 +40,8 @@ import {
   type InsertCategory,
   type VerificationSubmission,
   type InsertVerificationSubmission,
+  type CategoryAdditionRequest,
+  type InsertCategoryAdditionRequest,
   type JobApplication,
   type InsertJobApplication,
   type Notification,
@@ -220,6 +223,7 @@ export interface IStorage {
   getProviderStats(providerId: string): Promise<any>;
 
   // Categories
+  getCategory(id: number): Promise<Category | undefined>;
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
 
@@ -233,6 +237,18 @@ export interface IStorage {
     reviewerId: string, 
     rejectionReason?: string
   ): Promise<VerificationSubmission | undefined>;
+
+  // Category Addition Requests
+  createCategoryAdditionRequest(request: InsertCategoryAdditionRequest): Promise<CategoryAdditionRequest>;
+  getCategoryAdditionRequest(id: string): Promise<CategoryAdditionRequest | undefined>;
+  getPendingCategoryAdditionRequests(): Promise<CategoryAdditionRequest[]>;
+  getPendingCategoryAdditionRequestsForProvider(providerId: string): Promise<CategoryAdditionRequest[]>;
+  updateCategoryAdditionRequestStatus(
+    id: string, 
+    status: 'approved' | 'rejected', 
+    reviewerId: string, 
+    rejectionReason?: string
+  ): Promise<CategoryAdditionRequest | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -471,6 +487,81 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  // 🆕 Category Addition Requests
+  async createCategoryAdditionRequest(request: InsertCategoryAdditionRequest): Promise<CategoryAdditionRequest> {
+    const [created] = await db.insert(categoryAdditionRequests).values(request).returning();
+    return created;
+  }
+
+  async getCategoryAdditionRequest(id: string): Promise<CategoryAdditionRequest | undefined> {
+    const [request] = await db.select().from(categoryAdditionRequests).where(eq(categoryAdditionRequests.id, id));
+    return request || undefined;
+  }
+
+  async getPendingCategoryAdditionRequests(): Promise<CategoryAdditionRequest[]> {
+    const requests = await db
+      .select()
+      .from(categoryAdditionRequests)
+      .where(eq(categoryAdditionRequests.status, 'pending'))
+      .orderBy(desc(categoryAdditionRequests.createdAt));
+    return requests;
+  }
+
+  async getPendingCategoryAdditionRequestsForProvider(providerId: string): Promise<CategoryAdditionRequest[]> {
+    const requests = await db
+      .select()
+      .from(categoryAdditionRequests)
+      .where(and(
+        eq(categoryAdditionRequests.providerId, providerId),
+        eq(categoryAdditionRequests.status, 'pending')
+      ))
+      .orderBy(desc(categoryAdditionRequests.createdAt));
+    return requests;
+  }
+
+  async updateCategoryAdditionRequestStatus(
+    id: string,
+    status: 'approved' | 'rejected',
+    reviewerId: string,
+    rejectionReason?: string
+  ): Promise<CategoryAdditionRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(categoryAdditionRequests)
+      .where(eq(categoryAdditionRequests.id, id));
+
+    if (!request) return undefined;
+
+    const [updated] = await db
+      .update(categoryAdditionRequests)
+      .set({
+        status: status,
+        reviewedBy: reviewerId,
+        reviewedAt: new Date(),
+        rejectionReason: status === 'rejected' ? rejectionReason : null,
+      })
+      .where(eq(categoryAdditionRequests.id, id))
+      .returning();
+
+    if (!updated) return undefined;
+
+    // If approved, add the category to provider's additionalCategories
+    if (status === 'approved') {
+      const provider = await this.getProvider(request.providerId);
+      if (provider) {
+        const additionalCategories = [...(provider.additionalCategories || [])];
+        if (!additionalCategories.includes(request.categoryId)) {
+          additionalCategories.push(request.categoryId);
+          await this.updateProvider(request.providerId, {
+            additionalCategories,
+          });
+        }
+      }
+    }
+
+    return updated;
+  }
+
   // Providers
   async getProvider(userId: string): Promise<Provider | undefined> {
     const [provider] = await db.select().from(providers).where(eq(providers.userId, userId));
@@ -514,7 +605,8 @@ export class DatabaseStorage implements IStorage {
       .select({
         userId: providers.userId,
         companyName: providers.companyName,
-        serviceCategories: providers.serviceCategories,
+        registeredCategories: providers.registeredCategories,
+        additionalCategories: providers.additionalCategories,
         ratingAverage: providers.ratingAverage,
         completedJobsCount: providers.completedJobsCount,
         isOnline: providers.isOnline,
@@ -1542,6 +1634,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Categories
+  async getCategory(id: number): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.id, id));
+    return category || undefined;
+  }
+
   async getCategories(): Promise<Category[]> {
     return await db.select().from(categories);
   }

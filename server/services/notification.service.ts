@@ -44,7 +44,7 @@ export class NotificationService {
         })
         .from(providers)
         .where(
-          sql`(${providers.serviceCategories}::jsonb) @> (${categoryArray}::jsonb)`
+          sql`(${providers.registeredCategories}::jsonb @> ${categoryArray}::jsonb) OR (${providers.additionalCategories}::jsonb @> ${categoryArray}::jsonb)`
         );
 
       if (relevantProviders.length === 0) {

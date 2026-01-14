@@ -292,6 +292,91 @@ export function registerAdminRoutes(app: Express, injectedClients: Map<string, W
     }
   })
 
+  // ==================== ADMIN CATEGORY MANAGEMENT ====================
+
+  /**
+   * GET /api/admin/categories/requests/pending
+   * List all pending category addition requests
+   */
+  app.get("/api/admin/categories/requests/pending", authMiddleware, async (req: AuthRequest, res) => {
+    if (req.user!.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" })
+    }
+
+    try {
+      const { categoryService } = await import("../services")
+      const requests = await categoryService.getPendingCategoryAdditionRequests()
+      res.json(requests)
+    } catch (error: any) {
+      console.error("Get pending category requests error:", error)
+      res.status(500).json({ message: error.message || "Failed to list pending requests" })
+    }
+  })
+
+  /**
+   * POST /api/admin/categories/requests/:id/approve
+   * Approve a category addition request
+   */
+  app.post("/api/admin/categories/requests/:id/approve", authMiddleware, async (req: AuthRequest, res) => {
+    if (req.user!.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" })
+    }
+
+    try {
+      const { categoryService } = await import("../services")
+      const updated = await categoryService.approveCategoryAdditionRequest(req.params.id, req.user!.id)
+
+      if (!updated) {
+        return res.status(404).json({ message: "Request not found" })
+      }
+
+      res.json({
+        message: "Category addition request approved",
+        request: updated,
+      })
+    } catch (error: any) {
+      console.error("Approve category request error:", error)
+      res.status(500).json({ message: error.message || "Failed to approve request" })
+    }
+  })
+
+  /**
+   * POST /api/admin/categories/requests/:id/reject
+   * Reject a category addition request
+   */
+  app.post("/api/admin/categories/requests/:id/reject", authMiddleware, async (req: AuthRequest, res) => {
+    if (req.user!.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" })
+    }
+
+    try {
+      const { rejectionReason } = req.body
+
+      if (!rejectionReason || rejectionReason.trim().length === 0) {
+        return res.status(400).json({ message: "Rejection reason is required" })
+      }
+
+      const { categoryService } = await import("../services")
+      const updated = await categoryService.rejectCategoryAdditionRequest(
+        req.params.id,
+        req.user!.id,
+        rejectionReason,
+      )
+
+      if (!updated) {
+        return res.status(404).json({ message: "Request not found" })
+      }
+
+      res.json({
+        message: "Category addition request rejected",
+        request: updated,
+      })
+    } catch (error: any) {
+      console.error("Reject category request error:", error)
+      res.status(500).json({ message: error.message || "Failed to reject request" })
+    }
+  })
+
   // ==================== ADMIN MESSAGING ====================
 
   /**

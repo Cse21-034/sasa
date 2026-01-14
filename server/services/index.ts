@@ -13,3 +13,4 @@ export { supplierService, SupplierService } from './supplier.service';
 export { companyService, CompanyService } from './company.service';
 export { analyticsService, AnalyticsService } from './analytics.service';
 export { notificationService, NotificationService } from './notification.service';
+export { categoryService, CategoryService } from './category.service';

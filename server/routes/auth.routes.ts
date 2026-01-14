@@ -11,7 +11,7 @@ export function registerAuthRoutes(app: Express): void {
   app.post('/api/auth/signup', async (req, res) => {
     try {
       const rawValidatedData = createUserRequestSchema.parse(req.body);
-      const { password, confirmPassword, primaryCity, companyRole, ...userData } = rawValidatedData as any;
+      const { password, confirmPassword, primaryCity, companyRole, serviceCategories, ...userData } = rawValidatedData as any;
       
       if (password !== confirmPassword) {
         return res.status(400).json({ message: "Passwords do not match." });
@@ -128,9 +128,17 @@ export function registerAuthRoutes(app: Express): void {
             });
           }
           
+          if (!serviceCategories || serviceCategories.length === 0) {
+            await storage.deleteUser(user.id);
+            return res.status(400).json({ 
+              message: 'At least one service category is required for service providers.' 
+            });
+          }
+          
           await storage.createProvider({
             userId: user.id,
-            serviceCategories: [],
+            registeredCategories: serviceCategories || [],
+            additionalCategories: [],
             primaryCity,
             approvedServiceAreas: [primaryCity],
             serviceAreaRadiusMeters: 10000,

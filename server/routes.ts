@@ -15,6 +15,7 @@ import {
   registerMessagingRoutes,
   registerMiscRoutes,
   registerNotificationRoutes,
+  registerCategoryRoutes,
 } from "./routes/index"
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -173,6 +174,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Verification routes (no verifyAccess - this is how users get verified)
   registerVerificationRoutes(app)
+
+  // Category routes (no verifyAccess for listing categories, but protected for requests)
+  registerCategoryRoutes(app)
 
   // Protected routes with verifyAccess
   registerJobRoutes(app, verifyAccess)

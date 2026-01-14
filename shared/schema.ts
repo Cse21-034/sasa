@@ -48,7 +48,10 @@ export const verificationStatusEnum = pgEnum("verification_status", ["pending", 
 export const messageTypeEnum = pgEnum("message_type", ["job_message", "admin_message", "system_notification"]);
 
 // 🆕 Notification Type Enum
-export const notificationTypeEnum = pgEnum("notification_type", ["job_posted", "job_accepted", "application_received", "application_accepted", "application_rejected", "message_received", "new_report", "new_verification", "new_migration"]);
+export const notificationTypeEnum = pgEnum("notification_type", ["job_posted", "job_accepted", "application_received", "application_accepted", "application_rejected", "message_received", "new_report", "new_verification", "new_migration", "category_request_received", "category_request_approved", "category_request_rejected"]);
+
+// 🆕 Category Request Status Enum
+export const categoryRequestStatusEnum = pgEnum("category_request_status", ["pending", "approved", "rejected"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -172,7 +175,10 @@ export const categories = pgTable("categories", {
 export const providers = pgTable("providers", {
   userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
   companyName: text("company_name"),
-  serviceCategories: jsonb("service_categories").notNull().$type<number[]>(),
+  // Registered categories are those verified during signup
+  registeredCategories: jsonb("registered_categories").notNull().$type<number[]>().default([]),
+  // Additional categories are those approved through category addition requests
+  additionalCategories: jsonb("additional_categories").notNull().$type<number[]>().default([]),
   basePriceInfo: jsonb("base_price_info").$type<Record<string, any>>(),
   serviceAreaRadiusMeters: integer("service_area_radius_meters").default(10000).notNull(),
   // Primary service city/area
@@ -183,7 +189,6 @@ export const providers = pgTable("providers", {
   averageResponseTimeSeconds: integer("average_response_time_seconds"),
   ratingAverage: numeric("rating_average", { precision: 3, scale: 2 }).default("0"),
   completedJobsCount: integer("completed_jobs_count").default(0).notNull(),
-  verificationDocuments: jsonb("verification_documents").$type<string[]>(),
   isOnline: boolean("is_online").default(false).notNull(),
   latitude: numeric("latitude", { precision: 10, scale: 7 }),
   longitude: numeric("longitude", { precision: 10, scale: 7 }),
@@ -284,6 +289,20 @@ export const verificationSubmissions = pgTable("verification_submissions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// 🆕 Category Addition Requests table
+export const categoryAdditionRequests = pgTable("category_addition_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  providerId: uuid("provider_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  categoryId: integer("category_id").notNull().references(() => categories.id),
+  documents: jsonb("documents").$type<{ name: string; url: string }[]>().default([]).notNull(),
+  status: categoryRequestStatusEnum("status").default("pending").notNull(),
+  rejectionReason: text("rejection_reason"),
+  reviewedBy: uuid("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Jobs table (defined later due to referencing other tables)
 export const jobs = pgTable("jobs", {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -358,6 +377,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   jobReports: many(jobReports),
   migrationRequests: many(serviceAreaMigrations),
   verificationSubmissions: many(verificationSubmissions),
+  categoryAdditionRequests: many(categoryAdditionRequests),
   jobApplications: many(jobApplications),
   notifications: many(notifications),
 }));
@@ -520,6 +540,22 @@ export const verificationSubmissionsRelations = relations(verificationSubmission
   }),
 }));
 
+// 🆕 Category Addition Requests Relations
+export const categoryAdditionRequestsRelations = relations(categoryAdditionRequests, ({ one }) => ({
+  provider: one(users, {
+    fields: [categoryAdditionRequests.providerId],
+    references: [users.id],
+  }),
+  category: one(categories, {
+    fields: [categoryAdditionRequests.categoryId],
+    references: [categories.id],
+  }),
+  reviewer: one(users, {
+    fields: [categoryAdditionRequests.reviewedBy],
+    references: [users.id],
+  }),
+}));
+
 
 // ============ SCHEMAS ============
 
@@ -569,17 +605,18 @@ export const individualSignupSchema = z.object({
   confirmPassword: z.string(),
   role: z.enum(['requester', 'provider']),
   primaryCity: z.string().optional(), // Changed from z.enum() to z.string()
+  serviceCategories: z.array(z.number()).optional().default([]), // Categories for providers
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
 }).refine((data) => {
   if (data.role === 'provider') {
-    return !!data.primaryCity;
+    return !!data.primaryCity && data.serviceCategories!.length > 0;
   }
   return true;
 }, {
-  message: "City is required for service providers",
-  path: ['primaryCity'],
+  message: "City and at least one category is required for service providers",
+  path: ['serviceCategories'],
 });
 
 // Supplier signup schema (WITH physical address)
@@ -653,17 +690,18 @@ export const companySignupSchema = z.object({
   numberOfEmployees: z.number().optional(),
   yearsInBusiness: z.number().optional(),
   primaryCity: z.string().optional(), // Required for company providers
+  serviceCategories: z.array(z.number()).optional().default([]), // Categories for company providers
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
 }).refine((data) => {
   if (data.companyRole === 'provider') {
-    return !!data.primaryCity;
+    return !!data.primaryCity && data.serviceCategories!.length > 0;
   }
   return true;
 }, {
-  message: "City is required for company service providers",
-  path: ['primaryCity'],
+  message: "City and at least one category is required for company service providers",
+  path: ['serviceCategories'],
 });
 
 // Schema for signup request from frontend
@@ -880,6 +918,19 @@ export type VerificationSubmission = typeof verificationSubmissions.$inferSelect
 export type InsertVerificationSubmission = z.infer<typeof insertVerificationSubmissionSchema>;
 export type UpdateUserStatus = z.infer<typeof updateUserStatusSchema>;
 
+// 🆕 Category Addition Request Schema
+export const insertCategoryAdditionRequestSchema = z.object({
+  providerId: z.string().uuid(),
+  categoryId: z.number().int().positive(),
+  documents: z.array(z.object({
+    name: z.string(),
+    url: z.string(),
+  })).min(1, "At least one document is required"),
+});
+
+export type CategoryAdditionRequest = typeof categoryAdditionRequests.$inferSelect;
+export type InsertCategoryAdditionRequest = z.infer<typeof insertCategoryAdditionRequestSchema>;
+
 export type SupplierPromotion = typeof supplierPromotions.$inferSelect;
 export type InsertSupplierPromotion = z.infer<typeof insertSupplierPromotionSchema>;
 export type UpdateSupplierProfile = z.infer<typeof updateSupplierProfileSchema>;
@@ -892,7 +943,7 @@ export type SelectProvider = z.infer<typeof selectProviderSchema>;
 export const insertNotificationSchema = z.object({
   recipientId: z.string().uuid(),
   jobId: z.string().uuid().optional(),
-  type: z.enum(["job_posted", "job_accepted", "application_received", "application_accepted", "application_rejected", "message_received", "new_report", "new_verification", "new_migration"]),
+  type: z.enum(["job_posted", "job_accepted", "application_received", "application_accepted", "application_rejected", "message_received", "new_report", "new_verification", "new_migration", "category_request_received", "category_request_approved", "category_request_rejected"]),
   title: z.string().min(1),
   message: z.string().min(1),
 });
