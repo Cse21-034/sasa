@@ -43,6 +43,7 @@ import AdminMessages from "@/pages/admin/messages";
 import AdminChat from "@/pages/admin/messages"; 
 import AdminChatUserView from "@/pages/messages/admin-chat";
 import AdminMigrations from "@/pages/admin/migrations";
+import AdminCategoryVerifications from "@/pages/admin/category-verifications";
 
 
 function ProtectedRoute({ component: Component, path, ...rest }: any) {
@@ -142,6 +143,9 @@ function Router() {
           </Route>
           <Route path="/admin/migrations">
             {() => <AdminRoute component={AdminMigrations} />}
+          </Route>
+          <Route path="/admin/category-verifications">
+            {() => <AdminRoute component={AdminCategoryVerifications} />}
           </Route>
           {/* NEW ADMIN MESSAGING ROUTES - Leads to private chat with user */}
           <Route path="/admin/messages">

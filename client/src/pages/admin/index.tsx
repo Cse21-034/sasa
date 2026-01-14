@@ -5,7 +5,8 @@ import {
   UserCheck, Users, FileText, TrendingUp, AlertCircle, Briefcase, Loader2, ArrowRight, 
   LayoutDashboard,
   CheckCircle2,
-  MapPin
+  MapPin,
+  Wrench
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -31,12 +32,16 @@ const useAdminOverview = () => {
         const migrationsRes = await apiRequest('GET', '/api/admin/migrations/pending');
         const migrations = await migrationsRes.json();
 
+        const categoryVerificationsRes = await apiRequest('GET', '/api/admin/provider-category-verifications');
+        const categoryVerifications = await categoryVerificationsRes.json();
+
         return {
             ...analytics,
             pendingVerificationCount: verification.length,
             unresolvedReportsCount: reports.length,
             totalUsersCount: totalUsers.length,
             pendingMigrationsCount: migrations.length,
+            pendingCategoryVerificationsCount: categoryVerifications.length,
         }
     },
     refetchInterval: 60000, // Refresh every minute
@@ -87,6 +92,14 @@ export default function AdminDashboardHub() {
       icon: MapPin,
       path: '/admin/migrations',
       badge: stats?.pendingMigrationsCount > 0 ? `${stats.pendingMigrationsCount} Pending` : null,
+      badgeVariant: 'warning' as const,
+    },
+    {
+      title: 'Category Verifications',
+      description: 'Review and approve provider requests for category verification and skill expansion.',
+      icon: Wrench,
+      path: '/admin/category-verifications',
+      badge: stats?.pendingCategoryVerificationsCount > 0 ? `${stats.pendingCategoryVerificationsCount} Pending` : null,
       badgeVariant: 'warning' as const,
     },
   ];
