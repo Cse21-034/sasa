@@ -63,12 +63,9 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
       // This ensures providers can ONLY see jobs in categories they are verified for
       const approvedCategories = await storage.getApprovedCategoriesForProvider(req.user!.id);
 
-      // If provider has no approved categories, return empty list with message
+      // If provider has no approved categories, return empty list
       if (approvedCategories.length === 0) {
-        return res.json({
-          jobs: [],
-          message: 'Your category verifications are pending admin review. Once approved, you will see available jobs.',
-        });
+        return res.json([]);
       }
 
       // Get open AND pending_selection jobs in approved cities

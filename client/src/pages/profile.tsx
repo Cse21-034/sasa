@@ -50,7 +50,7 @@ type MigrationRequestForm = z.infer<typeof migrationRequestSchema>;
 
 // Category verification request schema
 const categoryVerificationRequestSchema = z.object({
-  categoryId: z.number().min(1, 'Please select a category'),
+  categoryIds: z.array(z.number()).min(1, 'Please select at least one category'),
   documents: z.array(z.object({
     name: z.string(),
     url: z.string(),
@@ -70,6 +70,7 @@ export default function Profile() {
   const [categoryVerificationDialogOpen, setCategoryVerificationDialogOpen] = useState(false);
   const [uploadingDocuments, setUploadingDocuments] = useState(false);
   const [uploadedDocuments, setUploadedDocuments] = useState<{ name: string; url: string }[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
 
   // Fetch categories for providers
   const { data: categories } = useQuery<Category[]>({
@@ -144,7 +145,7 @@ export default function Profile() {
   const categoryVerificationForm = useForm<CategoryVerificationRequestForm>({
     resolver: zodResolver(categoryVerificationRequestSchema),
     defaultValues: {
-      categoryId: 0,
+      categoryIds: [],
       documents: [],
     },
   });
@@ -155,19 +156,27 @@ export default function Profile() {
       if (!uploadedDocuments.length) {
         throw new Error('Please upload at least one document');
       }
-      const res = await apiRequest('POST', `/api/provider/category-verifications/${data.categoryId}/submit-documents`, {
-        documents: uploadedDocuments,
-      });
-      return res.json();
+      if (!selectedCategoryIds.length) {
+        throw new Error('Please select at least one category');
+      }
+      // Submit for each selected category
+      const promises = selectedCategoryIds.map(categoryId =>
+        apiRequest('POST', `/api/provider/category-verifications/${categoryId}/submit-documents`, {
+          documents: uploadedDocuments,
+        }).then(res => res.json())
+      );
+      const results = await Promise.all(promises);
+      return results[0]; // Return first result for toast message
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/provider/category-verifications'] });
       setCategoryVerificationDialogOpen(false);
       categoryVerificationForm.reset();
       setUploadedDocuments([]);
+      setSelectedCategoryIds([]);
       toast({
         title: 'Request Submitted',
-        description: 'Your category verification request has been submitted for admin approval.',
+        description: `Your category verification request(s) have been submitted for admin approval.`,
       });
     },
     onError: (error: Error) => {
@@ -766,38 +775,42 @@ export default function Profile() {
                         </DialogHeader>
                         <Form {...categoryVerificationForm}>
                           <form onSubmit={categoryVerificationForm.handleSubmit((data) => categoryVerificationMutation.mutate(data))} className="space-y-4">
-                            <FormField
-                              control={categoryVerificationForm.control}
-                              name="categoryId"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Select Category</FormLabel>
-                                  <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value ? field.value.toString() : ''}>
-                                    <FormControl>
-                                      <SelectTrigger data-testid="select-category">
-                                        <SelectValue placeholder="Choose a category" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {categories
-                                        .filter(category => {
-                                          // Exclude categories already verified or pending
-                                          const verificationExists = categoryVerifications?.some(
-                                            v => v.categoryId === category.id
-                                          );
-                                          return !verificationExists;
-                                        })
-                                        .map((category) => (
-                                          <SelectItem key={category.id} value={category.id.toString()}>
-                                            {category.name}
-                                          </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
+                            <FormItem>
+                              <FormLabel>Select Categories</FormLabel>
+                              <FormDescription>
+                                Select one or more categories you want to get verified for.
+                              </FormDescription>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+                                {categories
+                                  .filter(category => {
+                                    // Exclude categories already verified or pending
+                                    const verificationExists = categoryVerifications?.some(
+                                      v => v.categoryId === category.id
+                                    );
+                                    return !verificationExists;
+                                  })
+                                  .map((category) => (
+                                    <label key={category.id} className="flex items-center gap-2 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedCategoryIds.includes(category.id)}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setSelectedCategoryIds([...selectedCategoryIds, category.id]);
+                                          } else {
+                                            setSelectedCategoryIds(selectedCategoryIds.filter(id => id !== category.id));
+                                          }
+                                        }}
+                                        className="w-4 h-4"
+                                      />
+                                      <span className="text-sm">{category.name}</span>
+                                    </label>
+                                  ))}
+                              </div>
+                              {selectedCategoryIds.length === 0 && (
+                                <p className="text-sm text-red-500 mt-2">Please select at least one category</p>
                               )}
-                            />
+                            </FormItem>
 
                             <div className="space-y-2">
                               <FormLabel>Upload Verification Documents</FormLabel>
@@ -856,6 +869,7 @@ export default function Profile() {
                                 onClick={() => {
                                   setCategoryVerificationDialogOpen(false);
                                   setUploadedDocuments([]);
+                                  setSelectedCategoryIds([]);
                                   categoryVerificationForm.reset();
                                 }}
                                 disabled={categoryVerificationMutation.isPending}
@@ -864,7 +878,7 @@ export default function Profile() {
                               </Button>
                               <Button
                                 type="submit"
-                                disabled={categoryVerificationMutation.isPending || uploadedDocuments.length === 0}
+                                disabled={categoryVerificationMutation.isPending || uploadedDocuments.length === 0 || selectedCategoryIds.length === 0}
                                 data-testid="button-submit-category"
                               >
                                 {categoryVerificationMutation.isPending ? (
@@ -873,7 +887,7 @@ export default function Profile() {
                                     Submitting...
                                   </>
                                 ) : (
-                                  'Submit Request'
+                                  `Submit Request${selectedCategoryIds.length > 1 ? 's' : ''}`
                                 )}
                               </Button>
                             </DialogFooter>
