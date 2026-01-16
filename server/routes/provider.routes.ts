@@ -99,37 +99,6 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
     }
   })
 
-  /**
-   * PATCH /api/provider/categories
-   * Update provider's service categories
-   */
-  app.patch("/api/provider/categories", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
-    try {
-      if (req.user!.role !== "provider") {
-        return res.status(403).json({ message: "Only providers can update categories" })
-      }
-
-      const { serviceCategories } = req.body
-
-      if (!Array.isArray(serviceCategories)) {
-        return res.status(400).json({ message: "Service categories must be an array" })
-      }
-
-      const updated = await storage.updateProvider(req.user!.id, {
-        serviceCategories,
-      })
-
-      if (!updated) {
-        return res.status(404).json({ message: "Provider not found" })
-      }
-
-      res.json(updated)
-    } catch (error: any) {
-      console.error("Update categories error:", error)
-      res.status(500).json({ message: error.message })
-    }
-  })
-
   // ==================== SERVICE AREA MIGRATION ROUTES ====================
 
   /**

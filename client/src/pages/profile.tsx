@@ -34,7 +34,6 @@ const profileSchema = z.object({
   phone: z.string().optional(),
   bio: z.string().optional(),
   profilePhotoUrl: z.string().optional(),
-  serviceCategories: z.array(z.number()).optional(),
   preferredLanguage: z.string().default('en'),
 });
 
@@ -195,16 +194,12 @@ export default function Profile() {
       phone: user?.phone || '',
       bio: user?.bio || '',
       profilePhotoUrl: user?.profilePhotoUrl || '',
-      serviceCategories: providerProfile?.serviceCategories || [],
       preferredLanguage: user?.preferredLanguage || 'en',
     },
   });
 
-  // Update form when provider profile loads
+  // Update form when user profile loads
   useState(() => {
-    if (providerProfile?.serviceCategories) {
-      form.setValue('serviceCategories', providerProfile.serviceCategories);
-    }
     if (user?.preferredLanguage) {
       i18n.changeLanguage(user.preferredLanguage);
     }
@@ -224,13 +219,6 @@ export default function Profile() {
 
       // Update local i18n language immediately
       i18n.changeLanguage(data.preferredLanguage);
-
-      // If provider, update service categories
-      if (user?.role === 'provider' && data.serviceCategories) {
-        await apiRequest('PATCH', '/api/provider/categories', {
-          serviceCategories: data.serviceCategories,
-        });
-      }
 
       return updatedUser;
     },
@@ -509,62 +497,7 @@ export default function Profile() {
                 )}
               />
 
-              {/* Service Categories for Providers */}
-              {user?.role === 'provider' && categories && (
-                <FormField
-                  control={form.control}
-                  name="serviceCategories"
-                  render={() => (
-                    <FormItem>
-                      <div className="mb-4">
-                        <FormLabel className="text-base flex items-center gap-2">
-                          <Wrench className="h-5 w-5" />
-                          {t('Service Categories')}
-                        </FormLabel>
-                        <FormDescription>
-                          Select the types of jobs you want to receive. Only jobs in these categories will be shown to you.
-                        </FormDescription>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {categories.map((category) => (
-                          <FormField
-                            key={category.id}
-                            control={form.control}
-                            name="serviceCategories"
-                            render={({ field }) => {
-                              return (
-                                <FormItem
-                                  key={category.id}
-                                  className="flex flex-row items-start space-x-3 space-y-0"
-                                >
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(category.id)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...(field.value || []), category.id])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== category.id
-                                              )
-                                            )
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal cursor-pointer">
-                                    {category.name}
-                                  </FormLabel>
-                                </FormItem>
-                              )
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+
 
               {/* Service Areas for Providers */}
               {user?.role === 'provider' && providerProfile && (

@@ -108,8 +108,8 @@ interface IndividualFormProps {
   onSubmit: (data: SignupData) => void;
   userType: 'individual' | 'company';
   onUserTypeChange: (type: 'individual' | 'company') => void;
-  selectedCategories: number[];
-  onCategoriesChange: (categories: number[]) => void;
+  selectedCategories?: number[];
+  onCategoriesChange?: (categories: number[]) => void;
 }
 
 const IndividualForm = ({ form, selectedRole, isLoading, onSubmit, userType, onUserTypeChange, selectedCategories, onCategoriesChange }: IndividualFormProps) => (
