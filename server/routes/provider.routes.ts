@@ -240,22 +240,28 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
         documents: req.body.documents,
       })
 
-      // Check if provider has this category verification pending
-      const existingVerification = await storage.getProviderCategoryVerification(
+      // Check if provider has this category verification already
+      let verification = await storage.getProviderCategoryVerification(
         req.user!.id,
         categoryIdNum
       )
 
-      if (!existingVerification) {
-        return res.status(404).json({ message: "Category verification not found for this provider" })
+      let updated;
+      if (!verification) {
+        // Create new verification record with documents
+        updated = await storage.createProviderCategoryVerification(
+          req.user!.id,
+          categoryIdNum,
+          validatedData.documents
+        )
+      } else {
+        // Update existing verification record with new documents
+        updated = await verificationService.submitCategoryVerificationDocuments(
+          req.user!.id,
+          categoryIdNum,
+          validatedData.documents
+        )
       }
-
-      // Submit documents via the verification service
-      const updated = await verificationService.submitCategoryVerificationDocuments(
-        req.user!.id,
-        categoryIdNum,
-        validatedData.documents
-      )
 
       if (!updated) {
         return res.status(500).json({ message: "Failed to submit documents" })
@@ -264,7 +270,7 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
       // Notify admins about document submission
       await notificationService.createAdminNotification({
         title: "Category Verification Documents Submitted",
-        message: `Provider ${req.user!.name} submitted verification documents for a category.`,
+        message: `A provider (${req.user!.email}) submitted verification documents for a category.`,
         type: 'new_verification'
       })
 
