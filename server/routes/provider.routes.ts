@@ -240,6 +240,8 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
         documents: req.body.documents,
       })
 
+      console.log(`Submitting documents for category ${categoryIdNum} (type: ${typeof categoryIdNum})`);
+
       // Check if provider has this category verification already
       let verification = await storage.getProviderCategoryVerification(
         req.user!.id,

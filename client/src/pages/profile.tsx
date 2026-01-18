@@ -160,7 +160,7 @@ export default function Profile() {
       }
       // Submit for each selected category
       const promises = selectedCategoryIds.map(categoryId =>
-        apiRequest('POST', `/api/provider/category-verifications/${categoryId}/submit-documents`, {
+        apiRequest('POST', `/api/provider/category-verifications/${Number(categoryId)}/submit-documents`, {
           documents: uploadedDocuments,
         }).then(res => res.json())
       );
@@ -726,12 +726,13 @@ export default function Profile() {
                                     <label key={category.id} className="flex items-center gap-2 cursor-pointer">
                                       <input
                                         type="checkbox"
-                                        checked={selectedCategoryIds.includes(category.id)}
+                                        checked={selectedCategoryIds.includes(Number(category.id))}
                                         onChange={(e) => {
+                                          const categoryId = Number(category.id);
                                           if (e.target.checked) {
-                                            setSelectedCategoryIds([...selectedCategoryIds, category.id]);
+                                            setSelectedCategoryIds(prev => [...prev, categoryId]);
                                           } else {
-                                            setSelectedCategoryIds(selectedCategoryIds.filter(id => id !== category.id));
+                                            setSelectedCategoryIds(prev => prev.filter(id => id !== categoryId));
                                           }
                                         }}
                                         className="w-4 h-4"
