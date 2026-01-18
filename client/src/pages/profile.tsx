@@ -149,9 +149,9 @@ export default function Profile() {
     },
   });
 
-  // Category verification mutation
   const categoryVerificationMutation = useMutation({
     mutationFn: async (data: CategoryVerificationRequestForm) => {
+      console.log('Starting category verification mutation with data:', data);
       if (!uploadedDocuments.length) {
         throw new Error('Please upload at least one document');
       }
@@ -159,26 +159,30 @@ export default function Profile() {
         throw new Error('Please select at least one category');
       }
       // Submit for each selected category
-      const promises = selectedCategoryIds.map(categoryId =>
-        apiRequest('POST', `/api/provider/category-verifications/${Number(categoryId)}/submit-documents`, {
+      const promises = selectedCategoryIds.map(categoryId => {
+        console.log(`Submitting document for category ID: ${categoryId}`);
+        return apiRequest('POST', `/api/provider/category-verifications/${Number(categoryId)}/submit-documents`, {
           documents: uploadedDocuments,
-        }).then(res => res.json())
-      );
+        }).then(res => res.json());
+      });
       const results = await Promise.all(promises);
+      console.log('Mutation results:', results);
       return results[0]; // Return first result for toast message
     },
     onSuccess: () => {
+      console.log('Mutation successful, invalidating queries...');
       queryClient.invalidateQueries({ queryKey: ['/api/provider/category-verifications'] });
       setCategoryVerificationDialogOpen(false);
       categoryVerificationForm.reset();
       setUploadedDocuments([]);
       setSelectedCategoryIds([]);
       toast({
-        title: 'Request Submitted',
+        title: 'Verification Request Submitted',
         description: `Your category verification request(s) have been submitted for admin approval.`,
       });
     },
     onError: (error: Error) => {
+      console.error('Mutation error:', error);
       toast({
         title: 'Request Failed',
         description: error.message,
@@ -811,8 +815,14 @@ export default function Profile() {
                                 Cancel
                               </Button>
                               <Button
-                                type="submit"
+                                type="button"
                                 disabled={categoryVerificationMutation.isPending || uploadedDocuments.length === 0 || selectedCategoryIds.length === 0}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  console.log('Submit button clicked, category IDs:', selectedCategoryIds);
+                                  categoryVerificationMutation.mutate({ categoryIds: selectedCategoryIds });
+                                }}
                                 data-testid="button-submit-category"
                               >
                                 {categoryVerificationMutation.isPending ? (

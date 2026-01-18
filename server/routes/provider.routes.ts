@@ -276,7 +276,10 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
         type: 'new_verification'
       })
 
-      res.json({ message: "Documents submitted successfully", verification: updated })
+      res.json({ 
+        message: "Verification request submitted successfully", 
+        verification: updated 
+      })
     } catch (error: any) {
       if (error instanceof ZodError) {
         return res.status(400).json({
