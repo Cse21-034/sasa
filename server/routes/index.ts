@@ -18,3 +18,5 @@ export { registerMessagingRoutes } from "./messages.routes"
 export { registerMiscRoutes } from "./misc.routes"
 export { registerNotificationRoutes } from "./notifications.routes"
 export { registerCategoryRoutes } from "./categories.routes"
+export { registerPushNotificationRoutes } from "./push-notification.routes"
+

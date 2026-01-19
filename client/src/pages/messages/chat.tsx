@@ -87,31 +87,31 @@ useEffect(() => {
   const otherUser = job?.requesterId === user?.id ? job?.provider : job?.requester;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl h-[calc(100vh-8rem)]">
+    <div className="container mx-auto px-2 md:px-4 py-4 md:py-8 max-w-4xl h-[calc(100vh-8rem)] md:h-[calc(100vh-9rem)]">
       <Card className="h-full flex flex-col">
         {/* Header */}
-        <CardHeader className="border-b">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => window.history.back()} data-testid="button-back">
-              <ArrowLeft className="h-5 w-5" />
+        <CardHeader className="border-b p-3 md:p-6">
+          <div className="flex items-center gap-2 md:gap-4">
+            <Button variant="ghost" size="icon" onClick={() => window.history.back()} data-testid="button-back" className="h-8 w-8 md:h-10 md:w-10">
+              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-8 w-8 md:h-10 md:w-10">
               <AvatarImage src={otherUser?.profilePhotoUrl} />
               <AvatarFallback>{otherUser?.name?.charAt(0)}</AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <h2 className="font-semibold">{otherUser?.name}</h2>
-              <p className="text-sm text-muted-foreground truncate">{job?.title}</p>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-semibold text-sm md:text-base truncate">{otherUser?.name}</h2>
+              <p className="text-xs md:text-sm text-muted-foreground truncate">{job?.title}</p>
             </div>
           </div>
         </CardHeader>
 
         {/* Messages */}
-        <CardContent className="flex-1 overflow-y-auto p-6 space-y-4">
+        <CardContent className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 md:space-y-4">
           {isLoading ? (
             [1, 2, 3, 4].map((i) => (
               <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
-                <Skeleton className="h-16 w-64 rounded-2xl" />
+                <Skeleton className="h-12 md:h-16 w-40 md:w-64 rounded-2xl" />
               </div>
             ))
           ) : messages && messages.length > 0 ? (
@@ -123,15 +123,15 @@ useEffect(() => {
                   className={`flex ${isSender ? 'justify-end' : 'justify-start'} animate-slide-up`}
                 >
                   <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                    className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-3 md:px-4 py-2 break-words ${
                       isSender
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted'
                     }`}
                   >
-                    <p className="text-sm leading-relaxed">{message.messageText}</p>
+                    <p className="text-xs md:text-sm leading-relaxed">{message.messageText}</p>
                     <p
-                      className={`text-xs mt-1 ${
+                      className={`text-[10px] md:text-xs mt-1 ${
                         isSender ? 'text-primary-foreground/70' : 'text-muted-foreground'
                       }`}
                     >
@@ -146,20 +146,20 @@ useEffect(() => {
             })
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
-              <p>No messages yet. Start the conversation!</p>
+              <p className="text-xs md:text-sm">No messages yet. Start the conversation!</p>
             </div>
           )}
           <div ref={messagesEndRef} />
         </CardContent>
 
         {/* Input */}
-        <div className="border-t p-4">
-          <form onSubmit={handleSendMessage} className="flex gap-2">
+        <div className="border-t p-2 md:p-4">
+          <form onSubmit={handleSendMessage} className="flex gap-1 md:gap-2">
             <Input
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
               placeholder="Type a message..."
-              className="flex-1"
+              className="flex-1 text-xs md:text-sm h-9 md:h-10"
               data-testid="input-message"
             />
             <Button
@@ -167,8 +167,9 @@ useEffect(() => {
               size="icon"
               disabled={!messageText.trim() || sendMessageMutation.isPending}
               data-testid="button-send-message"
+              className="h-9 w-9 md:h-10 md:w-10"
             >
-              <Send className="h-5 w-5" />
+              <Send className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
           </form>
         </div>
