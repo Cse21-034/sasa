@@ -1,21 +1,20 @@
-// Service Worker for JobTradeSasa PWA
+// client/public/service-worker.js - FIXED VERSION
 const CACHE_NAME = 'jobtradesasa-v1';
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
 ];
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
+  console.log('🔧 Service Worker installing...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Caching static assets');
+      console.log('📦 Caching static assets');
       return cache.addAll(urlsToCache);
     }).catch((error) => {
-      console.error('Cache installation failed:', error);
+      console.error('❌ Cache installation failed:', error);
     })
   );
   self.skipWaiting();
@@ -23,56 +22,80 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
+  console.log('✅ Service Worker activated');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
+            console.log('🗑️ Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
-    }).catch((error) => {
-      console.error('Cache cleanup failed:', error);
     })
   );
   self.clients.claim();
 });
 
-// Push notification event
+// Push notification event - THIS IS THE KEY PART
 self.addEventListener('push', (event) => {
-  console.log('🔔 Push notification received:', event);
+  console.log('🔔 Push notification received!', event);
   
-  if (!event.data) {
-    console.log('No data in push event');
-    return;
-  }
+  let notificationData = {
+    title: 'New Notification',
+    body: 'You have a new update',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    tag: 'notification',
+    url: '/',
+  };
 
-  let notificationData;
-  try {
-    notificationData = event.data.json();
-  } catch (e) {
-    notificationData = {
-      title: 'New Notification',
-      body: event.data.text(),
-    };
+  if (event.data) {
+    try {
+      // Try to parse as JSON
+      const data = event.data.json();
+      console.log('📬 Push data:', data);
+      
+      notificationData = {
+        title: data.title || 'New Notification',
+        body: data.body || data.message || '',
+        icon: data.icon || '/icon-192.png',
+        badge: data.badge || '/icon-192.png',
+        tag: data.tag || 'notification',
+        url: data.url || '/',
+        data: data, // Store all data for click handling
+      };
+    } catch (e) {
+      // If not JSON, use text
+      console.log('📬 Push text:', event.data.text());
+      notificationData.body = event.data.text();
+    }
   }
 
   const options = {
-    body: notificationData.body || notificationData.message || '',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    tag: notificationData.tag || 'notification',
+    body: notificationData.body,
+    icon: notificationData.icon,
+    badge: notificationData.badge,
+    tag: notificationData.tag,
     requireInteraction: true,
+    vibrate: [200, 100, 200],
     data: {
-      url: notificationData.url || '/',
-      ...notificationData,
+      url: notificationData.url,
+      dateOfArrival: Date.now(),
     },
   };
 
+  console.log('📢 Showing notification:', notificationData.title, options);
+
   event.waitUntil(
-    self.registration.showNotification(notificationData.title || 'Notification', options)
+    self.registration.showNotification(notificationData.title, options)
+      .then(() => {
+        console.log('✅ Notification shown successfully');
+      })
+      .catch((error) => {
+        console.error('❌ Error showing notification:', error);
+      })
   );
 });
 
@@ -85,14 +108,18 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Check if there's already a window/tab open with the target URL
+      // Check if there's already a window/tab open
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
-        if (client.url === urlToOpen && 'focus' in client) {
-          return client.focus();
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus().then(() => {
+            if (client.navigate) {
+              return client.navigate(urlToOpen);
+            }
+          });
         }
       }
-      // If not, open a new window/tab with the target URL
+      // If not, open a new window/tab
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
@@ -122,20 +149,12 @@ self.addEventListener('fetch', (event) => {
             const responseClone = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
               cache.put(event.request, responseClone);
-            }).catch((error) => {
-              console.error('Cache put failed:', error);
             });
           }
           return response;
         })
-        .catch((error) => {
-          console.error('Network fetch failed:', error);
-          return caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            throw new Error('Network and cache fetch failed');
-          });
+        .catch(() => {
+          return caches.match(event.request);
         })
     );
     return;
@@ -144,13 +163,7 @@ self.addEventListener('fetch', (event) => {
   // Static assets - cache first, network fallback
   event.respondWith(
     caches.match(event.request).then((response) => {
-      if (response) {
-        return response;
-      }
-      return fetch(event.request).catch((error) => {
-        console.error('Static asset fetch failed:', error);
-        throw error;
-      });
+      return response || fetch(event.request);
     })
   );
 });
