@@ -40,6 +40,71 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Push notification event
+self.addEventListener('push', (event) => {
+  console.log('🔔 Push notification received:', event);
+  
+  if (!event.data) {
+    console.log('No data in push event');
+    return;
+  }
+
+  let notificationData;
+  try {
+    notificationData = event.data.json();
+  } catch (e) {
+    notificationData = {
+      title: 'New Notification',
+      body: event.data.text(),
+    };
+  }
+
+  const options = {
+    body: notificationData.body || notificationData.message || '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    tag: notificationData.tag || 'notification',
+    requireInteraction: true,
+    data: {
+      url: notificationData.url || '/',
+      ...notificationData,
+    },
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title || 'Notification', options)
+  );
+});
+
+// Notification click event
+self.addEventListener('notificationclick', (event) => {
+  console.log('📌 Notification clicked:', event.notification.tag);
+  event.notification.close();
+
+  const urlToOpen = event.notification.data.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Check if there's already a window/tab open with the target URL
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // If not, open a new window/tab with the target URL
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
+
+// Notification close event
+self.addEventListener('notificationclose', (event) => {
+  console.log('✕ Notification closed:', event.notification.tag);
+});
+
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests

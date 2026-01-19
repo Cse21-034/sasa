@@ -61,7 +61,7 @@ export function MobileNav() {
         </Link>
       )}
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90 rounded-t-3xl">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 rounded-t-3xl">
         <div className="flex items-center justify-around h-20 px-2">
           {navItems.map((item) => {
             const isActive = location === item.href;
@@ -70,8 +70,8 @@ export function MobileNav() {
                 <a
                   className={`flex flex-col items-center justify-center flex-1 h-full gap-1 rounded-2xl transition-all duration-200 py-2 ${
                     isActive
-                      ? 'text-orange-500 bg-orange-50'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'text-orange-500 bg-orange-50 dark:bg-orange-950/40'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
                   data-testid={item.testId}
                 >
