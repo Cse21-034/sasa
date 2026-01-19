@@ -22,6 +22,10 @@ import { useAuth } from '@/lib/auth-context';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useTranslation } from 'react-i18next';
 import type { Category, ServiceAreaMigration, ProviderCategoryVerification } from '@shared/schema';
+import PushNotificationTest from '@/components/push-notification-test';
+   
+    // In your profile page
+   <PushNotificationTest />
 
 // Botswana cities for migration request
 const botswanaCities = [
