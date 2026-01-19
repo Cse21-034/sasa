@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { Home, Briefcase, MessageSquare, User, LayoutDashboard, FileText, Building2, Tag, Users, TrendingUp, UserCheck } from 'lucide-react';
+import { Home, Briefcase, MessageSquare, User, LayoutDashboard, FileText, Building2, Tag, Users, TrendingUp, UserCheck, Plus } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 export function MobileNav() {
@@ -27,6 +27,7 @@ export function MobileNav() {
   const requesterItems = [
     { href: '/jobs', icon: Briefcase, label: 'My Jobs', testId: 'nav-jobs' },
     { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
+    { href: '/promotions', icon: Tag, label: 'Promos', testId: 'nav-promotions' },
     { href: '/suppliers', icon: Building2, label: 'Suppliers', testId: 'nav-suppliers' },
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
@@ -34,6 +35,7 @@ export function MobileNav() {
   const providerItems = [
     { href: '/jobs', icon: Home, label: 'Browse', testId: 'nav-home' },
     { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
+    { href: '/promotions', icon: TrendingUp, label: 'Promos', testId: 'nav-promos' },
     { href: '/provider/applications', icon: Briefcase, label: 'Applications', testId: 'nav-applications' },
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
@@ -49,25 +51,36 @@ export function MobileNav() {
   }
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex items-center justify-around h-16">
-        {navItems.map((item) => {
-          const isActive = location === item.href;
-          return (
-            <Link key={item.href} href={item.href}>
-              <a
-                className={`flex flex-col items-center justify-center flex-1 h-full gap-1 hover-elevate transition-colors ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`}
-                data-testid={item.testId}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="text-xs font-medium">{item.label}</span>
-              </a>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+    <>
+      {/* FAB Button for Post Job (Requester only) */}
+      {user?.role === 'requester' && (
+        <Link href="/post-job">
+          <a className="md:hidden fixed bottom-24 right-4 z-50 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center">
+            <Plus className="h-6 w-6" />
+          </a>
+        </Link>
+      )}
+
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center justify-around h-16">
+          {navItems.map((item) => {
+            const isActive = location === item.href;
+            return (
+              <Link key={item.href} href={item.href}>
+                <a
+                  className={`flex flex-col items-center justify-center flex-1 h-full gap-1 hover-elevate transition-colors ${
+                    isActive ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                  data-testid={item.testId}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span className="text-xs font-medium">{item.label}</span>
+                </a>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    </>
   );
 }
