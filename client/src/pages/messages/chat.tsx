@@ -40,6 +40,13 @@ export default function Chat() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/messages', params?.jobId] });
       setMessageText('');
+      
+      // Request notification permission and show push notification if possible
+      if ('Notification' in window) {
+        if (Notification.permission === 'default') {
+          Notification.permission === 'granted' || Notification.requestPermission();
+        }
+      }
     },
   });
   

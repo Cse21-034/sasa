@@ -191,10 +191,10 @@ export default function BrowseJobs() {
                         </Badge>
                       </div>
                     </div>
-                    <h3 className="text-lg font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                    <h3 className="text-lg font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors overflow-hidden text-ellipsis">
                       {job.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2 overflow-hidden text-ellipsis break-words">
                       {job.description}
                     </p>
                     <div className="space-y-2">

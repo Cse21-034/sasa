@@ -86,17 +86,17 @@
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: 'JetBrains Mono', Menlo, monospace;
-  --radius: .75rem;
+  --radius: 1.25rem;
   
-  /* Shadows - Adjusted to use HSL colors */
-  --shadow-2xs: 0px 1px 2px 0px hsla(0, 0%, 0%, 0.05);
-  --shadow-xs: 0px 2px 4px 0px hsla(0, 0%, 0%, 0.08);
-  --shadow-sm: 0px 3px 6px 0px hsla(0, 0%, 0%, 0.1);
-  --shadow: 0px 4px 8px 0px hsla(0, 0%, 0%, 0.12);
-  --shadow-md: 0px 6px 12px 0px hsla(0, 0%, 0%, 0.15);
-  --shadow-lg: 0px 10px 20px 0px hsla(0, 0%, 0%, 0.18);
-  --shadow-xl: 0px 15px 30px 0px hsla(0, 0%, 0%, 0.22);
-  --shadow-2xl: 0px 25px 50px 0px hsla(0, 0%, 0%, 0.25);
+  /* Shadows - Adjusted for iOS 26 style (softer, larger) */
+  --shadow-2xs: 0px 1px 2px 0px hsla(0, 0%, 0%, 0.03);
+  --shadow-xs: 0px 2px 8px 0px hsla(0, 0%, 0%, 0.05);
+  --shadow-sm: 0px 4px 12px 0px hsla(0, 0%, 0%, 0.08);
+  --shadow: 0px 8px 16px 0px hsla(0, 0%, 0%, 0.1);
+  --shadow-md: 0px 12px 24px 0px hsla(0, 0%, 0%, 0.12);
+  --shadow-lg: 0px 16px 32px 0px hsla(0, 0%, 0%, 0.15);
+  --shadow-xl: 0px 24px 48px 0px hsla(0, 0%, 0%, 0.18);
+  --shadow-2xl: 0px 32px 64px 0px hsla(0, 0%, 0%, 0.2);
 
   /* Computed borders */
   --sidebar-primary-border: hsl(33 92% 65%);
@@ -231,19 +231,19 @@
 }
 
 @layer utilities {
-  /* Glass morphism effect - KEPT */
+  /* Glass morphism effect - UPDATED for iOS 26 */
   .glass {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: hsla(var(--background), 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsla(var(--border), 0.4);
   }
 
   .glass-dark {
-    background: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: hsla(var(--background), 0.6);
+    backdrop-filter: blur(25px) saturate(200%);
+    -webkit-backdrop-filter: blur(25px) saturate(200%);
+    border: 1px solid hsla(var(--border), 0.2);
   }
 
   /* Floating animation - KEPT */

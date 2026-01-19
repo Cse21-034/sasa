@@ -27,14 +27,14 @@ export function MobileNav() {
   const requesterItems = [
     { href: '/jobs', icon: Briefcase, label: 'My Jobs', testId: 'nav-jobs' },
     { href: '/suppliers', icon: Building2, label: 'Suppliers', testId: 'nav-suppliers' },
-    { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
+    { href: '/promotions', icon: TrendingUp, label: 'Promos', testId: 'nav-promotions' },
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
 
   const providerItems = [
     { href: '/jobs', icon: Home, label: 'Browse', testId: 'nav-home' },
     { href: '/provider/applications', icon: Briefcase, label: 'Applications', testId: 'nav-applications' },
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', testId: 'nav-dashboard' },
+    { href: '/promotions', icon: TrendingUp, label: 'Promos', testId: 'nav-promotions' },
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
 
