@@ -126,22 +126,22 @@ export function NotificationPanel() {
         <>
           {/* Mobile Overlay */}
           <div
-            className="fixed inset-0 md:hidden z-40"
+            className="fixed inset-0 md:hidden z-40 bg-black/50"
             onClick={() => setIsOpen(false)}
           />
           
-          <div className="fixed md:absolute bottom-0 md:bottom-auto md:top-full right-0 md:mt-2 md:left-auto w-full md:w-96 bg-white rounded-t-3xl md:rounded-lg shadow-2xl md:shadow-xl border-t md:border border-gray-200 z-50 max-h-[80vh] md:max-h-[500px] overflow-y-auto md:mx-0 mx-0">
+          <div className="fixed md:absolute bottom-20 md:bottom-auto md:right-0 md:top-full md:mt-3 right-4 md:mx-0 left-4 md:left-auto w-auto md:w-96 bg-white rounded-2xl md:rounded-xl shadow-2xl md:shadow-lg border border-gray-200 z-50 max-h-[70vh] md:max-h-[500px] overflow-y-auto">
             {/* Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-teal-50 to-teal-100 border-b border-teal-200 p-4 md:p-4 flex items-center justify-between rounded-t-3xl md:rounded-t-lg">
+            <div className="sticky top-0 bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200 p-4 flex items-center justify-between rounded-t-2xl md:rounded-t-xl">
               <div>
                 <h3 className="font-semibold text-gray-900 text-sm md:text-base">Notifications</h3>
                 {unreadCount > 0 && <p className="text-xs md:text-sm text-gray-600">{unreadCount} unread</p>}
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1 hover:bg-white/50 rounded transition-colors"
+                className="p-1 hover:bg-white/50 rounded-lg transition-colors"
               >
-                <X className="w-4 h-4 text-gray-600" />
+                <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
 
@@ -214,13 +214,13 @@ export function NotificationPanel() {
 
               {/* Footer Actions */}
               {unreadNotifications.length > 0 && (
-                <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 p-4 md:p-4 flex gap-2 rounded-b-3xl md:rounded-b-lg">
+                <div className="sticky bottom-0 bg-gradient-to-r from-orange-50 to-orange-100 border-t border-orange-200 p-3 md:p-4 flex gap-2 rounded-b-2xl md:rounded-b-xl">
                   <Button
                     onClick={() => {
                       markAllAsRead();
                       setIsOpen(false);
                     }}
-                    className="flex-1 text-xs md:text-sm bg-teal-500 hover:bg-teal-600 text-white font-semibold"
+                    className="flex-1 text-xs md:text-sm bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg"
                   >
                     <Check className="w-4 h-4 mr-2" />
                     Mark all as read
