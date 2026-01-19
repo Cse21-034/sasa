@@ -19,22 +19,22 @@ export function MobileNav() {
   // Supplier navigation items
   const supplierItems = [
     { href: '/suppliers', icon: Building2, label: 'Browse', testId: 'nav-suppliers-browse' },
-    { href: '/supplier/dashboard', icon: Tag, label: 'Promotions', testId: 'nav-supplier-dashboard' },
-    { href: '/promotions', icon: TrendingUp, label: 'Promos', testId: 'nav-promotions' },
+    { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
+    { href: '/supplier/dashboard', icon: Tag, label: 'Dashboard', testId: 'nav-supplier-dashboard' },
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
 
   const requesterItems = [
     { href: '/jobs', icon: Briefcase, label: 'My Jobs', testId: 'nav-jobs' },
+    { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
     { href: '/suppliers', icon: Building2, label: 'Suppliers', testId: 'nav-suppliers' },
-    { href: '/promotions', icon: TrendingUp, label: 'Promos', testId: 'nav-promotions' },
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
 
   const providerItems = [
     { href: '/jobs', icon: Home, label: 'Browse', testId: 'nav-home' },
+    { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
     { href: '/provider/applications', icon: Briefcase, label: 'Applications', testId: 'nav-applications' },
-    { href: '/promotions', icon: TrendingUp, label: 'Promos', testId: 'nav-promotions' },
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
 

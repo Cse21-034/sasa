@@ -71,7 +71,7 @@ export default function Suppliers() {
       </div>
 
       {/* Search and Filter */}
-      <Card className="mb-6 border-2">
+      <Card className="mb-6">
         <CardContent className="p-6">
           <div className="space-y-4">
             {/* Search Bar */}

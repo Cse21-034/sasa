@@ -164,7 +164,7 @@ export default function AdminUsers() {
       </div>
 
       {/* Filters and Search */}
-      <Card className="mb-6 border-2">
+      <Card className="mb-6">
         <CardContent className="p-6">
           <form onSubmit={handleSearch} className="grid md:grid-cols-4 gap-4">
             <div className="md:col-span-2 relative">
@@ -208,7 +208,7 @@ export default function AdminUsers() {
       </Card>
 
       {/* Users Table */}
-      <Card className="border-2">
+      <Card className="">
         <CardHeader>
           <CardTitle>User Accounts ({users?.length || 0})</CardTitle>
           <CardDescription>A list of all users on the platform.</CardDescription>

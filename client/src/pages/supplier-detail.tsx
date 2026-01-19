@@ -88,7 +88,7 @@ export default function SupplierDetail() {
       </Link>
 
       {/* Header Section */}
-      <Card className="mb-6 border-2">
+      <Card className="mb-6">
         <CardContent className="p-8">
           <div className="flex flex-col md:flex-row gap-6 items-start">
             <Avatar className="h-32 w-32 border-4">
@@ -152,7 +152,7 @@ export default function SupplierDetail() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Contact Person */}
-          <Card className="border-2">
+          <Card className=">
             <CardHeader>
               <CardTitle className="text-lg">Contact Person</CardTitle>
             </CardHeader>
@@ -164,7 +164,7 @@ export default function SupplierDetail() {
 
           {/* Social Media Links */}
           {(supplier.facebookUrl || supplier.instagramUrl || supplier.twitterUrl || supplier.whatsappNumber) && (
-  <Card className="border-2">
+  <Card className=">
     <CardHeader>
       <CardTitle className="text-lg">Connect With Us</CardTitle>
     </CardHeader>
@@ -219,7 +219,7 @@ export default function SupplierDetail() {
 
         {/* Main Content - Promotions */}
         <div className="md:col-span-2">
-          <Card className="border-2">
+          <Card className=">
             <CardHeader>
               <CardTitle className="text-xl">Active Promotions & Specials</CardTitle>
             </CardHeader>

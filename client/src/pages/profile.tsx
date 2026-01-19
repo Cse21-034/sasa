@@ -351,7 +351,7 @@ export default function Profile() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <Card className="border-2">
+      <Card className="">
         <CardHeader>
           <CardTitle className="text-3xl">{t('Profile Settings')}</CardTitle>
           <CardDescription>{t('Manage your account information')}</CardDescription>

@@ -199,7 +199,7 @@ export default function SupplierDashboard() {
         </div>
       </div>
 
-      <Card className="mb-6 border-2">
+      <Card className="mb-6">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>

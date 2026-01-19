@@ -52,7 +52,7 @@ export default function PromotionsPage() {
 
       <div className="container mx-auto px-4 pb-20">
         {activePromotions.length === 0 ? (
-          <Card className="bg-muted/30 border-dashed border-2">
+          <Card className="bg-muted/30 border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-20">
               <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-6">
                 <Tag className="h-10 w-10 text-muted-foreground/40" />

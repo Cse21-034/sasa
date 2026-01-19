@@ -191,7 +191,7 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
   }
 
   return (
-    <Card className="border-2">
+    <Card className="">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
             {user?.role === 'requester' ? <UserCheck className="h-6 w-6" /> : <Wrench className="h-6 w-6" />}
@@ -414,7 +414,7 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
   }
 
   return (
-    <Card className="border-2">
+    <Card className="">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-6 w-6" />

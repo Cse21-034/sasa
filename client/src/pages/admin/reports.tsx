@@ -79,7 +79,7 @@ export default function AdminReports() {
       </div>
 
       {/* Filter */}
-      <Card className="mb-6 border-2">
+      <Card className="mb-6">
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
             <CardDescription className="flex-shrink-0">Filter Status:</CardDescription>

@@ -97,7 +97,7 @@ export default function AdminChatUserView() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl h-[calc(100vh-8rem)]">
-      <Card className="h-full flex flex-col border-2">
+      <Card className="h-full flex flex-col">
         {/* Header */}
         <CardHeader className="border-b bg-primary/10">
           <div className="flex items-center gap-4">

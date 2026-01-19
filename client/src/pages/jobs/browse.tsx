@@ -80,8 +80,8 @@ export default function BrowseJobs() {
       </div>
 
       {/* Filters Section */}
-      <Card className="mb-6 border-2">
-        <CardContent className="p-6">
+      <Card className="mb-6">
+        <CardContent className="p-4 md:p-6">
           <div className="space-y-4">
             {/* Search Bar */}
             <div className="relative">
@@ -144,10 +144,10 @@ export default function BrowseJobs() {
 
       {/* Jobs Grid */}
       {jobsLoading ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-20 md:pb-0">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <Card key={i}>
-              <CardContent className="p-6">
+              <CardContent className="p-4 md:p-6">
                 <Skeleton className="h-6 w-3/4 mb-4" />
                 <Skeleton className="h-4 w-full mb-2" />
                 <Skeleton className="h-4 w-2/3 mb-4" />
@@ -160,7 +160,7 @@ export default function BrowseJobs() {
           ))}
         </div>
       ) : filteredJobs && filteredJobs.length > 0 ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-20 md:pb-0">
           {filteredJobs.map((job) => (
             <Link key={job.id} href={`/jobs/${job.id}`}>
               <a>
@@ -168,15 +168,15 @@ export default function BrowseJobs() {
                   className="hover:shadow-lg hover:scale-105 transition-all duration-300 hover:border-primary/50 h-full group cursor-pointer" 
                   data-testid={`card-job-${job.id}`}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-3">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex items-start justify-between mb-3 gap-2">
                       <div className="flex gap-2 flex-wrap">
-                        <Badge variant={job.urgency === 'emergency' ? 'destructive' : 'secondary'}>
+                        <Badge variant={job.urgency === 'emergency' ? 'destructive' : 'secondary'} className="text-xs md:text-sm">
                           {job.urgency === 'emergency' ? '🚨 Emergency' : 'Normal'}
                         </Badge>
                         <Badge 
                           variant="outline" 
-                          className={`${
+                          className={`text-xs md:text-sm ${
                             job.status === 'open' 
                               ? 'bg-success/10 text-success border-success/20'
                               : job.status === 'completed'
@@ -191,25 +191,25 @@ export default function BrowseJobs() {
                         </Badge>
                       </div>
                     </div>
-                    <h3 className="text-lg font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors overflow-hidden text-ellipsis break-words">
+                    <h3 className="text-base md:text-lg font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors break-words">
                       {job.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-3 overflow-hidden text-ellipsis break-words">
+                    <p className="text-xs md:text-sm text-muted-foreground mb-4 line-clamp-3 break-words whitespace-normal">
                       {job.description}
                     </p>
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-muted-foreground truncate">{job.address || 'Location not specified'}</span>
+                      <div className="flex items-start gap-2 text-xs md:text-sm">
+                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                        <span className="text-muted-foreground break-words">{job.address || 'Location not specified'}</span>
                       </div>
                       {job.expiryDate && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Clock className={`h-4 w-4 flex-shrink-0 ${
+                        <div className="flex items-start gap-2 text-xs md:text-sm">
+                          <Clock className={`h-4 w-4 flex-shrink-0 mt-0.5 ${
                             new Date(job.expiryDate).getTime() - new Date().getTime() < 86400000 
                               ? 'text-red-500 animate-pulse' 
                               : 'text-muted-foreground'
                           }`} />
-                          <span className={`${
+                          <span className={`break-words ${
                             new Date(job.expiryDate).getTime() - new Date().getTime() < 86400000 
                               ? 'text-red-500 font-bold' 
                               : 'text-muted-foreground'
@@ -218,7 +218,7 @@ export default function BrowseJobs() {
                           </span>
                         </div>
                       )}
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
                         <Badge variant="outline" className="text-xs">
                           {job.category?.name || 'Uncategorized'}
                         </Badge>

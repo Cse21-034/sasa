@@ -111,7 +111,7 @@ export default function SupplierSettings() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <Card className="border-2">
+          <Card className="">
             <CardHeader>
               <CardTitle>About Your Business</CardTitle>
               <CardDescription>Help customers learn more about your company</CardDescription>
@@ -157,7 +157,7 @@ export default function SupplierSettings() {
             </CardContent>
           </Card>
 
-          <Card className="border-2">
+          <Card className="">
             <CardHeader>
               <CardTitle>Contact & Social Media</CardTitle>
               <CardDescription>Make it easy for customers to reach you</CardDescription>

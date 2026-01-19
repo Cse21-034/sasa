@@ -266,7 +266,7 @@ export default function AdminVerification() {
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">User Verification Review</h1>
       
-      <Card className="mb-8 border-2">
+      <Card className="mb-8">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Pending</CardTitle>
             <AlertCircle className="h-4 w-4 text-warning" />
@@ -280,7 +280,7 @@ export default function AdminVerification() {
       {isLoading ? (
         <Loader2 className="h-8 w-8 animate-spin mx-auto mt-12" />
       ) : totalPending === 0 ? (
-        <Card className="border-2 border-dashed mt-8">
+        <Card className="border-dashed mt-8">
             <CardContent className="p-12 text-center">
                 <UserCheck className="h-12 w-12 mx-auto text-success mb-4" />
                 <h3 className="text-lg font-semibold">No Pending Submissions</h3>

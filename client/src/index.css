@@ -9,42 +9,42 @@
   Secondary: Dark Teal/Navy (#274345 -> 186 35% 21%)
 */
 
-/* LIGHT MODE (Primary Theme) */
+/* LIGHT MODE (iOS 26 Design with Original Colors) */
 :root {
   /* Dynamic Elevation */
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
-  --opaque-button-border-intensity: -8;
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --button-outline: rgba(0,0,0, .08);
+  --badge-outline: rgba(0,0,0, .04);
+  --opaque-button-border-intensity: -6;
+  --elevate-1: rgba(0,0,0, .02);
+  --elevate-2: rgba(0,0,0, .05);
 
-  /* Corporate Palette - White Base */
-  --background: 0 0% 100%;       /* White */
-  --foreground: 186 35% 21%;    /* Dark Teal/Navy Text */
-  --border: 186 10% 90%;        /* Light Blue/Gray border */
+  /* iOS 26 Palette - Original Colors */
+  --background: 0 0% 100%;           /* Pure White */
+  --foreground: 186 35% 21%;         /* Original Dark Teal/Navy Text */
+  --border: 186 10% 90%;             /* Light Gray */
 
-  /* Card Styling */
-  --card: 0 0% 100%;            /* White Card background */
+  /* Card Styling - iOS 26 Style */
+  --card: 0 0% 100%;                 /* White Card */
   --card-foreground: 186 35% 21%;
-  --card-border: 186 10% 90%;   /* Visible light border */
+  --card-border: 186 10% 88%;        /* Subtle light border */
 
   /* Sidebar */
-  --sidebar: 186 10% 95%;      /* Very Light Blue/Gray Sidebar */
+  --sidebar: 0 0% 98%;               /* Almost white Sidebar */
   --sidebar-foreground: 186 35% 21%;
   --sidebar-border: 186 10% 90%;
   
-  /* Primary Orange (#F8992D) */
-  --primary: 33 92% 58%; 
-  --primary-foreground: 0 0% 100%; /* White text */
+  /* Primary - Original Orange (#F8992D) */
+  --primary: 33 92% 58%;             /* Original Orange */
+  --primary-foreground: 0 0% 100%;   /* White text */
 
-  /* Secondary Orange (MATCHES PRIMARY) */
-  --secondary: 33 92% 58%; 
+  /* Secondary - Original Orange (Matches Primary) */
+  --secondary: 33 92% 58%;           /* Original Orange */
   --secondary-foreground: 0 0% 100%; /* White text */
 
-  /* Sidebar/Accent - Using primary/secondary colors */
-  --sidebar-primary: 33 92% 58%; 
+  /* Sidebar/Accent - Using original primary/secondary colors */
+  --sidebar-primary: 33 92% 58%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 33 92% 58%;  
+  --sidebar-accent: 33 92% 58%;
   --sidebar-accent-foreground: 0 0% 100%;
   --sidebar-ring: 33 92% 65%;
 
@@ -57,16 +57,16 @@
   --muted: 186 10% 90%;
   --muted-foreground: 186 10% 45%;
 
-  /* Accent - Orange (Same as Primary/Secondary) */
-  --accent: 33 92% 58%;  
+  /* Accent - Original Orange */
+  --accent: 33 92% 58%;
   --accent-foreground: 0 0% 100%;
 
-  /* Destructive - Keeping standard red for warnings/errors */
+  /* Destructive - Standard Red */
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
 
-  /* Success - Using Primary Orange for general success/completion indicators, keeping destructive separate */
-  --success: 33 92% 58%; 
+  /* Success - Original Orange */
+  --success: 33 92% 58%;
   --success-foreground: 0 0% 100%;
 
   /* Warning - Standard Orange/Yellow */
@@ -77,129 +77,129 @@
   --ring: 33 92% 65%;
   
   /* Chart colors */
-  --chart-1: 33 92% 58%;     /* Orange (Primary) */
-  --chart-2: 186 35% 21%;    /* Dark Teal (Secondary) */
-  --chart-3: 186 10% 45%;    /* Muted Text */
-  --chart-4: 186 10% 60%;     /* Medium Gray/Blue */
-  --chart-5: 186 10% 70%;     /* Light Gray/Blue */
+  --chart-1: 33 92% 58%;             /* Orange (Primary) */
+  --chart-2: 186 35% 21%;            /* Dark Teal (Secondary) */
+  --chart-3: 186 10% 45%;            /* Muted Text */
+  --chart-4: 186 10% 60%;            /* Medium Gray/Blue */
+  --chart-5: 186 10% 70%;            /* Light Gray/Blue */
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   --font-serif: Georgia, serif;
-  --font-mono: 'JetBrains Mono', Menlo, monospace;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Menlo', monospace;
   --radius: 1.25rem;
   
-  /* Shadows - Adjusted for iOS 26 style (softer, larger) */
-  --shadow-2xs: 0px 1px 2px 0px hsla(0, 0%, 0%, 0.03);
-  --shadow-xs: 0px 2px 8px 0px hsla(0, 0%, 0%, 0.05);
-  --shadow-sm: 0px 4px 12px 0px hsla(0, 0%, 0%, 0.08);
-  --shadow: 0px 8px 16px 0px hsla(0, 0%, 0%, 0.1);
-  --shadow-md: 0px 12px 24px 0px hsla(0, 0%, 0%, 0.12);
-  --shadow-lg: 0px 16px 32px 0px hsla(0, 0%, 0%, 0.15);
-  --shadow-xl: 0px 24px 48px 0px hsla(0, 0%, 0%, 0.18);
-  --shadow-2xl: 0px 32px 64px 0px hsla(0, 0%, 0%, 0.2);
+  /* iOS 26 Shadows - Softer */
+  --shadow-2xs: 0px 1px 2px 0px hsla(0, 0%, 0%, 0.02);
+  --shadow-xs: 0px 2px 4px 0px hsla(0, 0%, 0%, 0.03);
+  --shadow-sm: 0px 4px 8px 0px hsla(0, 0%, 0%, 0.05);
+  --shadow: 0px 8px 16px 0px hsla(0, 0%, 0%, 0.08);
+  --shadow-md: 0px 12px 24px 0px hsla(0, 0%, 0%, 0.10);
+  --shadow-lg: 0px 16px 32px 0px hsla(0, 0%, 0%, 0.12);
+  --shadow-xl: 0px 24px 48px 0px hsla(0, 0%, 0%, 0.15);
+  --shadow-2xl: 0px 32px 64px 0px hsla(0, 0%, 0%, 0.18);
 
   /* Computed borders */
   --sidebar-primary-border: hsl(33 92% 65%);
   --sidebar-accent-border: hsl(33 92% 65%);
   --primary-border: hsl(33 92% 65%);
   --secondary-border: hsl(33 92% 65%);
-  --muted-border: hsl(186 10% 80%);
+  --muted-border: hsl(186 10% 88%);
   --accent-border: hsl(33 92% 65%);
-  --destructive-border: hsl(0 84% 50%);
+  --destructive-border: hsl(0 84% 70%);
 }
 
-/* DARK MODE */
+/* DARK MODE (iOS 26 Dark with Original Colors) */
 .dark {
   /* Dynamic Elevation */
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
-  --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
+  --button-outline: rgba(255,255,255, .08);
+  --badge-outline: rgba(255,255,255, .04);
+  --opaque-button-border-intensity: 6;
+  --elevate-1: rgba(255,255,255, .03);
+  --elevate-2: rgba(255,255,255, .06);
 
-  /* Corporate Palette - Dark Teal/Navy Base */
-  --background: 186 35% 21%;     /* Dark Teal/Navy */
-  --foreground: 0 0% 100%;       /* White Text */
-  --border: 186 35% 30%;        /* Dark Teal Border */
+  /* iOS 26 Dark - Original Colors */
+  --background: 186 35% 10%;         /* Dark Teal/Navy */
+  --foreground: 0 0% 95%;            /* Near White Text */
+  --border: 186 25% 25%;             /* Dark Teal Border */
 
   /* Card Styling */
-  --card: 186 35% 25%;          /* Slightly lighter Dark Teal Card */
-  --card-foreground: 0 0% 100%;
-  --card-border: 186 35% 35%;   /* Subtle card separation */
+  --card: 186 35% 13%;               /* Dark Teal Card */
+  --card-foreground: 0 0% 95%;
+  --card-border: 186 25% 28%;        /* Subtle Dark Teal Border */
 
-  /* Sidebar - Darker Navy for contrast */
-  --sidebar: 186 35% 18%;       /* Darker Dark Teal Sidebar */
-  --sidebar-foreground: 0 0% 100%;
-  --sidebar-border: 186 35% 30%;
+  /* Sidebar */
+  --sidebar: 186 35% 11%;            /* Very Dark Teal Sidebar */
+  --sidebar-foreground: 0 0% 95%;
+  --sidebar-border: 186 25% 25%;
 
-  /* Primary Orange (#F8992D) */
-  --primary: 33 92% 58%; 
-  --primary-foreground: 0 0% 100%;
+  /* Primary - Original Orange */
+  --primary: 33 92% 58%;             /* Original Orange */
+  --primary-foreground: 0 0% 10%;    /* Dark Text */
 
-  /* Secondary Orange (MATCHES PRIMARY) */
-  --secondary: 33 92% 58%; 
-  --secondary-foreground: 0 0% 100%;
+  /* Secondary - Original Orange */
+  --secondary: 33 92% 58%;           /* Original Orange */
+  --secondary-foreground: 0 0% 10%;  /* Dark Text */
 
-  /* Sidebar/Accent - Using primary/secondary colors */
+  /* Sidebar/Accent */
   --sidebar-primary: 33 92% 58%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 33 92% 58%; 
-  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-primary-foreground: 0 0% 10%;
+  --sidebar-accent: 33 92% 58%;
+  --sidebar-accent-foreground: 0 0% 10%;
   --sidebar-ring: 33 92% 65%;
 
   /* Popover */
-  --popover: 186 35% 25%;
-  --popover-foreground: 0 0% 100%;
-  --popover-border: 186 35% 30%;
+  --popover: 186 35% 15%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 186 25% 30%;
 
-  /* Muted - Dark Gray/Navy */
-  --muted: 186 35% 30%;
-  --muted-foreground: 186 10% 70%;
+  /* Muted */
+  --muted: 186 25% 35%;
+  --muted-foreground: 186 10% 65%;
 
-  /* Accent - Orange */
-  --accent: 33 92% 58%; 
-  --accent-foreground: 0 0% 100%;
+  /* Accent */
+  --accent: 33 92% 58%;
+  --accent-foreground: 0 0% 10%;
 
   /* Destructive */
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 98%;
+  --destructive: 0 84% 65%;
+  --destructive-foreground: 0 0% 10%;
 
-  /* Success - Orange */
+  /* Success */
   --success: 33 92% 58%;
-  --success-foreground: 0 0% 100%;
+  --success-foreground: 0 0% 10%;
 
-  /* Warning - Standard Orange/Yellow */
-  --warning: 40 80% 65%;
-  --warning-foreground: 0 0% 100%;
+  /* Warning */
+  --warning: 40 80% 55%;
+  --warning-foreground: 186 35% 10%;
 
-  --input: 186 35% 35%;
+  --input: 186 25% 25%;
   --ring: 33 92% 65%;
 
   /* Chart colors */
-  --chart-1: 33 92% 58%; /* Orange (Primary) */
-  --chart-2: 0 0% 100%;/* White (on Dark BG) */
-  --chart-3: 186 10% 70%; /* Muted Text */
-  --chart-4: 186 10% 80%;
-  --chart-5: 186 10% 90%;
+  --chart-1: 33 92% 58%;            /* Orange */
+  --chart-2: 186 35% 40%;           /* Light Teal */
+  --chart-3: 186 25% 50%;           /* Medium Teal */
+  --chart-4: 186 20% 35%;           /* Dark Teal */
+  --chart-5: 186 15% 25%;           /* Very Dark Teal */
 
-  /* Shadows - Adjusted to use HSL colors */
-  --shadow-2xs: 0px 1px 2px 0px hsla(0, 0%, 0%, 0.3);
-  --shadow-xs: 0px 2px 4px 0px hsla(0, 0%, 0%, 0.35);
-  --shadow-sm: 0px 3px 6px 0px hsla(0, 0%, 0%, 0.4);
-  --shadow: 0px 4px 8px 0px hsla(0, 0%, 0%, 0.45);
-  --shadow-md: 0px 6px 12px 0px hsla(0, 0%, 0%, 0.5);
-  --shadow-lg: 0px 10px 20px 0px hsla(0, 0%, 0%, 0.55);
-  --shadow-xl: 0px 15px 30px 0px hsla(0, 0%, 0%, 0.6);
-  --shadow-2xl: 0px 25px 50px 0px hsla(0, 0%, 0%, 0.7);
+  /* Shadows - Darker for Dark Mode */
+  --shadow-2xs: 0px 1px 2px 0px hsla(0, 0%, 0%, 0.2);
+  --shadow-xs: 0px 2px 4px 0px hsla(0, 0%, 0%, 0.25);
+  --shadow-sm: 0px 4px 8px 0px hsla(0, 0%, 0%, 0.3);
+  --shadow: 0px 8px 16px 0px hsla(0, 0%, 0%, 0.4);
+  --shadow-md: 0px 12px 24px 0px hsla(0, 0%, 0%, 0.45);
+  --shadow-lg: 0px 16px 32px 0px hsla(0, 0%, 0%, 0.5);
+  --shadow-xl: 0px 24px 48px 0px hsla(0, 0%, 0%, 0.55);
+  --shadow-2xl: 0px 32px 64px 0px hsla(0, 0%, 0%, 0.6);
 
   /* Computed borders */
   --sidebar-primary-border: hsl(33 92% 65%);
   --sidebar-accent-border: hsl(33 92% 65%);
   --primary-border: hsl(33 92% 65%);
   --secondary-border: hsl(33 92% 65%);
-  --muted-border: hsl(186 35% 30%);
+  --muted-border: hsl(186 25% 30%);
   --accent-border: hsl(33 92% 65%);
-  --destructive-border: hsl(0 84% 68%);
+  --destructive-border: hsl(0 84% 70%);
 }
 
 @layer base {
@@ -231,33 +231,34 @@
 }
 
 @layer utilities {
-  /* Glass morphism effect - UPDATED for iOS 26 */
+  /* Glass morphism effect - iOS 26 Style */
   .glass {
-    background: hsla(var(--background), 0.7);
+    background: hsla(var(--card), 0.6);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid hsla(var(--border), 0.4);
-    box-shadow: 0 8px 32px 0 hsla(0, 0%, 0%, 0.1);
+    border: 1px solid hsla(var(--border), 0.3);
   }
 
   .glass-dark {
-    background: hsla(var(--background), 0.6);
+    background: hsla(var(--card), 0.5);
     backdrop-filter: blur(25px) saturate(200%);
     -webkit-backdrop-filter: blur(25px) saturate(200%);
     border: 1px solid hsla(var(--border), 0.2);
-    box-shadow: 0 8px 32px 0 hsla(0, 0%, 0%, 0.3);
   }
 
   /* iOS 26 Button Styles */
   .ios-button {
     @apply rounded-2xl transition-all active:scale-95 active:opacity-80;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-xs);
+    font-weight: 500;
+    letter-spacing: -0.5px;
   }
 
-  /* iOS 26 Card Styles */
+  /* iOS 26 Card Styles - Clean, Minimal */
   .ios-card {
-    @apply rounded-[2rem] border-0 glass;
-    box-shadow: var(--shadow-md);
+    @apply rounded-2xl border glass;
+    box-shadow: var(--shadow-sm);
+    border-color: hsl(var(--border));
   }
 
   /* Floating animation - KEPT */

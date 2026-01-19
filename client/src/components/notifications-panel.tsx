@@ -113,9 +113,9 @@ export function NotificationPanel() {
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 hover:bg-white/10 rounded-lg transition-colors duration-200"
       >
-        <Bell className="w-5 h-5 text-white" />
+        <Bell className="w-4 h-4 md:w-5 md:h-5 text-white" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+          <span className="absolute top-1 right-1 w-4 h-4 md:w-5 md:h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold text-[10px] md:text-xs">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -123,12 +123,12 @@ export function NotificationPanel() {
 
       {/* Notification Dropdown Panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[500px] overflow-y-auto">
+        <div className="fixed md:absolute bottom-0 md:bottom-auto right-0 md:mt-2 w-full md:w-96 bg-white rounded-t-3xl md:rounded-lg shadow-2xl md:shadow-xl border-t md:border border-gray-200 z-50 max-h-[80vh] md:max-h-[500px] overflow-y-auto">
           {/* Header */}
-          <div className="sticky top-0 bg-gradient-to-r from-teal-50 to-teal-100 border-b border-teal-200 p-4 flex items-center justify-between">
+          <div className="sticky top-0 bg-gradient-to-r from-teal-50 to-teal-100 border-b border-teal-200 p-4 md:p-4 flex items-center justify-between rounded-t-3xl md:rounded-t-lg">
             <div>
-              <h3 className="font-semibold text-gray-900">Notifications</h3>
-              {unreadCount > 0 && <p className="text-sm text-gray-600">{unreadCount} unread</p>}
+              <h3 className="font-semibold text-gray-900 text-sm md:text-base">Notifications</h3>
+              {unreadCount > 0 && <p className="text-xs md:text-sm text-gray-600">{unreadCount} unread</p>}
             </div>
             <button
               onClick={() => setIsOpen(false)}
@@ -141,8 +141,8 @@ export function NotificationPanel() {
           {/* Notifications List */}
           {notifications.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
-              <Bell className="w-12 h-12 mx-auto mb-2 opacity-20" />
-              <p>No notifications yet</p>
+              <Bell className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-2 opacity-20" />
+              <p className="text-sm md:text-base">No notifications yet</p>
             </div>
           ) : (
             <>
@@ -157,31 +157,32 @@ export function NotificationPanel() {
                         if (!notification.isRead) {
                           markAsRead(notification.id);
                         }
+                        setIsOpen(false);
                       }}
-                      className={`block p-4 hover:bg-gray-50 transition-colors ${
+                      className={`block p-3 md:p-4 hover:bg-gray-50 transition-colors ${
                         notification.isRead ? 'opacity-60' : 'opacity-100'
                       }`}
                     >
                       <div className="flex gap-3">
                         {/* Icon */}
-                        <div className="flex-shrink-0 text-xl">
+                        <div className="flex-shrink-0 text-lg md:text-xl">
                           {getNotificationIcon(notification.type)}
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-medium text-gray-900 text-sm leading-snug">
+                            <h4 className="font-medium text-gray-900 text-xs md:text-sm leading-snug">
                               {notification.title}
                             </h4>
                             {!notification.isRead && (
                               <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1" />
                             )}
                           </div>
-                          <p className="text-sm text-gray-600 leading-snug mt-1">
+                          <p className="text-xs md:text-sm text-gray-600 leading-snug mt-1">
                             {notification.message}
                           </p>
-                          <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                          <div className="flex items-center gap-1 mt-2 text-[10px] md:text-xs text-gray-500">
                             <Clock className="w-3 h-3" />
                             {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                           </div>
@@ -196,7 +197,7 @@ export function NotificationPanel() {
                           }}
                           className="p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
                         </button>
                       </div>
                     </a>
@@ -214,7 +215,7 @@ export function NotificationPanel() {
                     }}
                     variant="outline"
                     size="sm"
-                    className="flex-1 text-xs"
+                    className="flex-1 text-xs md:text-sm"
                   >
                     <Check className="w-3 h-3 mr-1" />
                     Mark all as read
