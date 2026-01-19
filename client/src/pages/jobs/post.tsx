@@ -289,13 +289,24 @@ export default function PostJob() {
                           <SelectValue placeholder="Select a category" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        {categories?.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id.toString()}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
+                      
+<SelectContent>
+  {categories?.map((cat) => (
+    <SelectItem
+      key={cat.id}
+      value={cat.id.toString()}
+      className="py-3"
+    >
+      <div className="flex flex-col">
+        <span className="font-medium">{cat.name}</span>
+        <span className="text-xs text-muted-foreground">
+          {cat.description}
+        </span>
+      </div>
+    </SelectItem>
+  ))}
+</SelectContent>
+
                     </Select>
                     <FormMessage />
                   </FormItem>
