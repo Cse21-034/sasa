@@ -237,6 +237,7 @@
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid hsla(var(--border), 0.4);
+    box-shadow: 0 8px 32px 0 hsla(0, 0%, 0%, 0.1);
   }
 
   .glass-dark {
@@ -244,6 +245,19 @@
     backdrop-filter: blur(25px) saturate(200%);
     -webkit-backdrop-filter: blur(25px) saturate(200%);
     border: 1px solid hsla(var(--border), 0.2);
+    box-shadow: 0 8px 32px 0 hsla(0, 0%, 0%, 0.3);
+  }
+
+  /* iOS 26 Button Styles */
+  .ios-button {
+    @apply rounded-2xl transition-all active:scale-95 active:opacity-80;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* iOS 26 Card Styles */
+  .ios-card {
+    @apply rounded-[2rem] border-0 glass;
+    box-shadow: var(--shadow-md);
   }
 
   /* Floating animation - KEPT */

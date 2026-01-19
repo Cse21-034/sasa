@@ -12,7 +12,7 @@ export function MobileNav() {
   const adminItems = [
     { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', testId: 'nav-admin-dashboard' },
     { href: '/admin/verification', icon: UserCheck, label: 'Verify', testId: 'nav-admin-verification' },
-    { href: '/admin/users', icon: Users, label: 'Users', testId: 'nav-admin-users' },
+    { href: '/promotions', icon: TrendingUp, label: 'Promos', testId: 'nav-promotions' },
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
 
@@ -20,7 +20,7 @@ export function MobileNav() {
   const supplierItems = [
     { href: '/suppliers', icon: Building2, label: 'Browse', testId: 'nav-suppliers-browse' },
     { href: '/supplier/dashboard', icon: Tag, label: 'Promotions', testId: 'nav-supplier-dashboard' },
-    { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
+    { href: '/promotions', icon: TrendingUp, label: 'Promos', testId: 'nav-promotions' },
     { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
   ];
 

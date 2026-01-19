@@ -44,7 +44,12 @@ export default function Chat() {
       // Request notification permission and show push notification if possible
       if ('Notification' in window) {
         if (Notification.permission === 'default') {
-          Notification.permission === 'granted' || Notification.requestPermission();
+          Notification.requestPermission();
+        } else if (Notification.permission === 'granted') {
+          new Notification('Message Sent', {
+            body: 'Your message has been sent successfully.',
+            icon: '/favicon.ico'
+          });
         }
       }
     },
