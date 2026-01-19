@@ -1,12 +1,28 @@
-import { useCallback } from 'react';
+// client/src/hooks/use-push-notification.ts - FIXED VERSION
+import { useCallback, useEffect } from 'react';
 import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/lib/auth-context';
 
 export function usePushNotification() {
+  const { user } = useAuth();
+
+  // Auto-subscribe authenticated users
+  useEffect(() => {
+    if (user && 'serviceWorker' in navigator && 'PushManager' in window) {
+      // Request permission and subscribe after a short delay
+      const timer = setTimeout(() => {
+        subscribeToPushNotifications();
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
+
   const subscribeToPushNotifications = useCallback(async () => {
     try {
       // Check browser support
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.warn('Push notifications not supported in this browser');
+        console.warn('⚠️ Push notifications not supported in this browser');
         return false;
       }
 
@@ -14,18 +30,19 @@ export function usePushNotification() {
       if (Notification.permission === 'default') {
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
-          console.log('Notification permission denied by user');
+          console.log('❌ Notification permission denied by user');
           return false;
         }
       }
 
       if (Notification.permission !== 'granted') {
-        console.log('Notifications are not permitted');
+        console.log('❌ Notifications are not permitted');
         return false;
       }
 
-      // Get service worker registration
+      // Wait for service worker to be ready
       const registration = await navigator.serviceWorker.ready;
+      console.log('✅ Service Worker ready:', registration);
 
       // Get VAPID public key from server
       const vapidResponse = await apiRequest('GET', '/api/push/vapid-public-key');
@@ -35,7 +52,7 @@ export function usePushNotification() {
         throw new Error('VAPID public key not received from server');
       }
 
-      console.log('🔑 VAPID key received, subscribing to push...');
+      console.log('🔑 VAPID key received:', vapidPublicKey.substring(0, 20) + '...');
 
       // Convert base64 string to Uint8Array for PushManager
       const urlBase64ToUint8Array = (base64String: string) => {
@@ -53,17 +70,24 @@ export function usePushNotification() {
 
       const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
 
-      // Subscribe to push notifications
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey,
-      });
-
-      console.log('📝 Push subscription created:', subscription.endpoint);
+      // Check if already subscribed
+      let subscription = await registration.pushManager.getSubscription();
+      
+      if (!subscription) {
+        // Subscribe to push notifications
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey,
+        });
+        console.log('📝 New push subscription created');
+      } else {
+        console.log('📝 Using existing push subscription');
+      }
 
       // Send subscription to backend
       const subscribeResponse = await apiRequest('POST', '/api/push/subscribe', {
         subscription: subscription.toJSON(),
+        enableNotifications: true,
       });
 
       if (!subscribeResponse.ok) {
@@ -71,6 +95,13 @@ export function usePushNotification() {
       }
 
       console.log('✅ Successfully subscribed to push notifications');
+      
+      // Show a test notification to confirm it works
+      new Notification('Push Notifications Enabled! 🎉', {
+        body: 'You will now receive job alerts and messages.',
+        icon: '/icon-192.png',
+      });
+      
       return true;
     } catch (error) {
       console.error('❌ Error subscribing to push notifications:', error);
