@@ -123,20 +123,27 @@ export function NotificationPanel() {
 
       {/* Notification Dropdown Panel */}
       {isOpen && (
-        <div className="fixed md:absolute bottom-0 md:bottom-auto right-0 md:mt-2 w-full md:w-96 bg-white rounded-t-3xl md:rounded-lg shadow-2xl md:shadow-xl border-t md:border border-gray-200 z-50 max-h-[80vh] md:max-h-[500px] overflow-y-auto">
-          {/* Header */}
-          <div className="sticky top-0 bg-gradient-to-r from-teal-50 to-teal-100 border-b border-teal-200 p-4 md:p-4 flex items-center justify-between rounded-t-3xl md:rounded-t-lg">
-            <div>
-              <h3 className="font-semibold text-gray-900 text-sm md:text-base">Notifications</h3>
-              {unreadCount > 0 && <p className="text-xs md:text-sm text-gray-600">{unreadCount} unread</p>}
+        <>
+          {/* Mobile Overlay */}
+          <div
+            className="fixed inset-0 md:hidden z-40"
+            onClick={() => setIsOpen(false)}
+          />
+          
+          <div className="fixed md:absolute bottom-0 md:bottom-auto md:top-full right-0 md:mt-2 md:left-auto w-full md:w-96 bg-white rounded-t-3xl md:rounded-lg shadow-2xl md:shadow-xl border-t md:border border-gray-200 z-50 max-h-[80vh] md:max-h-[500px] overflow-y-auto md:mx-0 mx-0">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-teal-50 to-teal-100 border-b border-teal-200 p-4 md:p-4 flex items-center justify-between rounded-t-3xl md:rounded-t-lg">
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm md:text-base">Notifications</h3>
+                {unreadCount > 0 && <p className="text-xs md:text-sm text-gray-600">{unreadCount} unread</p>}
+              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1 hover:bg-white/50 rounded transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-600" />
+              </button>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-1 hover:bg-white/50 rounded transition-colors"
-            >
-              <X className="w-4 h-4 text-gray-600" />
-            </button>
-          </div>
 
           {/* Notifications List */}
           {notifications.length === 0 ? (
@@ -207,24 +214,23 @@ export function NotificationPanel() {
 
               {/* Footer Actions */}
               {unreadNotifications.length > 0 && (
-                <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-3 flex gap-2">
+                <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 p-4 md:p-4 flex gap-2 rounded-b-3xl md:rounded-b-lg">
                   <Button
                     onClick={() => {
                       markAllAsRead();
                       setIsOpen(false);
                     }}
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 text-xs md:text-sm"
+                    className="flex-1 text-xs md:text-sm bg-teal-500 hover:bg-teal-600 text-white font-semibold"
                   >
-                    <Check className="w-3 h-3 mr-1" />
+                    <Check className="w-4 h-4 mr-2" />
                     Mark all as read
                   </Button>
                 </div>
               )}
             </>
           )}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

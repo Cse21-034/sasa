@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, Filter, CheckCircle2, Clock, Search, ListFilter, AlertCircle } from 'lucide-react';
+import { MapPin, Filter, CheckCircle2, Clock, Search, ListFilter, AlertCircle, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ export default function BrowseJobs() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('recent');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const { data: jobs, isLoading: jobsLoading } = useQuery<(Job & { requester: any; category: Category })[]>({
     queryKey: ['jobs', { category: selectedCategory, sort: sortBy }],
@@ -79,68 +80,166 @@ export default function BrowseJobs() {
         <p className="text-muted-foreground">{pageDescription}</p>
       </div>
 
-      {/* Filters Section */}
-      <Card className="mb-6">
-        <CardContent className="p-4 md:p-6">
-          <div className="space-y-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Search jobs by title or description..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 text-base"
-                data-testid="input-search-jobs"
-              />
-            </div>
-
-            {/* Filter Tabs */}
-            <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 h-12">
-                <TabsTrigger value="all" className="relative">
-                  All Jobs
-                  <Badge variant="secondary" className="ml-2">{statusCounts.all}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="open">
-                  {user?.role === 'provider' ? 'Available' : 'Pending'}
-                  <Badge variant="secondary" className="ml-2">{statusCounts.open}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="in-progress">
-                  In Progress
-                  <Badge variant="secondary" className="ml-2">{statusCounts.inProgress}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="completed">
-                  Completed
-                  <Badge variant="secondary" className="ml-2">{statusCounts.completed}</Badge>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            {/* Additional Filters */}
-            {user?.role === 'provider' && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={sortBy === 'urgent' ? 'default' : 'outline'}
-                  onClick={() => setSortBy('urgent')}
-                  className="h-12"
-                >
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  Urgent Jobs
-                </Button>
-                <Button
-                  variant={sortBy === 'distance' ? 'default' : 'outline'}
-                  onClick={() => setSortBy('distance')}
-                  className="h-12"
-                >
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Near Me
-                </Button>
+      {/* Desktop Filters */}
+      <div className="hidden md:block mb-6">
+        <Card>
+          <CardContent className="p-4 md:p-6">
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search jobs by title or description..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-12 text-base"
+                  data-testid="input-search-jobs"
+                />
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+
+              {/* Filter Tabs */}
+              <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full">
+                <TabsList className="grid w-full grid-cols-4 h-12">
+                  <TabsTrigger value="all" className="relative">
+                    All Jobs
+                    <Badge variant="secondary" className="ml-2">{statusCounts.all}</Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="open">
+                    {user?.role === 'provider' ? 'Available' : 'Pending'}
+                    <Badge variant="secondary" className="ml-2">{statusCounts.open}</Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="in-progress">
+                    In Progress
+                    <Badge variant="secondary" className="ml-2">{statusCounts.inProgress}</Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="completed">
+                    Completed
+                    <Badge variant="secondary" className="ml-2">{statusCounts.completed}</Badge>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {/* Additional Filters */}
+              {user?.role === 'provider' && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={sortBy === 'urgent' ? 'default' : 'outline'}
+                    onClick={() => setSortBy('urgent')}
+                    className="h-12"
+                  >
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Urgent Jobs
+                  </Button>
+                  <Button
+                    variant={sortBy === 'distance' ? 'default' : 'outline'}
+                    onClick={() => setSortBy('distance')}
+                    className="h-12"
+                  >
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Near Me
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Mobile Filter Drawer */}
+      <div className="md:hidden mb-6">
+        <Button
+          onClick={() => setShowMobileFilters(!showMobileFilters)}
+          className="w-full h-12 bg-primary text-white font-semibold"
+        >
+          <Filter className="h-5 w-5 mr-2" />
+          Filters
+          <ChevronDown className={`h-5 w-5 ml-auto transition-transform ${showMobileFilters ? 'rotate-180' : ''}`} />
+        </Button>
+
+        {showMobileFilters && (
+          <Card className="mt-2 rounded-b-lg rounded-t-none border-t-2">
+            <CardContent className="p-4 space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search jobs..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-10 text-sm"
+                  data-testid="input-search-jobs-mobile"
+                />
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <label className="text-sm font-semibold mb-2 block">Status</label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'all', label: 'All Jobs' },
+                    { value: 'open', label: user?.role === 'provider' ? 'Available' : 'Pending' },
+                    { value: 'in-progress', label: 'In Progress' },
+                    { value: 'completed', label: 'Completed' }
+                  ].map(filter => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setStatusFilter(filter.value)}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                        statusFilter === filter.value
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Provider Specific Filters */}
+              {user?.role === 'provider' && (
+                <div>
+                  <label className="text-sm font-semibold mb-2 block">Sort By</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setSortBy('recent')}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                        sortBy === 'recent'
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      Recent
+                    </button>
+                    <button
+                      onClick={() => setSortBy('urgent')}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${
+                        sortBy === 'urgent'
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      <AlertCircle className="h-3 w-3" />
+                      Urgent
+                    </button>
+                    <button
+                      onClick={() => setSortBy('distance')}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${
+                        sortBy === 'distance'
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      <MapPin className="h-3 w-3" />
+                      Near
+                    </button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Jobs Grid */}
       {jobsLoading ? (

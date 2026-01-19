@@ -92,25 +92,27 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {categories.map(category => (
-            <div key={category.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`category-${category.id}`}
-                checked={selectedCategories.includes(category.id)}
-                onCheckedChange={() => handleCategoryToggle(category.id)}
-              />
-              <Label
-                htmlFor={`category-${category.id}`}
-                className="flex-1 cursor-pointer font-normal"
-              >
-                <div className="font-medium">{category.name}</div>
-                {category.description && (
-                  <div className="text-sm text-muted-foreground">{category.description}</div>
-                )}
-              </Label>
-            </div>
-          ))}
+        <div className="max-h-[500px] overflow-y-auto border rounded-lg p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {categories.map(category => (
+              <div key={category.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                <Checkbox
+                  id={`category-${category.id}`}
+                  checked={selectedCategories.includes(category.id)}
+                  onCheckedChange={() => handleCategoryToggle(category.id)}
+                />
+                <Label
+                  htmlFor={`category-${category.id}`}
+                  className="flex-1 cursor-pointer font-normal"
+                >
+                  <div className="font-medium text-sm md:text-base">{category.name}</div>
+                  {category.description && (
+                    <div className="text-xs md:text-sm text-muted-foreground">{category.description}</div>
+                  )}
+                </Label>
+              </div>
+            ))}
+          </div>
         </div>
 
         {categories.length === 0 && !error && (
