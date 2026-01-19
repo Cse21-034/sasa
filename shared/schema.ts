@@ -875,7 +875,9 @@ export const updateProfileSchema = z.object({
   name: z.string().min(2).optional(),
   phone: z.string().optional(),
   bio: z.string().optional(),
-  profilePhotoUrl: z.string().optional(), 
+  profilePhotoUrl: z.string().optional(),
+  preferredLanguage: z.string().optional(),
+  enableWebPushNotifications: z.boolean().optional(),
 });
 
 // Update Provider Service Area Schema

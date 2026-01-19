@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { User, Mail, Phone, Loader2, Camera, Wrench, MapPin, Clock, CheckCircle, XCircle, Plus, Languages, AlertCircle } from 'lucide-react';
+import { User, Mail, Phone, Loader2, Camera, Wrench, MapPin, Clock, CheckCircle, XCircle, Plus, Languages, AlertCircle, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { usePushNotification } from '@/hooks/use-push-notification';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +36,7 @@ const profileSchema = z.object({
   bio: z.string().optional(),
   profilePhotoUrl: z.string().optional(),
   preferredLanguage: z.string().default('en'),
+  enableWebPushNotifications: z.boolean().optional(),
 });
 
 type ProfileForm = z.infer<typeof profileSchema>;
@@ -62,6 +64,7 @@ export default function Profile() {
   const { user, setUser } = useAuth();
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
+  const { subscribeToPushNotifications, unsubscribeFromPushNotifications } = usePushNotification();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(user?.profilePhotoUrl || null);
@@ -199,6 +202,7 @@ export default function Profile() {
       bio: user?.bio || '',
       profilePhotoUrl: user?.profilePhotoUrl || '',
       preferredLanguage: user?.preferredLanguage || 'en',
+      enableWebPushNotifications: (user as any)?.enableWebPushNotifications ?? true,
     },
   });
 
@@ -218,11 +222,30 @@ export default function Profile() {
         bio: data.bio,
         profilePhotoUrl: data.profilePhotoUrl,
         preferredLanguage: data.preferredLanguage,
+        enableWebPushNotifications: data.enableWebPushNotifications,
       });
       const updatedUser = await res.json();
 
       // Update local i18n language immediately
       i18n.changeLanguage(data.preferredLanguage);
+
+      // Handle push notification subscription state change
+      if (data.enableWebPushNotifications) {
+        try {
+          const subscribed = await subscribeToPushNotifications();
+          if (!subscribed) {
+            console.log('User did not grant notification permissions or browser does not support push notifications');
+          }
+        } catch (error) {
+          console.error('Error subscribing to push notifications:', error);
+        }
+      } else {
+        try {
+          await unsubscribeFromPushNotifications();
+        } catch (error) {
+          console.error('Error unsubscribing from push notifications:', error);
+        }
+      }
 
       return updatedUser;
     },
@@ -501,6 +524,30 @@ export default function Profile() {
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="enableWebPushNotifications"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base cursor-pointer flex items-center gap-2">
+                        <Bell className="h-5 w-5" />
+                        {t('Push Notifications')}
+                      </FormLabel>
+                      <FormDescription>
+                        {t('Receive notifications about messages and job updates even when the app is closed')}
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        data-testid="checkbox-push-notifications"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
 
               {/* Service Areas for Providers */}
