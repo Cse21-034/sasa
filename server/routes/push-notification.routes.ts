@@ -17,8 +17,8 @@ export function registerPushNotificationRoutes(
    */
   app.get("/api/push/vapid-public-key", (req, res) => {
     try {
-      const publicKey = pushNotificationService.getVapidPublicKey();
-      res.json({ publicKey });
+      const key = pushNotificationService.getVapidPublicKey();
+      res.json({ key });
     } catch (error: any) {
       console.error("Error getting VAPID public key:", error);
       res.status(500).json({ message: "Failed to get VAPID key" });
@@ -126,6 +126,43 @@ export function registerPushNotificationRoutes(
     } catch (error: any) {
       console.error("Error unsubscribing from push notifications:", error);
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  /**
+   * POST /api/push/test
+   * Send a test push notification (for testing only)
+   */
+  app.post("/api/push/test", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      console.log(`📬 Sending test notification to user ${req.user!.id}`);
+
+      await pushNotificationService.sendPushNotification(
+        req.user!.id,
+        "🎉 Test Notification",
+        {
+          body: "This is a test push notification from JobTradeSasa",
+          tag: "test_notification",
+          url: "/",
+        }
+      );
+
+      res.json({
+        success: true,
+        message: "Test notification sent! Check your browser in a few seconds.",
+        notification: {
+          title: "🎉 Test Notification",
+          body: "This is a test push notification from JobTradeSasa",
+          tag: "test_notification",
+        },
+      });
+    } catch (error: any) {
+      console.error("Error sending test push notification:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to send test notification",
+        hint: "Make sure you have push notifications enabled in your profile and granted browser permissions.",
+      });
     }
   });
 }

@@ -31,11 +31,35 @@ export function usePushNotification() {
       const vapidResponse = await apiRequest('GET', '/api/push/vapid-public-key');
       const { key: vapidPublicKey } = await vapidResponse.json();
 
+      if (!vapidPublicKey) {
+        throw new Error('VAPID public key not received from server');
+      }
+
+      console.log('🔑 VAPID key received, subscribing to push...');
+
+      // Convert base64 string to Uint8Array for PushManager
+      const urlBase64ToUint8Array = (base64String: string) => {
+        const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+        const base64 = (base64String + padding)
+          .replace(/\-/g, '+')
+          .replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+          outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+      };
+
+      const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+
       // Subscribe to push notifications
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: vapidPublicKey,
+        applicationServerKey,
       });
+
+      console.log('📝 Push subscription created:', subscription.endpoint);
 
       // Send subscription to backend
       const subscribeResponse = await apiRequest('POST', '/api/push/subscribe', {
@@ -46,10 +70,10 @@ export function usePushNotification() {
         throw new Error(`Failed to save subscription: ${subscribeResponse.statusText}`);
       }
 
-      console.log('Successfully subscribed to push notifications');
+      console.log('✅ Successfully subscribed to push notifications');
       return true;
     } catch (error) {
-      console.error('Error subscribing to push notifications:', error);
+      console.error('❌ Error subscribing to push notifications:', error);
       return false;
     }
   }, []);
