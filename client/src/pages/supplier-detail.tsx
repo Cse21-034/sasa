@@ -164,62 +164,62 @@ export default function SupplierDetail() {
 
           {/* Social Media Links */}
           {(supplier.facebookUrl || supplier.instagramUrl || supplier.twitterUrl || supplier.whatsappNumber) && (
-  <Card className=">
-    <CardHeader>
-      <CardTitle className="text-lg">Connect With Us</CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-3">
-      {supplier.whatsappNumber && (
-        <a 
-          href={`https://wa.me/${supplier.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi ${supplier.companyName}, I'm interested in your services.`)}`}
-          target="_blank" 
-          rel="noopener noreferrer"
-        >
-          <Button variant="outline" className="w-full justify-start">
-            {getSocialIcon('whatsapp')}
-            <span className="ml-2">WhatsApp Quote</span>
-            <ExternalLink className="h-3 w-3 ml-auto" />
-          </Button>
-        </a>
-      )}
-      
-      {supplier.facebookUrl && (
-        <a href={supplier.facebookUrl} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" className="w-full justify-start">
-            {getSocialIcon('facebook')}
-            <span className="ml-2">Facebook</span>
-            <ExternalLink className="h-3 w-3 ml-auto" />
-          </Button>
-        </a>
-      )}
-      
-      {supplier.instagramUrl && (
-        <a href={supplier.instagramUrl} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" className="w-full justify-start">
-            {getSocialIcon('instagram')}
-            <span className="ml-2">Instagram</span>
-            <ExternalLink className="h-3 w-3 ml-auto" />
-          </Button>
-        </a>
-      )}
-      
-      {supplier.twitterUrl && (
-        <a href={supplier.twitterUrl} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" className="w-full justify-start">
-            {getSocialIcon('twitter')}
-            <span className="ml-2">Twitter/X</span>
-            <ExternalLink className="h-3 w-3 ml-auto" />
-          </Button>
-        </a>
-      )}
-    </CardContent>
-  </Card>
-)}
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle className="text-lg">Connect With Us</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {supplier.whatsappNumber && (
+                  <a 
+                    href={`https://wa.me/${supplier.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi ${supplier.companyName}, I'm interested in your services.`)}`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    <Button variant="outline" className="w-full justify-start">
+                      {getSocialIcon('whatsapp')}
+                      <span className="ml-2">WhatsApp Quote</span>
+                      <ExternalLink className="h-3 w-3 ml-auto" />
+                    </Button>
+                  </a>
+                )}
+                
+                {supplier.facebookUrl && (
+                  <a href={supplier.facebookUrl} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" className="w-full justify-start">
+                      {getSocialIcon('facebook')}
+                      <span className="ml-2">Facebook</span>
+                      <ExternalLink className="h-3 w-3 ml-auto" />
+                    </Button>
+                  </a>
+                )}
+                
+                {supplier.instagramUrl && (
+                  <a href={supplier.instagramUrl} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" className="w-full justify-start">
+                      {getSocialIcon('instagram')}
+                      <span className="ml-2">Instagram</span>
+                      <ExternalLink className="h-3 w-3 ml-auto" />
+                    </Button>
+                  </a>
+                )}
+                
+                {supplier.twitterUrl && (
+                  <a href={supplier.twitterUrl} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" className="w-full justify-start">
+                      {getSocialIcon('twitter')}
+                      <span className="ml-2">Twitter/X</span>
+                      <ExternalLink className="h-3 w-3 ml-auto" />
+                    </Button>
+                  </a>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Main Content - Promotions */}
         <div className="md:col-span-2">
-          <Card className=">
+          <Card className="border-2">
             <CardHeader>
               <CardTitle className="text-xl">Active Promotions & Specials</CardTitle>
             </CardHeader>
