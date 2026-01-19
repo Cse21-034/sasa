@@ -152,7 +152,7 @@ export default function SupplierDetail() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Contact Person */}
-          <Card className=">
+          <Card>
             <CardHeader>
               <CardTitle className="text-lg">Contact Person</CardTitle>
             </CardHeader>
