@@ -224,6 +224,66 @@ export class VerificationService {
       .returning();
     return updated || undefined;
   }
+
+  // 🆕 SMILE IDENTITY PHASE 1 METHODS
+
+  /**
+   * Update verification submission with Smile Identity result
+   * Used for Phase 1 automated verification
+   * @param id - Submission ID
+   * @param smileResult - Result from Smile Identity (PASS or FAIL)
+   * @param smileJobId - Job ID from Smile Identity
+   * @param confidenceScore - Confidence score from Smile Identity
+   * @param idType - ID type used
+   * @param rejectionReason - Reason if verification failed
+   * @returns Updated submission
+   */
+  async updateSmileIdentityResult(
+    id: string,
+    smileResult: 'PASS' | 'FAIL',
+    smileJobId: string,
+    confidenceScore: number,
+    idType: string,
+    rejectionReason?: string
+  ): Promise<VerificationSubmission | undefined> {
+    const status = smileResult === 'PASS' ? 'approved' : 'rejected';
+    const phase1Verified = smileResult === 'PASS';
+
+    const [updated] = await db
+      .update(verificationSubmissions)
+      .set({
+        status,
+        phase1Verified,
+        smileResult,
+        smileJobId,
+        confidenceScore,
+        idType,
+        rejectionReason: rejectionReason || (smileResult === 'FAIL' ? 'Smile Identity verification failed' : null),
+        verifiedAt: smileResult === 'PASS' ? new Date() : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(verificationSubmissions.id, id))
+      .returning();
+
+    return updated || undefined;
+  }
+
+  /**
+   * Get Phase 1 verification status for a user
+   * Returns both identity submission and user verification flags
+   * @param userId - User ID
+   * @returns Verification submission with identity status
+   */
+  async getPhase1Status(userId: string): Promise<VerificationSubmission | undefined> {
+    const [submission] = await db
+      .select()
+      .from(verificationSubmissions)
+      .where(and(
+        eq(verificationSubmissions.userId, userId),
+        eq(verificationSubmissions.type, 'identity')
+      ));
+    return submission || undefined;
+  }
 }
 
 // Export singleton instance

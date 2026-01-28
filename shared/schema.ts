@@ -44,6 +44,7 @@ export const migrationStatusEnum = pgEnum("migration_status", ["pending", "appro
 // 🆕 Verification Enums
 export const verificationTypeEnum = pgEnum("verification_type", ["identity", "document"]);
 export const verificationStatusEnum = pgEnum("verification_status", ["pending", "approved", "rejected"]);
+export const idTypeEnum = pgEnum("id_type", ["national_id", "passport", "driver_licence"]);
 
 export const messageTypeEnum = pgEnum("message_type", ["job_message", "admin_message", "system_notification"]);
 
@@ -290,6 +291,14 @@ export const verificationSubmissions = pgTable("verification_submissions", {
   rejectionReason: text("rejection_reason"),
   reviewedBy: uuid("reviewed_by").references(() => users.id),
   reviewedAt: timestamp("reviewed_at"),
+  // 🆕 SMILE IDENTITY FIELDS (Phase 1 Only)
+  verificationProvider: text("verification_provider").default("smile_identity").notNull(), // "smile_identity" or "manual"
+  smileJobId: text("smile_job_id"), // Job ID from Smile Identity API
+  smileResult: text("smile_result"), // PASS or FAIL
+  idType: text("id_type"), // National ID, Passport, Driver's Licence
+  confidenceScore: numeric("confidence_score"), // Smile Identity confidence percentage
+  phase1Verified: boolean("phase1_verified").default(false).notNull(), // Denotes if Phase 1 passed
+  verifiedAt: timestamp("verified_at"), // When Phase 1 was verified
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -909,13 +918,16 @@ export const updateUserStatusSchema = z.object({
 });
 
 
-// 🆕 Schema for Verification Submissions
+// 🆕 Schema for Verification Submissions (with Smile Identity support)
 export const insertVerificationSubmissionSchema = z.object({
   type: z.enum(['identity', 'document']),
   documents: z.array(z.object({
     name: z.string().max(255, "File name is too long"),
     url: z.string().min(10, "Document URL/Base64 is required"),
   })).min(1, "At least one document/photo is required."),
+  // 🆕 Smile Identity fields (Phase 1)
+  idType: z.enum(['national_id', 'passport', 'driver_licence']).optional(),
+  verificationProvider: z.enum(['smile_identity', 'manual']).optional().default('smile_identity'),
 });
 
 // 🆕 Schema for Admin Approval/Rejection
