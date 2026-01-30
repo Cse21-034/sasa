@@ -49,6 +49,7 @@ export class SmileIdentityService {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Authorization': `Bearer ${SMILE_IDENTITY_API_KEY}`,
       },
     });
   }
@@ -100,8 +101,6 @@ export class SmileIdentityService {
         id_number: payload.idNumber,
         first_name: payload.firstName,
         last_name: payload.lastName,
-        // 🔐 Authentication
-        api_key: SMILE_IDENTITY_API_KEY,
       });
 
       // ✅ Extract verification result
@@ -153,7 +152,6 @@ export class SmileIdentityService {
       const response = await this.apiClient.get(`/v2/smart-selfie-compare/${jobId}`, {
         params: {
           partner_id: SMILE_IDENTITY_PARTNER_ID,
-          api_key: SMILE_IDENTITY_API_KEY,
         },
       });
 
