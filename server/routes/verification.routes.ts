@@ -15,18 +15,17 @@ import { authMiddleware, generateToken, type AuthRequest } from "../middleware/a
  */
 
 export function registerVerificationRoutes(app: Express): void {
+
+  // 🔄 Map UI id types → Smile Identity enums
+  const idTypeMap: Record<string, string> = {
+    national_id: "NATIONAL_ID",
+    passport: "PASSPORT",
+    driver_licence: "DRIVER_LICENSE",
+  }
+
   /**
    * POST /api/verification/submit
    * 🆕 Submit Phase 1 (Identity) or Phase 2 (Documents) verification
-   * 
-   * For Phase 1 (Identity):
-   *   - Sends images to Smile Identity API
-   *   - Automatically approves/rejects based on Smile result
-   *   - NO admin involvement
-   * 
-   * For Phase 2 (Documents):
-   *   - Stores documents for admin review
-   *   - Requires admin approval (providers/suppliers only)
    */
   app.post("/api/verification/submit", authMiddleware, async (req: AuthRequest, res) => {
     try {
@@ -40,43 +39,44 @@ export function registerVerificationRoutes(app: Express): void {
           })
         }
 
-        // 📋 Validate ID type is provided for Phase 1
-        if (!validatedData.idType) {
+        if (!validatedData.idType || !idTypeMap[validatedData.idType]) {
           return res.status(400).json({
-            message: "ID type (national_id, passport, driver_licence) is required for identity verification."
+            message: "ID type (national_id, passport, driver_licence) is required and must be valid."
           })
         }
 
         // 🔗 Call Smile Identity API for verification
+        const idDocument = validatedData.documents.find(d => d.name === validatedData.idType)
+        const selfieDocument = validatedData.documents.find(d => d.name === "selfie_photo")
+
+        if (!idDocument || !selfieDocument) {
+          return res.status(400).json({
+            message: "Both ID document and selfie photo are required."
+          })
+        }
+
         const smilePayload = {
-          country: 'BW', // Botswana
-          idType: validatedData.idType,
-          selfieImage: validatedData.documents.find(d => d.name === 'selfie_photo')?.url || '',
-          idImage: validatedData.documents.find(d => d.name === 'national_id')?.url || '',
+          country: "BW",
+          idType: idTypeMap[validatedData.idType],
+          selfieImage: selfieDocument.url,
+          idImage: idDocument.url,
         }
 
         console.log('📤 Submitting to Smile Identity API...')
         const smileResponse = await smileIdentityService.submitKYCVerification(smilePayload)
         const parsedResult = smileIdentityService.parseVerificationResult(smileResponse)
 
-        // 💾 Create submission record with Smile result
-        // ⚠️ CRITICAL: Phase 1 is AUTOMATED - reviewed_by MUST BE NULL
-        // There is NO human reviewer for Phase 1 (identity verification)
-        // Smile Identity API automatically determines PASS/FAIL
         const submission = await storage.createVerificationSubmission({
           userId: req.user!.id,
           type: 'identity',
           documents: validatedData.documents,
           idType: validatedData.idType,
           verificationProvider: 'smile_identity',
-          // NOTE: reviewedBy is intentionally NOT set - Phase 1 is fully automated
         })
 
-        // ✅ AUTOMATED DECISION - NO ADMIN APPROVAL NEEDED
         let decidedSubmission = submission
         
         if (parsedResult.passed) {
-          // 🟢 SMILE PASSED: Auto-approve for ALL user types
           console.log('✅ Smile Identity PASSED - Auto-approving for all users')
           
           decidedSubmission = await verificationService.updateSmileIdentityResult(
@@ -87,17 +87,15 @@ export function registerVerificationRoutes(app: Express): void {
             validatedData.idType
           ) || submission
 
-          // 🔓 Update user's identity verification flag
           const user = await storage.getUser(req.user!.id)
           await storage.updateUser(req.user!.id, {
             isIdentityVerified: true,
-            isVerified: user?.role === 'requester' ? true : false, // Requesters are fully verified
+            isVerified: user?.role === 'requester' ? true : false,
           })
 
           const finalUser = await storage.getUser(req.user!.id)
           const { passwordHash: _, ...userWithoutPassword } = finalUser!
 
-          // 📧 Notify providers/suppliers they can proceed to Phase 2
           if (user?.role === 'provider' || user?.role === 'supplier') {
             await notificationService.createAdminNotification({
               title: 'Phase 1 Identity Verified',
@@ -116,7 +114,6 @@ export function registerVerificationRoutes(app: Express): void {
             phase1Verified: true,
           })
         } else {
-          // 🔴 SMILE FAILED: Auto-reject with Smile reason
           console.log('❌ Smile Identity FAILED - Auto-rejecting')
           
           decidedSubmission = await verificationService.updateSmileIdentityResult(
@@ -146,24 +143,21 @@ export function registerVerificationRoutes(app: Express): void {
         }
 
         const user = await storage.getUser(req.user!.id)
-
-        // ✅ Phase 2 requires Phase 1 to be complete
         const phase1Status = await verificationService.getPhase1Status(req.user!.id)
+
         if (!phase1Status?.phase1Verified) {
           return res.status(400).json({
             message: "Please complete Phase 1 (Identity Verification) first."
           })
         }
 
-        // 💾 Create Phase 2 submission (pending admin review)
         const submission = await storage.createVerificationSubmission({
           userId: req.user!.id,
           type: 'document',
           documents: validatedData.documents,
-          verificationProvider: 'manual', // Phase 2 is always manual
+          verificationProvider: 'manual',
         })
 
-        // 🔔 Notify admin of pending review (only for Phase 2)
         await notificationService.createAdminNotification({
           title: 'Phase 2: Category Verification Pending',
           message: `A ${user?.role} has submitted documents for Phase 2 category/qualification verification.`,
@@ -190,53 +184,35 @@ export function registerVerificationRoutes(app: Express): void {
 
   /**
    * GET /api/verification/status
-   * Get current verification status for all phases
-   * 
-   * Returns:
-   * - Phase 1 status (Smile Identity result)
-   * - Phase 2 status (if applicable)
-   * - User verification flags
-   * - Smile confidence score and failure reasons
    */
   app.get("/api/verification/status", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      // 📊 Get Phase 1 (Identity) status
       const phase1 = await storage.getVerificationSubmission(req.user!.id, "identity")
-      
-      // 📊 Get Phase 2 (Document) status if applicable
       const phase2 = (req.user!.role === "provider" || req.user!.role === "supplier")
         ? await storage.getVerificationSubmission(req.user!.id, "document")
         : null
 
-      // 👤 Get user current status
       const user = await storage.getUser(req.user!.id)
 
       res.json({
-        // 🔐 Phase 1 (Identity)
         phase1: {
-          status: phase1?.status || 'not_submitted', // pending, approved, rejected, not_submitted
+          status: phase1?.status || 'not_submitted',
           verified: phase1?.phase1Verified || false,
           verificationProvider: phase1?.verificationProvider || 'smile_identity',
           smileJobId: phase1?.smileJobId,
-          smileResult: phase1?.smileResult, // PASS or FAIL
+          smileResult: phase1?.smileResult,
           idType: phase1?.idType,
           confidenceScore: phase1?.confidenceScore,
           verifiedAt: phase1?.verifiedAt,
           rejectionReason: phase1?.rejectionReason,
         },
-        
-        // 📋 Phase 2 (Documents/Category Verification)
         phase2: phase2 ? {
-          status: phase2.status, // pending, approved, rejected
+          status: phase2.status,
           submittedAt: phase2.createdAt,
           rejectionReason: phase2.rejectionReason,
         } : null,
-
-        // 👤 User Verification Flags
         isIdentityVerified: user?.isIdentityVerified || false,
         isVerified: user?.isVerified || false,
-        
-        // 🔄 Workflow Status
         canProceedToPhase2: phase1?.phase1Verified && phase1?.status === 'approved',
         canAcceptJobs: user?.role === 'requester' ? user?.isVerified : (phase1?.phase1Verified && phase2?.status === 'approved'),
         role: req.user!.role,
@@ -249,20 +225,17 @@ export function registerVerificationRoutes(app: Express): void {
 
   /**
    * POST /api/verification/resubmit
-   * 🆕 Resubmit Phase 1 verification after rejection
-   * Uses same Smile Identity flow as initial submission
    */
   app.post("/api/verification/resubmit", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const { documents, idType } = req.body
 
-      if (!documents || documents.length < 2 || !idType) {
+      if (!documents || documents.length < 2 || !idType || !idTypeMap[idType]) {
         return res.status(400).json({
-          message: "ID type and both ID + selfie photos are required."
+          message: "ID type and both ID + selfie photos are required and must be valid."
         })
       }
 
-      // 📊 Get previous Phase 1 submission
       const previous = await verificationService.getPhase1Status(req.user!.id)
       if (!previous) {
         return res.status(400).json({
@@ -270,18 +243,25 @@ export function registerVerificationRoutes(app: Express): void {
         })
       }
 
-      // 🔄 Resubmit to Smile Identity
+      const idDocument = documents.find((d: any) => d.name === idType)
+      const selfieDocument = documents.find((d: any) => d.name === "selfie_photo")
+
+      if (!idDocument || !selfieDocument) {
+        return res.status(400).json({
+          message: "Both ID document and selfie photo are required."
+        })
+      }
+
       const smilePayload = {
-        country: 'BW',
-        idType,
-        selfieImage: documents.find((d: any) => d.name === 'selfie_photo')?.url || '',
-        idImage: documents.find((d: any) => d.name === 'national_id')?.url || '',
+        country: "BW",
+        idType: idTypeMap[idType],
+        selfieImage: selfieDocument.url,
+        idImage: idDocument.url,
       }
 
       const smileResponse = await smileIdentityService.submitKYCVerification(smilePayload)
       const parsedResult = smileIdentityService.parseVerificationResult(smileResponse)
 
-      // 💾 Update with new result
       let updatedSubmission: any
 
       if (parsedResult.passed) {
