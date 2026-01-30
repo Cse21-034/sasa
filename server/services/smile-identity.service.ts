@@ -52,23 +52,27 @@ export class SmileIdentityService {
    */
   async submitKYCVerification(payload: SmileIdentitySubmissionPayload) {
     try {
-      const jobPayload = {
-        job_type: 3, // SmartSelfie + ID
-        job_id: `job_${Date.now()}`,
-        user_id: `user_${Date.now()}`,
-        country: payload.country,
-        id_type: payload.idType,
-        images: [
-          {
-            image_type_id: 1, // ID document
-            image: payload.idImage.replace(/^data:image\/\w+;base64,/, ""),
-          },
-          {
-            image_type_id: 2, // Selfie
-            image: payload.selfieImage.replace(/^data:image\/\w+;base64,/, ""),
-          },
-        ],
-      };
+     const jobPayload = {
+  job_type: 3, // SmartSelfie + ID
+  job_id: `job_${Date.now()}`,
+  user_id: `user_${Date.now()}`,
+
+  id_info: {
+    country: payload.country, // ✅ MUST be here (e.g. "BW")
+    id_type: payload.idType,  // ✅ MUST be here
+  },
+
+  images: [
+    {
+      image_type_id: 1, // ID document
+      image: payload.idImage.replace(/^data:image\/\w+;base64,/, ""),
+    },
+    {
+      image_type_id: 2, // Selfie
+      image: payload.selfieImage.replace(/^data:image\/\w+;base64,/, ""),
+    },
+  ],
+};
 
       const { base64Payload, signature } = signPayload(jobPayload);
 
