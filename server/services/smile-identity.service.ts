@@ -5,11 +5,12 @@
  */
 
 import axios, { AxiosInstance } from 'axios';
+import aws4 from 'aws4';
 
 // 🔐 Smile Identity API Configuration
-const SMILE_IDENTITY_API_BASE = process.env.SMILE_IDENTITY_API_URL || 'https://3eydmgh10d.execute-api.us-west-2.amazonaws.com';
-const SMILE_IDENTITY_API_KEY = process.env.SMILE_IDENTITY_API_KEY;
-const SMILE_IDENTITY_PARTNER_ID = process.env.SMILE_IDENTITY_PARTNER_ID;
+const SMILE_IDENTITY_API_BASE = process.env.SMILE_IDENTITY_API_URL || 'https://api.smileidentity.com/v1';
+const SMILE_IDENTITY_API_KEY = process.env.SMILE_IDENTITY_API_KEY; // AWS Access Key ID
+const SMILE_IDENTITY_PARTNER_ID = process.env.SMILE_IDENTITY_PARTNER_ID; // Partner ID
 
 interface SmileIdentitySubmissionPayload {
   country: string;
@@ -49,8 +50,39 @@ export class SmileIdentityService {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': `Bearer ${SMILE_IDENTITY_API_KEY}`,
       },
+    });
+
+    // 🔐 Add AWS SigV4 signing interceptor
+    this.apiClient.interceptors.request.use((config) => {
+      if (!SMILE_IDENTITY_API_KEY || !SMILE_IDENTITY_PARTNER_ID) {
+        return config;
+      }
+
+      // Parse the URL
+      const url = new URL(config.url || '', config.baseURL);
+      const pathname = url.pathname + url.search;
+
+      // Prepare request for signing
+      const request = {
+        host: url.hostname,
+        path: pathname,
+        method: config.method?.toUpperCase() || 'GET',
+        headers: config.headers as Record<string, string>,
+        body: config.data ? JSON.stringify(config.data) : undefined,
+      };
+
+      // 🔐 Sign the request with AWS SigV4
+      // Using Partner ID as access key and auth_token as secret key
+      aws4.sign(request, {
+        accessKeyId: SMILE_IDENTITY_PARTNER_ID,
+        secretAccessKey: SMILE_IDENTITY_API_KEY,
+      });
+
+      // Update config with signed headers
+      config.headers = request.headers as any;
+
+      return config;
     });
   }
 
@@ -82,7 +114,6 @@ export class SmileIdentityService {
 
       // 🔗 POST to Smile Identity Smart Selfie Compare endpoint
       const response = await this.apiClient.post('/v2/smart-selfie-compare', {
-        partner_id: SMILE_IDENTITY_PARTNER_ID,
         partner_params: {
           job_type: 3, // KYC job type
           user_id: `user_${Date.now()}`, // Unique user identifier
@@ -149,11 +180,7 @@ export class SmileIdentityService {
       }
 
       // 🔗 GET result from Smile Identity
-      const response = await this.apiClient.get(`/v2/smart-selfie-compare/${jobId}`, {
-        params: {
-          partner_id: SMILE_IDENTITY_PARTNER_ID,
-        },
-      });
+      const response = await this.apiClient.get(`/v2/smart-selfie-compare/${jobId}`);
 
       return response.data as SmileIdentityResponse;
     } catch (error: any) {
