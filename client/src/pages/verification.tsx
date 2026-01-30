@@ -302,7 +302,7 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
                     )}
                   />
 
-                  {/* Selfie Upload */}
+                  {/* Selfie Capture - CAMERA ONLY */}
                   <FormField
                     control={form.control}
                     name="selfiePhoto"
@@ -310,20 +310,22 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
                       <FormItem>
                         <FormLabel className="flex items-center">
                           Selfie with ID <span className="text-destructive ml-1">*</span>
+                          <span className="text-xs text-orange-600 ml-2 font-semibold">📷 Camera Required</span>
                         </FormLabel>
                         <FormControl>
                           <div className={`flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg transition-all ${!isDisabled ? 'hover:border-primary/50 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
                             {photoPreviews.selfie ? (
                               <img src={photoPreviews.selfie} alt="Selfie Preview" className="w-full h-32 object-cover rounded" />
                             ) : (
-                              <Camera className="h-10 w-10 text-muted-foreground mb-2" />
+                              <Camera className="h-10 w-10 text-orange-600 mb-2" />
                             )}
                             <p className="text-xs text-muted-foreground text-center max-w-[150px]">
-                              Hold your ID next to your face
+                              📷 Use your device camera to take a selfie holding your ID next to your face
                             </p>
                             <Input
                               type="file"
                               accept="image/*"
+                              capture="user"
                               className="hidden"
                               onChange={(e) => handleFileChange(e.target.files?.[0], 'selfiePhoto')}
                               disabled={isDisabled}
@@ -333,7 +335,7 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
                               onClick={() => (document.querySelector(`input[name="selfiePhoto"]`) as HTMLInputElement)?.click()}
                               disabled={isDisabled}
                             >
-                              {photoPreviews.selfie ? 'Change' : 'Take'}
+                              {photoPreviews.selfie ? 'Retake' : 'Take Selfie'}
                             </Button>
                           </div>
                         </FormControl>
