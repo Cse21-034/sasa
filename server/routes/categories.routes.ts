@@ -47,13 +47,12 @@ export function registerCategoryRoutes(app: Express): void {
 
       const request = await categoryService.createCategoryAdditionRequest(validatedData);
 
-      // Notify admin about new category request
+      // Notify admin about new category request (to all admins)
       const category = await storage.getCategory(validatedData.categoryId);
-      await storage.createNotification({
-        recipientId: "", // This will be handled by admin notification system
-        type: 'category_request_received',
+      await notificationService.createAdminNotification({
         title: 'New Category Addition Request',
         message: `A service provider has requested to add the "${category?.name || 'unknown'}" category.`,
+        type: 'new_verification',
       });
 
       res.status(201).json({

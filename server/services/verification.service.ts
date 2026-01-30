@@ -260,7 +260,6 @@ export class VerificationService {
         idType,
         rejectionReason: rejectionReason || (smileResult === 'FAIL' ? 'Smile Identity verification failed' : null),
         verifiedAt: smileResult === 'PASS' ? new Date() : null,
-        updatedAt: new Date(),
       })
       .where(eq(verificationSubmissions.id, id))
       .returning();
