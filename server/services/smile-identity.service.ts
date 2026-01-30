@@ -8,9 +8,11 @@ import axios, { AxiosInstance } from 'axios';
 import aws4 from 'aws4';
 
 // 🔐 Smile Identity API Configuration
-const SMILE_IDENTITY_API_BASE = process.env.SMILE_IDENTITY_API_URL || 'https://api.smileidentity.com/v1';
-const SMILE_IDENTITY_API_KEY = process.env.SMILE_IDENTITY_API_KEY; // AWS Access Key ID
-const SMILE_IDENTITY_PARTNER_ID = process.env.SMILE_IDENTITY_PARTNER_ID; // Partner ID
+const SMILE_IDENTITY_API_BASE = process.env.SMILE_IDENTITY_API_URL || 'https://3eydmgh10d.execute-api.us-west-2.amazonaws.com';
+const SMILE_IDENTITY_API_KEY = process.env.SMILE_IDENTITY_API_KEY; // AWS Secret Access Key
+const SMILE_IDENTITY_PARTNER_ID = process.env.SMILE_IDENTITY_PARTNER_ID; // AWS Access Key ID
+const AWS_REGION = 'us-west-2';
+const AWS_SERVICE = 'execute-api';
 
 interface SmileIdentitySubmissionPayload {
   country: string;
@@ -56,34 +58,67 @@ export class SmileIdentityService {
     // 🔐 Add AWS SigV4 signing interceptor
     this.apiClient.interceptors.request.use((config) => {
       if (!SMILE_IDENTITY_API_KEY || !SMILE_IDENTITY_PARTNER_ID) {
+        console.warn('⚠️ Smile Identity credentials not configured');
         return config;
       }
 
-      // Parse the URL
-      const url = new URL(config.url || '', config.baseURL);
-      const pathname = url.pathname + url.search;
+      try {
+        // Parse the URL to get host and path
+        const url = new URL(config.url || '', config.baseURL);
+        
+        // Prepare request for signing with correct AWS configuration
+        const request: any = {
+          host: url.hostname,
+          path: url.pathname + url.search,
+          method: config.method?.toUpperCase() || 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: config.data ? JSON.stringify(config.data) : undefined,
+          service: AWS_SERVICE, // 'execute-api'
+          region: AWS_REGION,   // 'us-west-2'
+        };
 
-      // Prepare request for signing
-      const request = {
-        host: url.hostname,
-        path: pathname,
-        method: config.method?.toUpperCase() || 'GET',
-        headers: config.headers as Record<string, string>,
-        body: config.data ? JSON.stringify(config.data) : undefined,
-      };
+        // 🔐 Sign the request with AWS SigV4
+        // Using Partner ID as access key and API key as secret key
+        aws4.sign(request, {
+          accessKeyId: SMILE_IDENTITY_PARTNER_ID,
+          secretAccessKey: SMILE_IDENTITY_API_KEY,
+          region: AWS_REGION,
+          service: AWS_SERVICE,
+        });
 
-      // 🔐 Sign the request with AWS SigV4
-      // Using Partner ID as access key and auth_token as secret key
-      aws4.sign(request, {
-        accessKeyId: SMILE_IDENTITY_PARTNER_ID,
-        secretAccessKey: SMILE_IDENTITY_API_KEY,
-      });
+        // Update config with signed headers (excluding host which axios handles)
+        const { host, ...signedHeaders } = request.headers;
+        config.headers = signedHeaders as any;
 
-      // Update config with signed headers
-      config.headers = request.headers as any;
+        console.log('✅ Request signed successfully for:', url.pathname);
+      } catch (error) {
+        console.error('❌ Error signing request:', error);
+      }
 
       return config;
     });
+
+    // Add response interceptor for better error handling
+    this.apiClient.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response) {
+          console.error('Smile Identity API Error Response:', {
+            status: error.response.status,
+            data: error.response.data,
+            headers: error.response.headers,
+          });
+        } else if (error.request) {
+          console.error('Smile Identity API No Response:', error.request);
+        } else {
+          console.error('Smile Identity API Request Error:', error.message);
+        }
+        throw error;
+      }
+    );
   }
 
   /**
@@ -105,12 +140,19 @@ export class SmileIdentityService {
         return {
           success: false,
           result: {
-            ResultStatus: 'FAIL',
-            ResultCode: 'CREDENTIALS_MISSING',
             ConfidenceScore: 0,
+            ResultCode: 'CREDENTIALS_MISSING',
+            ResultStatus: 'FAIL',
           },
         };
       }
+
+      console.log('📤 Submitting to Smile Identity:', {
+        country: payload.country,
+        idType: payload.idType,
+        hasIdImage: !!payload.idImage,
+        hasSelfieImage: !!payload.selfieImage,
+      });
 
       // 🔗 POST to Smile Identity Smart Selfie Compare endpoint
       const response = await this.apiClient.post('/v2/smart-selfie-compare', {
@@ -146,7 +188,11 @@ export class SmileIdentityService {
 
       return verificationResult;
     } catch (error: any) {
-      console.error('❌ Smile Identity API error:', error.response?.data || error.message);
+      console.error('❌ Smile Identity API error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
 
       // 🚨 Return failure response
       return {
@@ -229,6 +275,8 @@ export class SmileIdentityService {
     const resultCode = response.result?.ResultCode;
 
     const failureReasons: Record<string, string> = {
+      'CREDENTIALS_MISSING': 'System configuration error. Please contact support.',
+      'API_ERROR': 'Verification service temporarily unavailable. Please try again later.',
       'DOCUMENT_FAILED_VERIFICATION': 'Document could not be verified. Please upload a clear, readable ID.',
       'FACE_MISMATCH': 'Face does not match the ID document. Please ensure both photos are clear.',
       'LIVENESS_FAILED': 'Liveness check failed. Please submit a fresh selfie.',
@@ -243,28 +291,6 @@ export class SmileIdentityService {
 
     return failureReasons[resultCode as string] || 
       `Verification failed. Please try again or contact support. (Code: ${resultCode})`;
-  }
-
-  /**
-   * Mock successful response for development/testing when API credentials not configured
-   * @returns Mock PASS response with high confidence
-   */
-  private getMockSuccessResponse(): SmileIdentityResponse {
-    return {
-      success: true,
-      smile_job_id: `mock_job_${Date.now()}`,
-      result: {
-        ConfidenceScore: 95,
-        ResultCode: 'PASSED',
-        ResultStatus: 'PASS',
-        Actions: {
-          Liveness: 'PASSED',
-          FaceMatch: 'PASSED',
-          DocumentAuthenticity: 'PASSED',
-        },
-      },
-      timestamp: new Date().toISOString(),
-    };
   }
 }
 
