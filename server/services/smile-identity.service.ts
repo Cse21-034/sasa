@@ -64,8 +64,19 @@ export class SmileIdentityService {
   ): Promise<SmileIdentityResponse> {
     try {
       if (!SMILE_IDENTITY_API_KEY || !SMILE_IDENTITY_PARTNER_ID) {
-        console.warn('⚠️ Smile Identity credentials not configured - returning mock PASS');
-        return this.getMockSuccessResponse();
+        console.error('🚨 CRITICAL: Smile Identity credentials NOT configured!');
+        console.error('   SMILE_IDENTITY_API_KEY:', SMILE_IDENTITY_API_KEY ? '✓ Set' : '✗ Missing');
+        console.error('   SMILE_IDENTITY_PARTNER_ID:', SMILE_IDENTITY_PARTNER_ID ? '✓ Set' : '✗ Missing');
+        
+        // ⚠️ DO NOT AUTO-PASS - return FAIL to force configuration
+        return {
+          success: false,
+          result: {
+            ResultStatus: 'FAIL',
+            ResultCode: 'CREDENTIALS_MISSING',
+            ConfidenceScore: 0,
+          },
+        };
       }
 
       // 🔗 POST to Smile Identity KYC endpoint
@@ -127,7 +138,15 @@ export class SmileIdentityService {
   async getVerificationResult(jobId: string): Promise<SmileIdentityResponse> {
     try {
       if (!SMILE_IDENTITY_API_KEY || !SMILE_IDENTITY_PARTNER_ID) {
-        return this.getMockSuccessResponse();
+        console.error('🚨 CRITICAL: Smile Identity credentials NOT configured!');
+        return {
+          success: false,
+          result: {
+            ResultStatus: 'FAIL',
+            ResultCode: 'CREDENTIALS_MISSING',
+            ConfidenceScore: 0,
+          },
+        };
       }
 
       // 🔗 GET result from Smile Identity

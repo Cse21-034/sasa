@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth-context';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Progress } from '@/components/ui/progress';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { CameraCapture } from '@/components/CameraCapture';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -133,6 +134,8 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
 
   const identityMutation = useVerificationSubmission('identity');
   const [photoPreviews, setPhotoPreviews] = useState({ id: '', selfie: '' });
+  const [showCameraCapture, setShowCameraCapture] = useState(false);
+  const [cameraMode, setCameraMode] = useState<'selfie' | 'id' | null>(null);
 
   const phase1Status = statusData.phase1?.status; // not_submitted, pending, approved, rejected
   const phase1Verified = statusData.phase1?.verified;
@@ -332,7 +335,7 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
                               {...fieldProps}
                             />
                             <Button type="button" variant="outline" size="sm" className="mt-2"
-                              onClick={() => (document.querySelector(`input[name="selfiePhoto"]`) as HTMLInputElement)?.click()}
+                              onClick={() => { setShowCameraCapture(true); setCameraMode('selfie'); }}
                               disabled={isDisabled}
                             >
                               {photoPreviews.selfie ? 'Retake' : 'Take Selfie'}
@@ -371,6 +374,21 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
             )}
           </form>
         </Form>
+
+        {/* Camera Capture Modal */}
+        {showCameraCapture && cameraMode === 'selfie' && (
+          <CameraCapture
+            onCapture={(file) => {
+              handleFileChange(file, 'selfiePhoto');
+              setShowCameraCapture(false);
+              setCameraMode(null);
+            }}
+            onCancel={() => {
+              setShowCameraCapture(false);
+              setCameraMode(null);
+            }}
+          />
+        )}
       </CardContent>
     </Card>
   );
