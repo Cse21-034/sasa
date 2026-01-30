@@ -1,28 +1,30 @@
 /**
- * Smile Identity Service
- * Handles KYC (Know Your Customer) verification using Smile Identity API
- * For Phase 1: Automated identity verification with liveness detection and face matching
+ * Smile Identity Service - VERSION A
+ * Standard REST API with Simple API Key Authentication
+ * 
+ * Use this version if:
+ * - Your Partner ID is a short number (e.g., "0001")
+ * - Your API Key is a regular alphanumeric string (not AWS format)
+ * - You're using https://api.smileidentity.com or https://testapi.smileidentity.com
  */
 
 import axios, { AxiosInstance } from 'axios';
-import aws4 from 'aws4';
+import crypto from 'crypto';
 
 // 🔐 Smile Identity API Configuration
-const SMILE_IDENTITY_API_BASE = process.env.SMILE_IDENTITY_API_URL || 'https://3eydmgh10d.execute-api.us-west-2.amazonaws.com';
-const SMILE_IDENTITY_API_KEY = process.env.SMILE_IDENTITY_API_KEY; // AWS Secret Access Key
-const SMILE_IDENTITY_PARTNER_ID = process.env.SMILE_IDENTITY_PARTNER_ID; // AWS Access Key ID
-const AWS_REGION = 'us-west-2';
-const AWS_SERVICE = 'execute-api';
+const SMILE_IDENTITY_API_BASE = process.env.SMILE_IDENTITY_API_URL || 'https://testapi.smileidentity.com/v1';
+const SMILE_IDENTITY_API_KEY = process.env.SMILE_IDENTITY_API_KEY;
+const SMILE_IDENTITY_PARTNER_ID = process.env.SMILE_IDENTITY_PARTNER_ID;
 
 interface SmileIdentitySubmissionPayload {
   country: string;
   idType: string;
-  idNumber?: string; // Optional - may not be available from image
+  idNumber?: string;
   firstName?: string;
   lastName?: string;
   selfieImage: string; // Base64
   idImage: string; // Base64
-  livenessImages?: string[]; // Base64 images
+  livenessImages?: string[];
 }
 
 interface SmileIdentityResponse {
@@ -31,7 +33,7 @@ interface SmileIdentityResponse {
   result?: {
     ConfidenceScore: number;
     ResultCode: string;
-    ResultStatus: string; // PASS or FAIL
+    ResultStatus: string;
     Actions?: {
       Liveness: string;
       FaceMatch: string;
@@ -55,7 +57,7 @@ export class SmileIdentityService {
       },
     });
 
-    // 🔐 Add AWS SigV4 signing interceptor
+    // 🔐 Add Smile Identity signature authentication
     this.apiClient.interceptors.request.use((config) => {
       if (!SMILE_IDENTITY_API_KEY || !SMILE_IDENTITY_PARTNER_ID) {
         console.warn('⚠️ Smile Identity credentials not configured');
@@ -63,58 +65,44 @@ export class SmileIdentityService {
       }
 
       try {
-        // Parse the URL to get host and path
-        const url = new URL(config.url || '', config.baseURL);
+        // Generate timestamp
+        const timestamp = new Date().toISOString();
         
-        // Prepare request for signing with correct AWS configuration
-        const request: any = {
-          host: url.hostname,
-          path: url.pathname + url.search,
-          method: config.method?.toUpperCase() || 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: config.data ? JSON.stringify(config.data) : undefined,
-          service: AWS_SERVICE, // 'execute-api'
-          region: AWS_REGION,   // 'us-west-2'
-        };
+        // Create signature (Smile Identity specific)
+        // Signature = HMAC-SHA256(partner_id + timestamp, api_key)
+        const signatureString = SMILE_IDENTITY_PARTNER_ID + timestamp;
+        const signature = crypto
+          .createHmac('sha256', SMILE_IDENTITY_API_KEY)
+          .update(signatureString)
+          .digest('hex');
 
-        // 🔐 Sign the request with AWS SigV4
-        // Using Partner ID as access key and API key as secret key
-        aws4.sign(request, {
-          accessKeyId: SMILE_IDENTITY_PARTNER_ID,
-          secretAccessKey: SMILE_IDENTITY_API_KEY,
-          region: AWS_REGION,
-          service: AWS_SERVICE,
+        // Add Smile Identity authentication headers
+        config.headers['partner_id'] = SMILE_IDENTITY_PARTNER_ID;
+        config.headers['timestamp'] = timestamp;
+        config.headers['signature'] = signature;
+
+        console.log('✅ Smile Identity signature created:', {
+          partner_id: SMILE_IDENTITY_PARTNER_ID,
+          timestamp,
+          signature: signature.substring(0, 10) + '...',
         });
-
-        // Update config with signed headers (excluding host which axios handles)
-        const { host, ...signedHeaders } = request.headers;
-        config.headers = signedHeaders as any;
-
-        console.log('✅ Request signed successfully for:', url.pathname);
       } catch (error) {
-        console.error('❌ Error signing request:', error);
+        console.error('❌ Error creating signature:', error);
       }
 
       return config;
     });
 
-    // Add response interceptor for better error handling
+    // Add response interceptor for error handling
     this.apiClient.interceptors.response.use(
       (response) => response,
       (error) => {
         if (error.response) {
-          console.error('Smile Identity API Error Response:', {
+          console.error('Smile Identity API Error:', {
             status: error.response.status,
             data: error.response.data,
             headers: error.response.headers,
           });
-        } else if (error.request) {
-          console.error('Smile Identity API No Response:', error.request);
-        } else {
-          console.error('Smile Identity API Request Error:', error.message);
         }
         throw error;
       }
@@ -123,9 +111,6 @@ export class SmileIdentityService {
 
   /**
    * Submit KYC verification to Smile Identity
-   * Includes: Face match, Liveness detection, ID authenticity verification
-   * @param payload - User verification data
-   * @returns Smile Identity response with verification result
    */
   async submitKYCVerification(
     payload: SmileIdentitySubmissionPayload
@@ -133,10 +118,6 @@ export class SmileIdentityService {
     try {
       if (!SMILE_IDENTITY_API_KEY || !SMILE_IDENTITY_PARTNER_ID) {
         console.error('🚨 CRITICAL: Smile Identity credentials NOT configured!');
-        console.error('   SMILE_IDENTITY_API_KEY:', SMILE_IDENTITY_API_KEY ? '✓ Set' : '✗ Missing');
-        console.error('   SMILE_IDENTITY_PARTNER_ID:', SMILE_IDENTITY_PARTNER_ID ? '✓ Set' : '✗ Missing');
-        
-        // ⚠️ DO NOT AUTO-PASS - return FAIL to force configuration
         return {
           success: false,
           result: {
@@ -150,43 +131,55 @@ export class SmileIdentityService {
       console.log('📤 Submitting to Smile Identity:', {
         country: payload.country,
         idType: payload.idType,
-        hasIdImage: !!payload.idImage,
-        hasSelfieImage: !!payload.selfieImage,
+        endpoint: SMILE_IDENTITY_API_BASE,
       });
 
-      // 🔗 POST to Smile Identity Smart Selfie Compare endpoint
-      const response = await this.apiClient.post('/v2/smart-selfie-compare', {
+      // Prepare the request body according to Smile Identity API spec
+      const requestBody = {
         partner_params: {
-          job_type: 3, // KYC job type
-          user_id: `user_${Date.now()}`, // Unique user identifier
           job_id: `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          user_id: `user_${Date.now()}`,
+          job_type: 5, // Enhanced KYC with Biometric
         },
-        source_sdk: 'backend_nodejs',
-        source_sdk_version: '1.0.0',
-        timestamp: new Date().toISOString(),
-        // 🖼️ Image data
-        selfie_image: payload.selfieImage,
-        id_image: payload.idImage,
-        liveness_images: payload.livenessImages || [],
-        // 📋 ID Information
-        country: payload.country,
-        id_type: payload.idType,
-        id_number: payload.idNumber,
-        first_name: payload.firstName,
-        last_name: payload.lastName,
+        images: [
+          {
+            image_type_id: 1, // ID Card
+            image: payload.idImage.replace(/^data:image\/[a-z]+;base64,/, ''),
+          },
+          {
+            image_type_id: 2, // Selfie
+            image: payload.selfieImage.replace(/^data:image\/[a-z]+;base64,/, ''),
+          },
+        ],
+        id_info: {
+          country: payload.country,
+          id_type: this.mapIdType(payload.idType),
+          id_number: payload.idNumber || '',
+          first_name: payload.firstName || '',
+          last_name: payload.lastName || '',
+        },
+      };
+
+      const response = await this.apiClient.post('/submit', requestBody);
+
+      console.log('✅ Smile Identity submission successful:', {
+        status: response.status,
+        data: response.data,
       });
 
-      // ✅ Extract verification result
-      const verificationResult = response.data as SmileIdentityResponse;
-
-      // 📊 Log submission for audit
-      console.log('✅ Smile Identity submission successful', {
-        jobId: verificationResult.smile_job_id,
-        resultStatus: verificationResult.result?.ResultStatus,
-        confidenceScore: verificationResult.result?.ConfidenceScore,
-      });
-
-      return verificationResult;
+      // Parse response
+      const result = response.data;
+      
+      return {
+        success: true,
+        smile_job_id: result.job_id || result.smile_job_id,
+        result: {
+          ConfidenceScore: result.confidence_score || result.ConfidenceScore || 0,
+          ResultCode: result.result_code || result.ResultCode || 'UNKNOWN',
+          ResultStatus: result.result_status || result.ResultStatus || 'PENDING',
+          Actions: result.Actions,
+        },
+      };
     } catch (error: any) {
       console.error('❌ Smile Identity API error:', {
         message: error.message,
@@ -194,7 +187,6 @@ export class SmileIdentityService {
         status: error.response?.status,
       });
 
-      // 🚨 Return failure response
       return {
         success: false,
         result: {
@@ -207,14 +199,11 @@ export class SmileIdentityService {
   }
 
   /**
-   * Get verification result from Smile Identity (for polling/webhook follow-up)
-   * @param jobId - Smile Identity job ID from previous submission
-   * @returns Verification status and result
+   * Get verification result
    */
   async getVerificationResult(jobId: string): Promise<SmileIdentityResponse> {
     try {
       if (!SMILE_IDENTITY_API_KEY || !SMILE_IDENTITY_PARTNER_ID) {
-        console.error('🚨 CRITICAL: Smile Identity credentials NOT configured!');
         return {
           success: false,
           result: {
@@ -225,12 +214,21 @@ export class SmileIdentityService {
         };
       }
 
-      // 🔗 GET result from Smile Identity
-      const response = await this.apiClient.get(`/v2/smart-selfie-compare/${jobId}`);
+      const response = await this.apiClient.get(`/job_status`, {
+        params: { job_id: jobId },
+      });
 
-      return response.data as SmileIdentityResponse;
+      return {
+        success: true,
+        smile_job_id: jobId,
+        result: {
+          ConfidenceScore: response.data.confidence_score || 0,
+          ResultCode: response.data.result_code || 'UNKNOWN',
+          ResultStatus: response.data.result_status || 'PENDING',
+        },
+      };
     } catch (error: any) {
-      console.error('❌ Smile Identity result retrieval error:', error.response?.data || error.message);
+      console.error('❌ Error retrieving result:', error);
       return {
         success: false,
         result: {
@@ -243,9 +241,19 @@ export class SmileIdentityService {
   }
 
   /**
-   * Parse Smile Identity response and determine if verification passed
-   * @param response - Smile Identity API response
-   * @returns Parsed verification decision
+   * Map ID types to Smile Identity format
+   */
+  private mapIdType(idType: string): string {
+    const mapping: Record<string, string> = {
+      'national_id': 'NATIONAL_ID',
+      'passport': 'PASSPORT',
+      'driver_licence': 'DRIVERS_LICENSE',
+    };
+    return mapping[idType] || 'NATIONAL_ID';
+  }
+
+  /**
+   * Parse verification result
    */
   parseVerificationResult(response: SmileIdentityResponse) {
     const isPassed = response.result?.ResultStatus === 'PASS';
@@ -263,9 +271,7 @@ export class SmileIdentityService {
   }
 
   /**
-   * Extract human-readable failure reason from Smile Identity response
-   * @param response - Smile Identity API response
-   * @returns Failure reason text
+   * Get failure reason
    */
   private getFailureReason(response: SmileIdentityResponse): string {
     if (response.result?.ResultStatus === 'PASS') {
