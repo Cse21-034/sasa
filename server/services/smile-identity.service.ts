@@ -150,7 +150,7 @@ export class SmileIdentityService {
       }
 
       // 🔗 GET result from Smile Identity
-      const response = await this.apiClient.get(`/verify/${jobId}`, {
+      const response = await this.apiClient.get(`/v2/smart-selfie-compare/${jobId}`, {
         params: {
           partner_id: SMILE_IDENTITY_PARTNER_ID,
           api_key: SMILE_IDENTITY_API_KEY,
