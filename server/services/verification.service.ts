@@ -239,33 +239,34 @@ export class VerificationService {
    * @returns Updated submission
    */
   async updateSmileIdentityResult(
-    id: string,
-    smileResult: 'PASS' | 'FAIL',
-    smileJobId: string,
-    confidenceScore: number,
-    idType: string,
-    rejectionReason?: string
-  ): Promise<VerificationSubmission | undefined> {
-    const status = smileResult === 'PASS' ? 'approved' : 'rejected';
-    const phase1Verified = smileResult === 'PASS';
+  id: string,
+  smileResult: 'PASS' | 'FAIL',
+  smileJobId: string,
+  confidenceScore: number,
+  idType: string,
+  rejectionReason?: string
+): Promise<VerificationSubmission | undefined> {
+  const status = smileResult === 'PASS' ? 'approved' : 'rejected';
 
-    const [updated] = await db
-      .update(verificationSubmissions)
-      .set({
-        status,
-        phase1Verified,
-        smileResult,
-        smileJobId,
-        confidenceScore,
-        idType,
-        rejectionReason: rejectionReason || (smileResult === 'FAIL' ? 'Smile Identity verification failed' : null),
-        verifiedAt: smileResult === 'PASS' ? new Date() : null,
-      })
-      .where(eq(verificationSubmissions.id, id))
-      .returning();
+  const [updated] = await db
+    .update(verificationSubmissions)
+    .set({
+      status,
+      phase1Verified: smileResult === 'PASS',
+      smileResult,
+      smileJobId,
+      confidenceScore,
+      idType,
+      rejectionReason: rejectionReason || null,
+      verifiedAt: smileResult === 'PASS' ? new Date() : null,
+      reviewedBy: null, // 🚨 ALWAYS NULL FOR PHASE 1
+      reviewedAt: null,
+    })
+    .where(eq(verificationSubmissions.id, id))
+    .returning();
 
-    return updated || undefined;
-  }
+  return updated;
+}
 
   /**
    * Get Phase 1 verification status for a user
