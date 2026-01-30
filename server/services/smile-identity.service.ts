@@ -79,8 +79,8 @@ export class SmileIdentityService {
         };
       }
 
-      // 🔗 POST to Smile Identity KYC endpoint
-      const response = await this.apiClient.post('/verify', {
+      // 🔗 POST to Smile Identity Smart Selfie Compare endpoint
+      const response = await this.apiClient.post('/v2/smart-selfie-compare', {
         partner_id: SMILE_IDENTITY_PARTNER_ID,
         partner_params: {
           job_type: 3, // KYC job type
