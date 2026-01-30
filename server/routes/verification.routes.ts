@@ -60,12 +60,16 @@ export function registerVerificationRoutes(app: Express): void {
         const parsedResult = smileIdentityService.parseVerificationResult(smileResponse)
 
         // 💾 Create submission record with Smile result
+        // ⚠️ CRITICAL: Phase 1 is AUTOMATED - reviewed_by MUST BE NULL
+        // There is NO human reviewer for Phase 1 (identity verification)
+        // Smile Identity API automatically determines PASS/FAIL
         const submission = await storage.createVerificationSubmission({
           userId: req.user!.id,
           type: 'identity',
           documents: validatedData.documents,
           idType: validatedData.idType,
           verificationProvider: 'smile_identity',
+          // NOTE: reviewedBy is intentionally NOT set - Phase 1 is fully automated
         })
 
         // ✅ AUTOMATED DECISION - NO ADMIN APPROVAL NEEDED

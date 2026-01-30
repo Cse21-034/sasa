@@ -919,15 +919,19 @@ export const updateUserStatusSchema = z.object({
 
 
 // 🆕 Schema for Verification Submissions (with Smile Identity support)
+// Phase 1 (identity): Automated via Smile Identity - NO manual review/reviewer
+// Phase 2 (documents): Manual admin review - reviewer field set by admin
 export const insertVerificationSubmissionSchema = z.object({
   type: z.enum(['identity', 'document']),
   documents: z.array(z.object({
     name: z.string().max(255, "File name is too long"),
     url: z.string().min(10, "Document URL/Base64 is required"),
   })).min(1, "At least one document/photo is required."),
-  // 🆕 Smile Identity fields (Phase 1)
+  // 🆕 Smile Identity fields (Phase 1 ONLY - identity type)
   idType: z.enum(['national_id', 'passport', 'driver_licence']).optional(),
   verificationProvider: z.enum(['smile_identity', 'manual']).optional().default('smile_identity'),
+  // NOTE: reviewedBy is NEVER set during creation - it's set only during admin approval (Phase 2)
+  // Phase 1 submissions do NOT have a reviewer - they're auto-approved/rejected by Smile Identity
 });
 
 // 🆕 Schema for Admin Approval/Rejection
