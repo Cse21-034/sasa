@@ -52,27 +52,39 @@ export class SmileIdentityService {
    */
   async submitKYCVerification(payload: SmileIdentitySubmissionPayload) {
     try {
-     const jobPayload = {
-  job_type: 3, // SmartSelfie + ID
-  job_id: `job_${Date.now()}`,
-  user_id: `user_${Date.now()}`,
+      console.log('📋 Smile Identity Payload received:', {
+        country: payload.country,
+        idType: payload.idType,
+        selfieImage: payload.selfieImage ? `${payload.selfieImage.substring(0, 50)}...` : 'undefined',
+        idImage: payload.idImage ? `${payload.idImage.substring(0, 50)}...` : 'undefined',
+      });
 
-  id_info: {
-    country: payload.country, // ✅ MUST be here (e.g. "BW")
-    id_type: payload.idType,  // ✅ MUST be here
-  },
+      const jobPayload = {
+        job_type: 3, // SmartSelfie + ID
+        job_id: `job_${Date.now()}`,
+        user_id: `user_${Date.now()}`,
 
-  images: [
-    {
-      image_type_id: 1, // ID document
-      image: payload.idImage.replace(/^data:image\/\w+;base64,/, ""),
-    },
-    {
-      image_type_id: 2, // Selfie
-      image: payload.selfieImage.replace(/^data:image\/\w+;base64,/, ""),
-    },
-  ],
-};
+        id_info: {
+          country: payload.country, // ✅ MUST be here (e.g. "BW")
+          id_type: payload.idType,  // ✅ MUST be here
+        },
+
+        images: [
+          {
+            image_type_id: 1, // ID document
+            image: payload.idImage.replace(/^data:image\/\w+;base64,/, ""),
+          },
+          {
+            image_type_id: 2, // Selfie
+            image: payload.selfieImage.replace(/^data:image\/\w+;base64,/, ""),
+          },
+        ],
+      };
+
+      console.log('📤 Sending to Smile Identity:', {
+        country: jobPayload.id_info.country,
+        id_type: jobPayload.id_info.id_type,
+      });
 
       const { base64Payload, signature } = signPayload(jobPayload);
 

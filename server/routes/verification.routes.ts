@@ -84,6 +84,11 @@ export function registerVerificationRoutes(app: Express): void {
           idImage: idDocument.url,
         }
 
+        console.log('🌍 User country info:', {
+          phoneCountry: req.user!.phoneCountry,
+          mappedCountryCode: smilePayload.country,
+          idType: smilePayload.idType,
+        })
         console.log('📤 Submitting to Smile Identity API...')
         const smileResponse = await smileIdentityService.submitKYCVerification(smilePayload)
         const parsedResult = smileIdentityService.parseVerificationResult(smileResponse)
