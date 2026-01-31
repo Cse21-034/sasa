@@ -280,7 +280,7 @@ export function registerVerificationRoutes(app: Express): void {
       }
 
       const smilePayload = {
-        country: "BW",
+        country: countryToISOCode[req.user!.phoneCountry || "Botswana"] || "BW",
         idType: idTypeMap[idType],
         selfieImage: selfieDocument.url,
         idImage: idDocument.url,
