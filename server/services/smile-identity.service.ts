@@ -63,12 +63,9 @@ export class SmileIdentityService {
         job_type: 3, // SmartSelfie + ID
         job_id: `job_${Date.now()}`,
         user_id: `user_${Date.now()}`,
-
-        id_info: {
-          country: payload.country, // ✅ MUST be here (e.g. "BW")
-          id_type: payload.idType,  // ✅ MUST be here
-        },
-
+        country: payload.country, // ✅ Top-level country (Lambda API requirement)
+        id_type: payload.idType,  // ✅ Top-level id_type (Lambda API requirement)
+        
         images: [
           {
             image_type_id: 1, // ID document
@@ -82,8 +79,9 @@ export class SmileIdentityService {
       };
 
       console.log('📤 Sending to Smile Identity:', {
-        country: jobPayload.id_info.country,
-        id_type: jobPayload.id_info.id_type,
+        country: jobPayload.country,
+        id_type: jobPayload.id_type,
+        job_type: jobPayload.job_type,
       });
 
       const { base64Payload, signature } = signPayload(jobPayload);
