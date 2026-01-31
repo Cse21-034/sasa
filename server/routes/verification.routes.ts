@@ -16,6 +16,28 @@ import { authMiddleware, generateToken, type AuthRequest } from "../middleware/a
 
 export function registerVerificationRoutes(app: Express): void {
 
+  // 🌍 Country code mapping (country name → ISO 2-letter code)
+  const countryToISOCode: Record<string, string> = {
+    "Botswana": "BW",
+    "Nigeria": "NG",
+    "Kenya": "KE",
+    "South Africa": "ZA",
+    "Ghana": "GH",
+    "Uganda": "UG",
+    "Tanzania": "TZ",
+    "Rwanda": "RW",
+    "Zambia": "ZM",
+    "Zimbabwe": "ZW",
+    "United States": "US",
+    "United Kingdom": "GB",
+    "Canada": "CA",
+    "Australia": "AU",
+    "India": "IN",
+    "Germany": "DE",
+    "France": "FR",
+    "Spain": "ES",
+  }
+
   // 🔄 Map UI id types → Smile Identity enums
   const idTypeMap: Record<string, string> = {
     national_id: "NATIONAL_ID",
@@ -56,7 +78,7 @@ export function registerVerificationRoutes(app: Express): void {
         }
 
         const smilePayload = {
-          country: "BW",
+          country: countryToISOCode[req.user!.phoneCountry || "Botswana"] || "BW",
           idType: idTypeMap[validatedData.idType],
           selfieImage: selfieDocument.url,
           idImage: idDocument.url,
