@@ -54,6 +54,7 @@ function generateSignature(timestamp: string): string {
 export class SmileIdentityService {
   /**
    * Submit Phase 1 KYC verification to Smile Identity Lambda API
+   * Uses Job Type 6 (Document Verification) for Botswana support
    */
   async submitKYCVerification(payload: SmileIdentitySubmissionPayload) {
     try {
@@ -67,55 +68,55 @@ export class SmileIdentityService {
       const timestamp = new Date().toISOString();
       const signature = generateSignature(timestamp);
 
-      // ✅ CRITICAL: Smile Identity expects images array WITHOUT base64Payload wrapper
+      // ✅ CRITICAL: Job Type 6 (Document Verification) - Supported in Botswana
+      // Image Type IDs for Base64:
+      // - 2 = Selfie (Base64)
+      // - 3 = ID Front (Base64)
       const requestBody = {
         source_sdk: "rest_api",
         source_sdk_version: "1.0.0",
         sec_key: timestamp,
         timestamp,
         
-        partner_params: {
-          job_id: `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          user_id: `user_${Date.now()}`,
-          job_type: 5, // ✅ Enhanced KYC (job_type 5 for SmartSelfie + ID)
-        },
+        partner_id: SMILE_PARTNER_ID,
         
-        // ✅ Images array (no base64Payload wrapper)
+        // ✅ Job Type 6: Document Verification (works for Botswana)
+        job_type: 6,
+        country: payload.country,
+        id_type: payload.idType,
+        
+        // ✅ Images with correct Base64 type IDs
         images: [
           {
-            image_type_id: 1, // ID document
-            image: payload.idImage.replace(/^data:image\/\w+;base64,/, ""),
+            image_type_id: 2, // ✅ Selfie (Base64)
+            image: payload.selfieImage.replace(/^data:image\/\w+;base64,/, ""),
           },
           {
-            image_type_id: 2, // Selfie with ID
-            image: payload.selfieImage.replace(/^data:image\/\w+;base64,/, ""),
+            image_type_id: 3, // ✅ ID Front (Base64)
+            image: payload.idImage.replace(/^data:image\/\w+;base64,/, ""),
           },
         ],
         
-        // ✅ ID Information (top-level, not in partner_params)
-        id_info: {
-          country: payload.country,
-          id_type: payload.idType,
-          // Optional: id_number, first_name, last_name if you have them
+        partner_params: {
+          job_id: `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          user_id: `user_${Date.now()}`,
         },
         
-        // ✅ Partner credentials
-        partner_id: SMILE_PARTNER_ID,
         signature,
       };
 
       console.log('📤 Sending to Smile Identity:', {
-        endpoint: `${SMILE_BASE_URL}/async_id_verification`,
+        endpoint: `${SMILE_BASE_URL}/verify`,
         partner_id: SMILE_PARTNER_ID,
-        job_type: requestBody.partner_params.job_type,
-        country: requestBody.id_info.country,
-        id_type: requestBody.id_info.id_type,
+        job_type: requestBody.job_type,
+        country: requestBody.country,
+        id_type: requestBody.id_type,
         timestamp,
       });
 
-      // ✅ Use async_id_verification endpoint for job_type 5
+      // ✅ Use /verify endpoint (synchronous for Job Type 6)
       const response = await axios.post(
-        `${SMILE_BASE_URL}/async_id_verification`,
+        `${SMILE_BASE_URL}/verify`,
         requestBody,
         {
           headers: {
