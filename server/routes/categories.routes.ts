@@ -94,20 +94,36 @@ export function registerCategoryRoutes(app: Express): void {
   /**
    * GET /api/categories
    * Get all available categories
-   * 🚀 Now cached for performance
+   * 🚀 Cached for performance (with graceful fallback)
    */
   app.get("/api/categories", async (req, res) => {
     try {
-      // 🚀 Check cache first (1 hour TTL)
-      let categories = await cacheService.getCategories();
-      if (!categories) {
-        // Fetch from database if not in cache
-        categories = await storage.getCategories();
-        // Cache the result
-        if (categories && categories.length > 0) {
+      let categories;
+      
+      // Try cache first, but if it fails, continue
+      try {
+        categories = await cacheService.getCategories();
+        if (categories) {
+          return res.json(categories);
+        }
+      } catch (cacheError: any) {
+        console.warn("Cache error (falling back to database):", cacheError.message);
+        // Continue to database fetch
+      }
+
+      // Fetch from database if no cache or cache failed
+      categories = await storage.getCategories();
+      
+      // Try to cache for next time (don't fail if cache fails)
+      if (categories && categories.length > 0) {
+        try {
           await cacheService.setCategories(categories);
+        } catch (setCacheError: any) {
+          console.warn("Failed to set cache:", setCacheError.message);
+          // Still return data even if cache failed
         }
       }
+      
       res.json(categories || []);
     } catch (error: any) {
       console.error("Get categories error:", error);
