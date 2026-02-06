@@ -27,6 +27,10 @@ export default function PostJob() {
 
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/categories');
+      return res.json();
+    },
   });
 
   const form = useForm({
