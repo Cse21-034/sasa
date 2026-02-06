@@ -9,6 +9,7 @@ import { insertCategoryAdditionRequestSchema } from "@shared/schema";
 import { storage } from "../storage";
 import { categoryService } from "../services";
 import { authMiddleware, type AuthRequest } from "../middleware/auth";
+import { cacheService } from "../services/cache.service";
 
 export function registerCategoryRoutes(app: Express): void {
   /**
@@ -93,11 +94,21 @@ export function registerCategoryRoutes(app: Express): void {
   /**
    * GET /api/categories
    * Get all available categories
+   * 🚀 Now cached for performance
    */
   app.get("/api/categories", async (req, res) => {
     try {
-      const categories = await storage.getCategories();
-      res.json(categories);
+      // 🚀 Check cache first (1 hour TTL)
+      let categories = await cacheService.getCategories();
+      if (!categories) {
+        // Fetch from database if not in cache
+        categories = await storage.getCategories();
+        // Cache the result
+        if (categories && categories.length > 0) {
+          await cacheService.setCategories(categories);
+        }
+      }
+      res.json(categories || []);
     } catch (error: any) {
       console.error("Get categories error:", error);
       res.status(500).json({ message: error.message || "Failed to fetch categories" });

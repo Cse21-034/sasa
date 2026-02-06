@@ -597,6 +597,27 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
+  // 🚀 Batch create provider category verifications (faster for signup)
+  async createBatchProviderCategoryVerifications(
+    providerId: string,
+    categoryIds: number[]
+  ): Promise<ProviderCategoryVerification[]> {
+    if (categoryIds.length === 0) return [];
+    
+    const values = categoryIds.map(categoryId => ({
+      providerId,
+      categoryId,
+      documents: [],
+      status: 'pending' as const,
+    }));
+
+    const created = await db
+      .insert(providerCategoryVerifications)
+      .values(values)
+      .returning();
+    return created;
+  }
+
   async getProviderCategoryVerifications(providerId: string): Promise<ProviderCategoryVerification[]> {
     const verifications = await db
       .select()

@@ -4,6 +4,7 @@ import { insertMessageSchema } from "@shared/schema"
 import { storage } from "../storage"
 import { authMiddleware, type AuthRequest } from "../middleware/auth"
 import { notificationService } from "../services/notification.service"
+import { cacheService } from "../services/cache.service"
 import { WebSocket } from "ws"
 
 /**
@@ -65,6 +66,10 @@ export function registerMessagingRoutes(
   app.post("/api/messages/admin-chat", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       const { messageText } = insertMessageSchema.partial().parse(req.body)
+
+      if (!messageText) {
+        return res.status(400).json({ message: "Message text is required" })
+      }
 
       const adminUser = await storage.getAdminUser()
 
@@ -131,12 +136,18 @@ export function registerMessagingRoutes(
   /**
    * POST /api/messages/admin-chat/read-all
    * Reporter: Mark all Admin messages as read
+   * 🚀 Now with cache invalidation
    */
   app.post("/api/messages/admin-chat/read-all", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       await storage.markAllAdminMessagesRead(req.user!.id)
 
-      const unreadCount = await storage.getUnreadMessageCount(req.user!.id)
+      // 🚀 Invalidate unread count cache and fetch fresh data
+      await cacheService.invalidateUnreadCount(req.user!.id);
+      const unreadCount = await storage.getUnreadMessageCount(req.user!.id);
+      // 🚀 Cache the fresh count
+      await cacheService.setUnreadCount(req.user!.id, unreadCount);
+      
       res.json({ success: true, unreadCount })
     } catch (error: any) {
       console.error("Mark all admin messages read error:", error)
