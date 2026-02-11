@@ -56,6 +56,15 @@ export const categoryRequestStatusEnum = pgEnum("category_request_status", ["pen
 // 🆕 Provider Category Verification Status Enum
 export const providerCategoryVerificationStatusEnum = pgEnum("provider_category_verification_status", ["pending", "approved", "rejected"]);
 
+// 💰 Payment Method Enum
+export const paymentMethodEnum = pgEnum("payment_method", ["cash", "bank_transfer", "card"]);
+
+// 💰 Invoice Status Enum
+export const invoiceStatusEnum = pgEnum("invoice_status", ["draft", "sent", "approved", "declined", "paid", "cancelled"]);
+
+// 💰 Payment Status Enum
+export const paymentStatusEnum = pgEnum("payment_status", ["unpaid", "paid"]);
+
 // Users table
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -354,6 +363,10 @@ export const jobs = pgTable("jobs", {
     priceAgreed: numeric("price_agreed", { precision: 10, scale: 2 }),
     pricePaid: numeric("price_paid", { precision: 10, scale: 2 }),
     allowedProviderType: providerTypeEnum("allowed_provider_type").default("both").notNull(),
+    // 💰 Invoice-related fields
+    invoiceId: uuid("invoice_id").references(() => invoices.id, { onDelete: "set null" }),
+    invoiceStatus: text("invoice_status").default("no_invoice"),
+    paymentStatus: paymentStatusEnum("payment_status").default("unpaid"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   });
@@ -388,6 +401,52 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   subscription: text("subscription").notNull(), // JSON stringified subscription object
   isEnabled: boolean("is_enabled").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// 🆕 Push Subscriptions table - for Web Push notifications
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  subscription: text("subscription").notNull(), // JSON stringified subscription object
+  isEnabled: boolean("is_enabled").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// 💰 Invoices table - for tracking job invoices and pricing
+export const invoices = pgTable("invoices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  jobId: uuid("job_id").notNull().unique().references(() => jobs.id, { onDelete: "cascade" }),
+  providerId: uuid("provider_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  requesterId: uuid("requester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: invoiceStatusEnum("status").default("draft").notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").default("BWP").notNull(),
+  description: text("description").notNull(),
+  paymentMethod: paymentMethodEnum("payment_method").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  sentAt: timestamp("sent_at"),
+  approvedAt: timestamp("approved_at"),
+  declinedAt: timestamp("declined_at"),
+  paidAt: timestamp("paid_at"),
+  expiresAt: timestamp("expires_at"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// 💰 Payments table - for tracking payment transactions
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  invoiceId: uuid("invoice_id").notNull().unique().references(() => invoices.id, { onDelete: "cascade" }),
+  jobId: uuid("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  paymentMethod: paymentMethodEnum("payment_method").notNull(),
+  paymentStatus: paymentStatusEnum("payment_status").default("unpaid").notNull(),
+  transactionId: text("transaction_id"),
+  paidAt: timestamp("paid_at"),
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -483,11 +542,19 @@ export const jobsRelations = relations(jobs, ({ one, many }) => ({
     fields: [jobs.categoryId],
     references: [categories.id],
   }),
+  invoice: one(invoices, {
+    fields: [jobs.invoiceId],
+    references: [invoices.id],
+  }),
   messages: many(messages),
   ratings: many(ratings),
   feedback: many(jobFeedback),
   reports: many(jobReports),
   applications: many(jobApplications),
+  payment: one(payments, {
+    fields: [jobs.id],
+    references: [payments.jobId],
+  }),
 }));
 
 export const jobApplicationsRelations = relations(jobApplications, ({ one }) => ({
@@ -607,6 +674,37 @@ export const providerCategoryVerificationsRelations = relations(providerCategory
   }),
 }));
 
+// 💰 Invoices Relations
+export const invoicesRelations = relations(invoices, ({ one, many }) => ({
+  job: one(jobs, {
+    fields: [invoices.jobId],
+    references: [jobs.id],
+  }),
+  provider: one(users, {
+    fields: [invoices.providerId],
+    references: [users.id],
+  }),
+  requester: one(users, {
+    fields: [invoices.requesterId],
+    references: [users.id],
+  }),
+  payment: one(payments, {
+    fields: [invoices.id],
+    references: [payments.invoiceId],
+  }),
+}));
+
+// 💰 Payments Relations
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  invoice: one(invoices, {
+    fields: [payments.invoiceId],
+    references: [invoices.id],
+  }),
+  job: one(jobs, {
+    fields: [payments.jobId],
+    references: [jobs.id],
+  }),
+}));
 
 // ============ SCHEMAS ============
 
@@ -939,6 +1037,47 @@ export const updateProviderCategoryVerificationStatusSchema = z.object({
   rejectionReason: z.string().optional(),
 });
 
+// 💰 Invoice Creation Schema
+export const createInvoiceSchema = z.object({
+  jobId: z.string().uuid("Invalid job ID"),
+  amount: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid amount format"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  paymentMethod: z.enum(["cash", "bank_transfer", "card"]),
+  notes: z.string().optional(),
+});
+
+// 💰 Update Invoice Schema (before sending)
+export const updateInvoiceSchema = z.object({
+  amount: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid amount format").optional(),
+  description: z.string().min(10, "Description must be at least 10 characters").optional(),
+  paymentMethod: z.enum(["cash", "bank_transfer", "card"]).optional(),
+  notes: z.string().optional(),
+});
+
+// 💰 Send Invoice Schema
+export const sendInvoiceSchema = z.object({
+  invoiceId: z.string().uuid("Invalid invoice ID"),
+});
+
+// 💰 Invoice Response Schema (for approval/decline)
+export const invoiceResponseSchema = z.object({
+  invoiceId: z.string().uuid("Invalid invoice ID"),
+});
+
+// 💰 Payment Processing Schema
+export const processPaymentSchema = z.object({
+  invoiceId: z.string().uuid("Invalid invoice ID"),
+  paymentMethod: z.enum(["cash", "bank_transfer", "card"]),
+  transactionId: z.string().optional(), // For card/bank transfers
+  notes: z.string().optional(),
+});
+
+// 💰 Mark Payment as Paid Schema (for cash payments)
+export const markPaymentPaidSchema = z.object({
+  invoiceId: z.string().uuid("Invalid invoice ID"),
+  notes: z.string().optional(),
+});
+
 // ============ TYPES ============
 
 export type User = typeof users.$inferSelect;
@@ -1022,3 +1161,17 @@ export const insertNotificationSchema = z.object({
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// 💰 Invoice Types
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = typeof invoices.$inferInsert;
+export type CreateInvoice = z.infer<typeof createInvoiceSchema>;
+export type UpdateInvoice = z.infer<typeof updateInvoiceSchema>;
+export type SendInvoice = z.infer<typeof sendInvoiceSchema>;
+export type InvoiceResponse = z.infer<typeof invoiceResponseSchema>;
+
+// 💰 Payment Types
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = typeof payments.$inferInsert;
+export type ProcessPayment = z.infer<typeof processPaymentSchema>;
+export type MarkPaymentPaid = z.infer<typeof markPaymentPaidSchema>;

@@ -3,11 +3,17 @@ import { emailService } from './email.service';
 
 // Define queue types
 interface EmailPayload {
-  type: 'verification' | 'welcome' | 'password_reset' | 'notification';
+  type: 'verification' | 'welcome' | 'password_reset' | 'notification' | 'invoice_sent' | 'invoice_approved' | 'invoice_declined' | 'payment_received' | 'payment_overdue';
   email: string;
   name: string;
   code?: string;
   resetCode?: string;
+  // 💰 Invoice/Payment specific fields
+  jobTitle?: string;
+  invoiceAmount?: string;
+  invoiceId?: string;
+  paymentMethod?: string;
+  reason?: string;
 }
 
 // 🚀 Create email queue with Redis connection
@@ -49,7 +55,7 @@ try {
 
   // Process email queue
   emailQueue.process(async (job) => {
-    const { type, email, name, code, resetCode } = job.data;
+    const { type, email, name, code, resetCode, jobTitle, invoiceAmount, invoiceId, paymentMethod, reason } = job.data;
 
     try {
       switch (type) {
@@ -63,6 +69,27 @@ try {
         case 'password_reset':
           if (!resetCode) throw new Error('Reset code is required');
           await emailService.sendPasswordResetEmail(email, name, resetCode);
+          break;
+        // 💰 Invoice/Payment email types
+        case 'invoice_sent':
+          if (!jobTitle || !invoiceAmount) throw new Error('jobTitle and invoiceAmount are required');
+          await emailService.sendInvoiceSentEmail(email, name, jobTitle, invoiceAmount);
+          break;
+        case 'invoice_approved':
+          if (!jobTitle || !invoiceAmount) throw new Error('jobTitle and invoiceAmount are required');
+          await emailService.sendInvoiceApprovedEmail(email, name, jobTitle, invoiceAmount);
+          break;
+        case 'invoice_declined':
+          if (!jobTitle) throw new Error('jobTitle is required');
+          await emailService.sendInvoiceDeclinedEmail(email, name, jobTitle, reason);
+          break;
+        case 'payment_received':
+          if (!jobTitle || !invoiceAmount) throw new Error('jobTitle and invoiceAmount are required');
+          await emailService.sendPaymentReceivedEmail(email, name, jobTitle, invoiceAmount);
+          break;
+        case 'payment_overdue':
+          if (!jobTitle || !invoiceAmount) throw new Error('jobTitle and invoiceAmount are required');
+          await emailService.sendPaymentOverdueEmail(email, name, jobTitle, invoiceAmount);
           break;
         default:
           console.warn(`Unknown email type: ${type}`);
@@ -118,6 +145,62 @@ export class EmailQueueService {
     return emailQueue.add(
       { type: 'password_reset', email, name, resetCode },
       { priority: 10 }
+    );
+  }
+
+  // 💰 Invoice/Payment Email Queue Methods
+  static async queueInvoiceSentEmail(email: string, name: string, jobTitle: string, invoiceAmount: string) {
+    if (!emailQueue) {
+      console.warn('Email queue not initialized. Sending email synchronously.');
+      return emailService.sendInvoiceSentEmail(email, name, jobTitle, invoiceAmount);
+    }
+    return emailQueue.add(
+      { type: 'invoice_sent', email, name, jobTitle, invoiceAmount },
+      { priority: 8 }
+    );
+  }
+
+  static async queueInvoiceApprovedEmail(email: string, name: string, jobTitle: string, invoiceAmount: string) {
+    if (!emailQueue) {
+      console.warn('Email queue not initialized. Sending email synchronously.');
+      return emailService.sendInvoiceApprovedEmail(email, name, jobTitle, invoiceAmount);
+    }
+    return emailQueue.add(
+      { type: 'invoice_approved', email, name, jobTitle, invoiceAmount },
+      { priority: 8 }
+    );
+  }
+
+  static async queueInvoiceDeclinedEmail(email: string, name: string, jobTitle: string, reason?: string) {
+    if (!emailQueue) {
+      console.warn('Email queue not initialized. Sending email synchronously.');
+      return emailService.sendInvoiceDeclinedEmail(email, name, jobTitle, reason);
+    }
+    return emailQueue.add(
+      { type: 'invoice_declined', email, name, jobTitle, reason },
+      { priority: 7 }
+    );
+  }
+
+  static async queuePaymentReceivedEmail(email: string, name: string, jobTitle: string, invoiceAmount: string) {
+    if (!emailQueue) {
+      console.warn('Email queue not initialized. Sending email synchronously.');
+      return emailService.sendPaymentReceivedEmail(email, name, jobTitle, invoiceAmount);
+    }
+    return emailQueue.add(
+      { type: 'payment_received', email, name, jobTitle, invoiceAmount },
+      { priority: 9 } // High priority for payment confirmations
+    );
+  }
+
+  static async queuePaymentOverdueEmail(email: string, name: string, jobTitle: string, invoiceAmount: string) {
+    if (!emailQueue) {
+      console.warn('Email queue not initialized. Sending email synchronously.');
+      return emailService.sendPaymentOverdueEmail(email, name, jobTitle, invoiceAmount);
+    }
+    return emailQueue.add(
+      { type: 'payment_overdue', email, name, jobTitle, invoiceAmount },
+      { priority: 9 } // High priority for payment reminders
     );
   }
 

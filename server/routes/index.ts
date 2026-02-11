@@ -19,4 +19,6 @@ export { registerMiscRoutes } from "./misc.routes"
 export { registerNotificationRoutes } from "./notifications.routes"
 export { registerCategoryRoutes } from "./categories.routes"
 export { registerPushNotificationRoutes } from "./push-notification.routes"
+export { registerInvoiceRoutes } from "./invoices.routes"
+export { registerPaymentRoutes } from "./payments.routes"
 

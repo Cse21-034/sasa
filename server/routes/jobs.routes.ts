@@ -248,13 +248,37 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
   app.patch('/api/jobs/:id', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       const validatedData = updateJobStatusSchema.parse(req.body);
-      const job = await storage.updateJob(req.params.id, validatedData);
+      const job = await storage.getJob(req.params.id);
 
       if (!job) {
         return res.status(404).json({ message: 'Job not found' });
       }
 
-      res.json(job);
+      // 💰 CHECK: If status is changing to "enroute" or "onsite" (job starting), invoice must be approved
+      if ((validatedData.status === 'enroute' || validatedData.status === 'onsite') && job.status !== 'enroute' && job.status !== 'onsite') {
+        const invoice = await storage.getInvoiceByJobId(req.params.id);
+        if (!invoice || invoice.status !== 'approved') {
+          return res.status(400).json({ 
+            message: 'Invoice must be approved before starting the job',
+            code: 'INVOICE_NOT_APPROVED'
+          });
+        }
+      }
+
+      // 💰 CHECK: If status is changing to "completed", payment must be made
+      if (validatedData.status === 'completed' && job.status !== 'completed') {
+        const payment = await storage.getPaymentByInvoiceId(job.invoiceId || '');
+        if (!payment || payment.paymentStatus !== 'paid') {
+          return res.status(400).json({ 
+            message: 'Payment must be completed before marking job as completed',
+            code: 'PAYMENT_NOT_COMPLETED'
+          });
+        }
+      }
+
+      const updated = await storage.updateJob(req.params.id, validatedData);
+
+      res.json(updated);
     } catch (error: any) {
       if (error instanceof ZodError) {
         return res.status(400).json({ 
@@ -335,6 +359,15 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
       const provider = await storage.getProvider(req.user!.id);
       if (!provider) {
         return res.status(404).json({ message: 'Provider profile not found' });
+      }
+
+      // 💰 CHECK: Provider cannot apply for new jobs if they have incomplete jobs
+      const incompleteJobs = await storage.getProviderIncompleteJobs(req.user!.id);
+      if (incompleteJobs && incompleteJobs.length > 0) {
+        return res.status(400).json({ 
+          message: `You have ${incompleteJobs.length} incomplete job(s). Please complete them before applying for new jobs.`,
+          code: 'INCOMPLETE_JOBS_EXIST'
+        });
       }
 
       const approvedCities = (provider.approvedServiceAreas as string[]) || [provider.primaryCity];

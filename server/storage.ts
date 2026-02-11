@@ -17,6 +17,8 @@ import {
   notifications,
   emailVerificationTokens,
   passwordResetTokens,
+  invoices,
+  payments,
   type User, 
   type InsertUser,
   type Provider,
@@ -49,6 +51,8 @@ import {
   type InsertJobApplication,
   type Notification,
   type InsertNotification,
+  type Invoice,
+  type Payment,
 } from "@shared/schema";
 import { db } from "./db"; // 🚨 CRITICAL FIX: Added missing 'db' import
 import { eq, and, sql, desc, asc, inArray, or } from "drizzle-orm"; // 🚨 FIX: Added 'or' operator
@@ -266,6 +270,22 @@ export interface IStorage {
     reviewerId: string,
     rejectionReason?: string
   ): Promise<ProviderCategoryVerification | undefined>;
+
+  // 💰 Invoices
+  createInvoice(jobId: string, providerId: string, requesterId: string, amount: string, description: string, paymentMethod: string, notes?: string): Promise<any>;
+  getInvoice(invoiceId: string): Promise<any | undefined>;
+  getInvoiceByJobId(jobId: string): Promise<any | undefined>;
+  updateInvoice(invoiceId: string, data: Partial<any>): Promise<any | undefined>;
+  sendInvoice(invoiceId: string): Promise<any | undefined>;
+  approveInvoice(invoiceId: string): Promise<any | undefined>;
+  declineInvoice(invoiceId: string): Promise<any | undefined>;
+  getProviderIncompleteJobs(providerId: string): Promise<Job[]>;
+  
+  // 💰 Payments
+  createPayment(invoiceId: string, jobId: string, amount: string, paymentMethod: string, transactionId?: string): Promise<any>;
+  getPayment(paymentId: string): Promise<any | undefined>;
+  getPaymentByInvoiceId(invoiceId: string): Promise<any | undefined>;
+  markPaymentAsPaid(invoiceId: string, transactionId?: string): Promise<any | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1936,6 +1956,182 @@ export class DatabaseStorage implements IStorage {
 
   async deleteNotification(notificationId: string): Promise<void> {
     await db.delete(notifications).where(eq(notifications.id, notificationId));
+  }
+
+  // 💰 INVOICES IMPLEMENTATION
+  async createInvoice(jobId: string, providerId: string, requesterId: string, amount: string, description: string, paymentMethod: string, notes?: string): Promise<Invoice> {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // Expire in 7 days
+    
+    const [created] = await db.insert(invoices).values({
+      jobId,
+      providerId,
+      requesterId,
+      amount: amount,
+      currency: 'BWP',
+      description,
+      paymentMethod: paymentMethod as any,
+      status: 'draft',
+      notes,
+      expiresAt,
+    }).returning();
+    return created;
+  }
+
+  async getInvoice(invoiceId: string): Promise<Invoice | undefined> {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, invoiceId));
+    return invoice || undefined;
+  }
+
+  async getInvoiceByJobId(jobId: string): Promise<Invoice | undefined> {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.jobId, jobId));
+    return invoice || undefined;
+  }
+
+  async updateInvoice(invoiceId: string, data: Partial<Invoice>): Promise<Invoice | undefined> {
+    const [updated] = await db
+      .update(invoices)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(invoices.id, invoiceId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async sendInvoice(invoiceId: string): Promise<Invoice | undefined> {
+    const [updated] = await db
+      .update(invoices)
+      .set({ 
+        status: 'sent',
+        sentAt: new Date(),
+        updatedAt: new Date() 
+      })
+      .where(eq(invoices.id, invoiceId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async approveInvoice(invoiceId: string): Promise<Invoice | undefined> {
+    const [updated] = await db
+      .update(invoices)
+      .set({ 
+        status: 'approved',
+        approvedAt: new Date(),
+        updatedAt: new Date() 
+      })
+      .where(eq(invoices.id, invoiceId))
+      .returning();
+    
+    // Also update job to reflect invoice approved
+    if (updated) {
+      await db
+        .update(jobs)
+        .set({ 
+          invoiceStatus: 'approved',
+          invoiceId: invoiceId,
+          updatedAt: new Date()
+        })
+        .where(eq(jobs.id, updated.jobId));
+    }
+    
+    return updated || undefined;
+  }
+
+  async declineInvoice(invoiceId: string): Promise<Invoice | undefined> {
+    const [updated] = await db
+      .update(invoices)
+      .set({ 
+        status: 'declined',
+        declinedAt: new Date(),
+        updatedAt: new Date() 
+      })
+      .where(eq(invoices.id, invoiceId))
+      .returning();
+    
+    // Reset job invoice status
+    if (updated) {
+      await db
+        .update(jobs)
+        .set({ 
+          invoiceStatus: 'no_invoice',
+          invoiceId: null,
+          updatedAt: new Date()
+        })
+        .where(eq(jobs.id, updated.jobId));
+    }
+    
+    return updated || undefined;
+  }
+
+  async getProviderIncompleteJobs(providerId: string): Promise<Job[]> {
+    const incomplete = await db
+      .select()
+      .from(jobs)
+      .where(and(
+        eq(jobs.providerId, providerId),
+        jobs.status !== 'completed' && jobs.status !== 'cancelled'
+      ));
+    return incomplete;
+  }
+
+  // 💰 PAYMENTS IMPLEMENTATION
+  async createPayment(invoiceId: string, jobId: string, amount: string, paymentMethod: string, transactionId?: string): Promise<Payment> {
+    const [created] = await db.insert(payments).values({
+      invoiceId,
+      jobId,
+      amount,
+      paymentMethod: paymentMethod as any,
+      paymentStatus: 'unpaid',
+      transactionId,
+    }).returning();
+    return created;
+  }
+
+  async getPayment(paymentId: string): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.id, paymentId));
+    return payment || undefined;
+  }
+
+  async getPaymentByInvoiceId(invoiceId: string): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.invoiceId, invoiceId));
+    return payment || undefined;
+  }
+
+  async markPaymentAsPaid(invoiceId: string, transactionId?: string): Promise<Payment | undefined> {
+    const [updated] = await db
+      .update(payments)
+      .set({ 
+        paymentStatus: 'paid',
+        paidAt: new Date(),
+        transactionId,
+        updatedAt: new Date()
+      })
+      .where(eq(payments.invoiceId, invoiceId))
+      .returning();
+    
+    // Also update invoice and job to reflect payment
+    if (updated) {
+      const invoiceRecord = await this.getInvoice(invoiceId);
+      if (invoiceRecord) {
+        await db
+          .update(invoices)
+          .set({ 
+            status: 'paid',
+            paidAt: new Date(),
+            updatedAt: new Date()
+          })
+          .where(eq(invoices.id, invoiceId));
+
+        await db
+          .update(jobs)
+          .set({ 
+            paymentStatus: 'paid',
+            updatedAt: new Date()
+          })
+          .where(eq(jobs.id, invoiceRecord.jobId));
+      }
+    }
+    
+    return updated || undefined;
   }
 }
 

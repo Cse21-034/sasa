@@ -31,6 +31,8 @@ const CACHE_DURATIONS = {
   PROVIDER_PROFILE: 1800, // 30 minutes
   SUPPLIER_PROFILE: 1800, // 30 minutes
   COMPANY_PROFILE: 3600, // 1 hour
+  INVOICE: 1800, // 30 minutes - invoices don't change often
+  PAYMENT: 300, // 5 minutes - payments are time-sensitive
 };
 
 class CacheService {
@@ -257,6 +259,91 @@ class CacheService {
       }
     } catch (error) {
       console.error(`Error invalidating cache pattern ${pattern}:`, error);
+    }
+  }
+
+  // 💰 Invoice Cache
+  async getInvoice(invoiceId: string) {
+    const cached = await redis.get(`invoice:${invoiceId}`);
+    return cached ? JSON.parse(cached as string) : null;
+  }
+
+  async setInvoice(invoiceId: string, data: any) {
+    await redis.setex(
+      `invoice:${invoiceId}`,
+      CACHE_DURATIONS.INVOICE,
+      JSON.stringify(data)
+    );
+  }
+
+  async invalidateInvoice(invoiceId: string) {
+    await redis.del(`invoice:${invoiceId}`);
+  }
+
+  // 💰 Invoice by Job ID Cache
+  async getInvoiceByJobId(jobId: string) {
+    const cached = await redis.get(`invoice:job:${jobId}`);
+    return cached ? JSON.parse(cached as string) : null;
+  }
+
+  async setInvoiceByJobId(jobId: string, data: any) {
+    await redis.setex(
+      `invoice:job:${jobId}`,
+      CACHE_DURATIONS.INVOICE,
+      JSON.stringify(data)
+    );
+  }
+
+  async invalidateInvoiceByJobId(jobId: string) {
+    await redis.del(`invoice:job:${jobId}`);
+  }
+
+  // 💰 Payment Cache
+  async getPayment(paymentId: string) {
+    const cached = await redis.get(`payment:${paymentId}`);
+    return cached ? JSON.parse(cached as string) : null;
+  }
+
+  async setPayment(paymentId: string, data: any) {
+    await redis.setex(
+      `payment:${paymentId}`,
+      CACHE_DURATIONS.PAYMENT,
+      JSON.stringify(data)
+    );
+  }
+
+  async invalidatePayment(paymentId: string) {
+    await redis.del(`payment:${paymentId}`);
+  }
+
+  // 💰 Payment by Invoice ID Cache
+  async getPaymentByInvoiceId(invoiceId: string) {
+    const cached = await redis.get(`payment:invoice:${invoiceId}`);
+    return cached ? JSON.parse(cached as string) : null;
+  }
+
+  async setPaymentByInvoiceId(invoiceId: string, data: any) {
+    await redis.setex(
+      `payment:invoice:${invoiceId}`,
+      CACHE_DURATIONS.PAYMENT,
+      JSON.stringify(data)
+    );
+  }
+
+  async invalidatePaymentByInvoiceId(invoiceId: string) {
+    await redis.del(`payment:invoice:${invoiceId}`);
+  }
+
+  // 💰 Invalidate all invoice/payment caches for a job
+  async invalidateJobInvoicesAndPayments(jobId: string) {
+    try {
+      await Promise.all([
+        this.invalidateInvoiceByJobId(jobId),
+        redis.del(`invoice:job:${jobId}`),
+        redis.del(`payment:job:${jobId}`),
+      ]);
+    } catch (error) {
+      console.error(`Error invalidating invoice/payment cache for job ${jobId}:`, error);
     }
   }
 }

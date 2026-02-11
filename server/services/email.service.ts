@@ -278,6 +278,240 @@ export const emailService = {
       return false;
     }
   },
+
+  // 💰 Invoice Email Methods
+  async sendInvoiceSentEmail(to: string, name: string, jobTitle: string, invoiceAmount: string): Promise<boolean> {
+    try {
+      if (!resend) {
+        console.log('Email service not configured. Would send invoice sent email to:', to);
+        return true;
+      }
+      const { error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to,
+        subject: `New Invoice - ${jobTitle}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #1a365d; padding: 20px; text-align: center;">
+              <h1 style="color: #fff; margin: 0;">JobTradeSasa</h1>
+            </div>
+            <div style="padding: 30px; background-color: #f8f9fa;">
+              <h2 style="color: #1a365d;">New Invoice Received</h2>
+              <p style="font-size: 16px; color: #333;">
+                Hello ${name},
+              </p>
+              <p style="font-size: 16px; color: #333;">
+                A new invoice has been sent for the job <strong>"${jobTitle}"</strong>.
+              </p>
+              <div style="background-color: #fff; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                <p style="margin: 0; font-size: 14px; color: #666;">Invoice Amount:</p>
+                <p style="margin: 10px 0 0 0; font-size: 28px; font-weight: bold; color: #1a365d;">BWP ${invoiceAmount}</p>
+              </div>
+              <p style="font-size: 14px; color: #666;">
+                Please review the invoice and approve or request changes in the JobTradeSasa platform.
+              </p>
+            </div>
+            <div style="background-color: #1a365d; padding: 15px; text-align: center;">
+              <p style="color: #fff; margin: 0; font-size: 12px;">
+                Find. Connect. Hire. - JobTradeSasa
+              </p>
+            </div>
+          </div>
+        `,
+      });
+      return !error;
+    } catch (err) {
+      console.error('Email service error:', err);
+      return false;
+    }
+  },
+
+  async sendInvoiceApprovedEmail(to: string, name: string, jobTitle: string, invoiceAmount: string): Promise<boolean> {
+    try {
+      if (!resend) {
+        console.log('Email service not configured. Would send invoice approved email to:', to);
+        return true;
+      }
+      const { error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to,
+        subject: `Invoice Approved! - ${jobTitle}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #1a365d; padding: 20px; text-align: center;">
+              <h1 style="color: #fff; margin: 0;">JobTradeSasa</h1>
+            </div>
+            <div style="padding: 30px; background-color: #f8f9fa;">
+              <h2 style="color: #10b981;">✓ Invoice Approved!</h2>
+              <p style="font-size: 16px; color: #333;">
+                Hello ${name},
+              </p>
+              <p style="font-size: 16px; color: #333;">
+                Your invoice for <strong>"${jobTitle}"</strong> has been approved!
+              </p>
+              <div style="background-color: #ecfdf5; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #10b981;">
+                <p style="margin: 0; font-size: 14px; color: #666;">Invoice Amount:</p>
+                <p style="margin: 10px 0 0 0; font-size: 28px; font-weight: bold; color: #10b981;">BWP ${invoiceAmount}</p>
+              </div>
+              <p style="font-size: 14px; color: #666;">
+                Please proceed with the job. The requester is ready for you to start work.
+              </p>
+            </div>
+            <div style="background-color: #1a365d; padding: 15px; text-align: center;">
+              <p style="color: #fff; margin: 0; font-size: 12px;">
+                Find. Connect. Hire. - JobTradeSasa
+              </p>
+            </div>
+          </div>
+        `,
+      });
+      return !error;
+    } catch (err) {
+      console.error('Email service error:', err);
+      return false;
+    }
+  },
+
+  async sendInvoiceDeclinedEmail(to: string, name: string, jobTitle: string, reason?: string): Promise<boolean> {
+    try {
+      if (!resend) {
+        console.log('Email service not configured. Would send invoice declined email to:', to);
+        return true;
+      }
+      const { error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to,
+        subject: `Invoice Changes Requested - ${jobTitle}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #1a365d; padding: 20px; text-align: center;">
+              <h1 style="color: #fff; margin: 0;">JobTradeSasa</h1>
+            </div>
+            <div style="padding: 30px; background-color: #f8f9fa;">
+              <h2 style="color: #ef4444;">Invoice Changes Requested</h2>
+              <p style="font-size: 16px; color: #333;">
+                Hello ${name},
+              </p>
+              <p style="font-size: 16px; color: #333;">
+                The requester has requested changes to your invoice for <strong>"${jobTitle}"</strong>.
+              </p>
+              ${reason ? `
+              <div style="background-color: #fff; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #ef4444;">
+                <p style="margin: 0; font-size: 14px; font-weight: bold; color: #333;">Reason:</p>
+                <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;">${reason}</p>
+              </div>
+              ` : ''}
+              <p style="font-size: 14px; color: #666;">
+                Please review your invoice and make any necessary adjustments, then resubmit it for approval.
+              </p>
+            </div>
+            <div style="background-color: #1a365d; padding: 15px; text-align: center;">
+              <p style="color: #fff; margin: 0; font-size: 12px;">
+                Find. Connect. Hire. - JobTradeSasa
+              </p>
+            </div>
+          </div>
+        `,
+      });
+      return !error;
+    } catch (err) {
+      console.error('Email service error:', err);
+      return false;
+    }
+  },
+
+  // 💰 Payment Email Methods
+  async sendPaymentReceivedEmail(to: string, name: string, jobTitle: string, invoiceAmount: string): Promise<boolean> {
+    try {
+      if (!resend) {
+        console.log('Email service not configured. Would send payment received email to:', to);
+        return true;
+      }
+      const { error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to,
+        subject: `Payment Received - ${jobTitle}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #1a365d; padding: 20px; text-align: center;">
+              <h1 style="color: #fff; margin: 0;">JobTradeSasa</h1>
+            </div>
+            <div style="padding: 30px; background-color: #f8f9fa;">
+              <h2 style="color: #10b981;">✓ Payment Received!</h2>
+              <p style="font-size: 16px; color: #333;">
+                Hello ${name},
+              </p>
+              <p style="font-size: 16px; color: #333;">
+                Payment has been received for the job <strong>"${jobTitle}"</strong>.
+              </p>
+              <div style="background-color: #ecfdf5; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #10b981;">
+                <p style="margin: 0; font-size: 14px; color: #666;">Amount Received:</p>
+                <p style="margin: 10px 0 0 0; font-size: 28px; font-weight: bold; color: #10b981;">BWP ${invoiceAmount}</p>
+              </div>
+              <p style="font-size: 14px; color: #666;">
+                Thank you for your work! You can now mark the job as complete once finished.
+              </p>
+            </div>
+            <div style="background-color: #1a365d; padding: 15px; text-align: center;">
+              <p style="color: #fff; margin: 0; font-size: 12px;">
+                Find. Connect. Hire. - JobTradeSasa
+              </p>
+            </div>
+          </div>
+        `,
+      });
+      return !error;
+    } catch (err) {
+      console.error('Email service error:', err);
+      return false;
+    }
+  },
+
+  async sendPaymentOverdueEmail(to: string, name: string, jobTitle: string, invoiceAmount: string): Promise<boolean> {
+    try {
+      if (!resend) {
+        console.log('Email service not configured. Would send payment overdue email to:', to);
+        return true;
+      }
+      const { error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to,
+        subject: `Payment Reminder - ${jobTitle}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #1a365d; padding: 20px; text-align: center;">
+              <h1 style="color: #fff; margin: 0;">JobTradeSasa</h1>
+            </div>
+            <div style="padding: 30px; background-color: #f8f9fa;">
+              <h2 style="color: #f59e0b;">Payment Reminder</h2>
+              <p style="font-size: 16px; color: #333;">
+                Hello ${name},
+              </p>
+              <p style="font-size: 16px; color: #333;">
+                This is a reminder that payment for the job <strong>"${jobTitle}"</strong> is pending.
+              </p>
+              <div style="background-color: #fffbeb; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                <p style="margin: 0; font-size: 14px; color: #666;">Outstanding Amount:</p>
+                <p style="margin: 10px 0 0 0; font-size: 28px; font-weight: bold; color: #f59e0b;">BWP ${invoiceAmount}</p>
+              </div>
+              <p style="font-size: 14px; color: #666;">
+                Please process the payment to complete the job and unlock the provider's ability to take on new projects.
+              </p>
+            </div>
+            <div style="background-color: #1a365d; padding: 15px; text-align: center;">
+              <p style="color: #fff; margin: 0; font-size: 12px;">
+                Find. Connect. Hire. - JobTradeSasa
+              </p>
+            </div>
+          </div>
+        `,
+      });
+      return !error;
+    } catch (err) {
+      console.error('Email service error:', err);
+      return false;
+    }
+  },
 };
 
 export function generateVerificationCode(): string {

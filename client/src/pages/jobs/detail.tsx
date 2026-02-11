@@ -38,6 +38,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { InvoiceForm } from '@/components/invoice-form';
+import { InvoiceApproval } from '@/components/invoice-approval';
+import { PaymentForm } from '@/components/payment-form';
+import { JobInvoicePaymentStatus } from '@/components/job-invoice-payment-status';
 
 interface JobWithRelations extends Job {
   requester: any;
@@ -690,6 +694,36 @@ export default function JobDetail() {
             </Card>
           )}
         </div>
+
+        {/* Invoice & Payment Management - Only when provider is assigned */}
+        {job.provider && (isAssignedProvider || isRequester) && (
+          <>
+            {/* Invoice/Payment Status Display */}
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle className="text-lg">Invoice & Payment Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <JobInvoicePaymentStatus jobId={jobId} />
+              </CardContent>
+            </Card>
+
+            {/* Provider: Create Invoice */}
+            {isAssignedProvider && (
+              <InvoiceForm jobId={jobId} providerId={job.provider.id} />
+            )}
+
+            {/* Requester: Approve/Decline Invoice */}
+            {isRequester && (
+              <InvoiceApproval jobId={jobId} />
+            )}
+
+            {/* Requester: Process Payment */}
+            {isRequester && (
+              <PaymentForm jobId={jobId} />
+            )}
+          </>
+        )}
 
         {/* Job Applicants Section - For Requesters */}
         {isRequester && (job.status === 'open' || job.status === 'pending_selection') && pendingApplications.length > 0 && (
