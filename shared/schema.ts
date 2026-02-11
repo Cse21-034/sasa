@@ -405,16 +405,6 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// 🆕 Push Subscriptions table - for Web Push notifications
-export const pushSubscriptions = pgTable("push_subscriptions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  subscription: text("subscription").notNull(), // JSON stringified subscription object
-  isEnabled: boolean("is_enabled").default(true).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
 // 💰 Invoices table - for tracking job invoices and pricing
 export const invoices = pgTable("invoices", {
   id: uuid("id").primaryKey().defaultRandom(),
