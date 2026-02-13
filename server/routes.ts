@@ -19,6 +19,7 @@ import {
   registerPushNotificationRoutes,
   registerInvoiceRoutes,
   registerPaymentRoutes,
+  registerCloudinaryRoutes,
 } from "./routes/index"
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -205,6 +206,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin routes (needs clients for WebSocket messaging)
   registerAdminRoutes(app, clients)
+
+  // Cloudinary routes (for image management and deletion)
+  registerCloudinaryRoutes(app)
 
   // Promotions Routes
   app.get("/api/promotions/active", async (req, res) => {

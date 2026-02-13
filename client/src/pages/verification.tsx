@@ -14,6 +14,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Progress } from '@/components/ui/progress';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -138,17 +139,55 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
       }
       form.clearErrors(field);
       form.setValue(field, file as any, { shouldValidate: true });
-      const base64 = await fileToBase64(file);
-      setPhotoPreviews(prev => ({ ...prev, [field === 'idDocument' ? 'id' : 'selfie']: base64 }));
+      
+      try {
+        // Upload to Cloudinary and get preview URL
+        const result = await uploadToCloudinary(file, {
+          folder: `identity-verification/${field}`,
+          width: 600,
+          height: 400,
+          crop: 'fill',
+          quality: 'auto',
+          format: 'auto',
+        });
+        setPhotoPreviews(prev => ({ ...prev, [field === 'idDocument' ? 'id' : 'selfie']: result.url }));
+      } catch (error) {
+        console.error('Preview upload failed:', error);
+        // Fallback to base64 preview
+        const base64 = await fileToBase64(file);
+        setPhotoPreviews(prev => ({ ...prev, [field === 'idDocument' ? 'id' : 'selfie']: base64 }));
+      }
     }
   };
 
   const onSubmit = async (data: IdentityUploadForm) => {
-    const documents = [
-      { name: 'national_id', url: await fileToBase64(data.idDocument) },
-      { name: 'selfie_photo', url: await fileToBase64(data.selfiePhoto) },
-    ];
-    identityMutation.mutate({ documents });
+    try {
+      // Upload both files to Cloudinary in parallel
+      const [idResult, selfieResult] = await Promise.all([
+        uploadToCloudinary(data.idDocument, {
+          folder: 'identity-verification/national_id',
+          quality: 'auto',
+          format: 'auto',
+        }),
+        uploadToCloudinary(data.selfiePhoto, {
+          folder: 'identity-verification/selfie_photo',
+          quality: 'auto',
+          format: 'auto',
+        }),
+      ]);
+
+      const documents = [
+        { name: 'national_id', url: idResult.url },
+        { name: 'selfie_photo', url: selfieResult.url },
+      ];
+      identityMutation.mutate({ documents });
+    } catch (error: any) {
+      toast({
+        title: 'Upload failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
   
   const StatusAlert = () => {
@@ -322,7 +361,7 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
   const isApproved = statusData.isVerified;
   const isIdentityApproved = statusData.isIdentityVerified;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
       const validFiles = Array.from(files).filter(file => {
@@ -344,12 +383,30 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
   };
 
   const onSubmit = async () => {
-    const documents = await Promise.all(fileList.map(async (file) => ({
-      name: file.name,
-      url: await fileToBase64(file),
-    })));
+    try {
+      // Upload all documents to Cloudinary in parallel
+      const uploadPromises = fileList.map((file) =>
+        uploadToCloudinary(file, {
+          folder: `verification-documents/${user?.id}`,
+          quality: 'auto',
+          format: 'auto',
+        })
+      );
 
-    documentMutation.mutate({ documents });
+      const results = await Promise.all(uploadPromises);
+      const documents = results.map((result, index) => ({
+        name: fileList[index].name,
+        url: result.url,
+      }));
+
+      documentMutation.mutate({ documents });
+    } catch (error: any) {
+      toast({
+        title: 'Upload failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const artisanDocumentList = [

@@ -17,12 +17,14 @@ import { useToast } from '@/hooks/use-toast';
 import { insertJobSchema, type Category, botswanaCities } from '@shared/schema';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 export default function PostJob() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   const { data: categories } = useQuery<Category[]>({
@@ -202,18 +204,40 @@ export default function PostJob() {
     tryGetLocation();
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle photo upload with Cloudinary
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (event.target?.result) {
-            setUploadedPhotos((prev) => [...prev, event.target!.result as string]);
-          }
-        };
-        reader.readAsDataURL(file);
+    if (!files) return;
+
+    setUploadingPhotos(true);
+    try {
+      const uploadPromises = Array.from(files).map((file) =>
+        uploadToCloudinary(file, {
+          folder: 'job-photos',
+          width: 800,
+          height: 600,
+          crop: 'fill',
+          quality: 'auto',
+          format: 'auto',
+        })
+      );
+
+      const results = await Promise.all(uploadPromises);
+      const newPhotos = results.map((result) => result.url);
+      
+      setUploadedPhotos((prev) => [...prev, ...newPhotos]);
+      toast({
+        title: 'Photos uploaded',
+        description: `${newPhotos.length} photo(s) uploaded successfully.`,
       });
+    } catch (error: any) {
+      toast({
+        title: 'Upload failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingPhotos(false);
     }
   };
 

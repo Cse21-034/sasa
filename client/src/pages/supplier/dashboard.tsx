@@ -12,6 +12,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/lib/auth-context';
 import { Settings } from 'lucide-react';
 import { Link } from 'wouter';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ export default function SupplierDashboard() {
   const [showPromotionDialog, setShowPromotionDialog] = useState(false);
   const [editingPromotion, setEditingPromotion] = useState<any>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -110,27 +112,47 @@ export default function SupplierDashboard() {
     },
   });
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach((file) => {
+    if (!files) return;
+
+    setUploadingImages(true);
+    try {
+      const uploadPromises = Array.from(files).map((file) => {
         if (file.size > 5 * 1024 * 1024) {
           toast({
             title: 'File too large',
             description: `${file.name} exceeds 5MB limit`,
             variant: 'destructive',
           });
-          return;
+          return Promise.reject(new Error(`${file.name} exceeds 5MB limit`));
         }
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (event.target?.result) {
-            setUploadedImages((prev) => [...prev, event.target!.result as string]);
-          }
-        };
-        reader.readAsDataURL(file);
+        return uploadToCloudinary(file, {
+          folder: `supplier-promotions/${user?.id}`,
+          width: 800,
+          height: 600,
+          crop: 'fill',
+          quality: 'auto',
+          format: 'auto',
+        });
       });
+
+      const results = await Promise.all(uploadPromises);
+      const newImages = results.map((result) => result.url);
+      
+      setUploadedImages((prev) => [...prev, ...newImages]);
+      toast({
+        title: 'Images uploaded',
+        description: `${newImages.length} image(s) uploaded successfully.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Upload failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingImages(false);
     }
   };
 

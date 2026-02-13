@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { usePushNotification } from '@/hooks/use-push-notification';
+import { uploadToCloudinary, generateThumbnailUrl } from '@/lib/cloudinary';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useTranslation } from 'react-i18next';
@@ -272,104 +273,82 @@ export default function Profile() {
     },
   });
 
-  // Handle photo upload with base64 encoding
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle photo upload with Cloudinary
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: 'File too large',
-        description: 'Please select an image smaller than 5MB.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Check file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Invalid file type',
-        description: 'Please select an image file.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setUploadingPhoto(true);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64String = event.target?.result as string;
-      setPhotoPreview(base64String);
-      form.setValue('profilePhotoUrl', base64String);
-      setUploadingPhoto(false);
+    try {
+      // Upload to Cloudinary
+      const result = await uploadToCloudinary(file, {
+        folder: `profile-photos/${user?.id}`,
+        width: 500,
+        height: 500,
+        crop: 'fill',
+        gravity: 'face',
+      });
+
+      // Store the Cloudinary URL (not Base64)
+      setPhotoPreview(result.url);
+      form.setValue('profilePhotoUrl', result.url);
       
       toast({
-        title: 'Photo selected',
-        description: 'Click "Save Changes" to update your profile picture.',
+        title: 'Photo uploaded',
+        description: 'Your profile picture has been uploaded successfully.',
       });
-    };
-    reader.onerror = () => {
-      setUploadingPhoto(false);
+    } catch (error: any) {
       toast({
         title: 'Upload failed',
-        description: 'Failed to read the image file.',
+        description: error.message,
         variant: 'destructive',
       });
-    };
-    reader.readAsDataURL(file);
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
-  // Handle document upload for category verification
-  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle document upload for category verification with Cloudinary
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
     setUploadingDocuments(true);
 
-    // Process all files
-    const fileProcessingPromises = files.map((file) => {
-      return new Promise<{ name: string; url: string }>((resolve, reject) => {
-        // Check file size (max 10MB per file)
-        if (file.size > 10 * 1024 * 1024) {
-          reject(new Error(`${file.name} is too large. Max 10MB per file.`));
-          return;
-        }
+    try {
+      // Upload all documents to Cloudinary in parallel
+      const uploadPromises = files.map((file) =>
+        uploadToCloudinary(file, {
+          folder: `category-verification/${user?.id}`,
+          quality: 'auto',
+          format: 'auto',
+        })
+      );
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const base64String = event.target?.result as string;
-          resolve({
-            name: file.name,
-            url: base64String,
-          });
-        };
-        reader.onerror = () => {
-          reject(new Error(`Failed to read ${file.name}`));
-        };
-        reader.readAsDataURL(file);
-      });
-    });
+      const results = await Promise.all(uploadPromises);
 
-    Promise.all(fileProcessingPromises)
-      .then((newDocs) => {
-        setUploadedDocuments([...uploadedDocuments, ...newDocs]);
-        setUploadingDocuments(false);
-        toast({
-          title: 'Documents uploaded',
-          description: `${newDocs.length} document(s) ready to submit.`,
-        });
-      })
-      .catch((error) => {
-        setUploadingDocuments(false);
-        toast({
-          title: 'Upload failed',
-          description: error.message,
-          variant: 'destructive',
-        });
+      // Convert results to document format
+      const newDocs = results.map((result, index) => ({
+        name: files[index].name,
+        url: result.url,
+      }));
+
+      setUploadedDocuments([...uploadedDocuments, ...newDocs]);
+      
+      toast({
+        title: 'Documents uploaded',
+        description: `${newDocs.length} document(s) uploaded successfully.`,
       });
+    } catch (error: any) {
+      toast({
+        title: 'Upload failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingDocuments(false);
+    }
   };
 
   const onSubmit = (data: ProfileForm) => {
