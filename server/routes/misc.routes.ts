@@ -62,22 +62,6 @@ export function registerMiscRoutes(app: Express, injectedVerifyAccess: any): voi
     }
   })
 
-  // ==================== CATEGORY ROUTES ====================
-
-  /**
-   * GET /api/categories
-   * Get all categories (public)
-   */
-  app.get("/api/categories", async (req, res) => {
-    try {
-      const categories = await storage.getCategories()
-      res.json(categories)
-    } catch (error: any) {
-      console.error("Get categories error:", error)
-      res.status(500).json({ message: error.message })
-    }
-  })
-
   // ==================== RATING ROUTES ====================
 
   /**
