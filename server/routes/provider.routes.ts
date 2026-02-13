@@ -3,6 +3,7 @@ import { ZodError } from "zod"
 import { insertServiceAreaMigrationSchema, updateProviderServiceAreaSchema, insertProviderCategoryVerificationSchema } from "@shared/schema"
 import { storage } from "../storage"
 import { notificationService, verificationService } from '../services';
+import { cacheService } from '../services/cache.service';
 import { authMiddleware, type AuthRequest } from "../middleware/auth"
 
 /**
@@ -31,7 +32,16 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
       if (longitude) params.longitude = Number.parseFloat(longitude as string)
       if (radius) params.radius = Number.parseInt(radius as string)
 
-      const providers = await storage.searchProviders(params)
+      // 🔥 TIER 5: Build cache key from search parameters
+      const cacheKey = `providers:search:${JSON.stringify(params)}`
+      let providers = await cacheService.get(cacheKey)
+      
+      if (!providers) {
+        providers = await storage.searchProviders(params)
+        // Cache search results for 5 minutes (300s)
+        await cacheService.set(cacheKey, providers, 300)
+      }
+      
       res.json(providers)
     } catch (error: any) {
       console.error("Get providers error:", error)
@@ -49,10 +59,18 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
         return res.status(403).json({ message: "Only providers can access this" })
       }
 
-      const provider = await storage.getProvider(req.user!.id)
-
+      // 🔥 Check cache first (1800 = 30 minutes)
+      let provider = await cacheService.getProviderProfile(req.user!.id);
+      
       if (!provider) {
-        return res.status(404).json({ message: "Provider profile not found" })
+        provider = await storage.getProvider(req.user!.id)
+        
+        if (!provider) {
+          return res.status(404).json({ message: "Provider profile not found" })
+        }
+        
+        // 🔥 Cache the provider profile
+        await cacheService.setProviderProfile(req.user!.id, provider);
       }
 
       res.json(provider)
@@ -72,7 +90,16 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
         return res.status(403).json({ message: "Only providers can access stats" })
       }
 
-      const stats = await storage.getProviderStats(req.user!.id)
+      // 🔥 TIER 5: Cache provider stats
+      const cacheKey = `provider:stats:${req.user!.id}`
+      let stats = await cacheService.get(cacheKey)
+      
+      if (!stats) {
+        stats = await storage.getProviderStats(req.user!.id)
+        // Cache stats for 10 minutes (600s)
+        await cacheService.set(cacheKey, stats, 600)
+      }
+      
       res.json(stats)
     } catch (error: any) {
       console.error("Get provider stats error:", error)
@@ -90,8 +117,17 @@ export function registerProviderRoutes(app: Express, injectedVerifyAccess: any):
         return res.status(403).json({ message: "Only providers can access this" })
       }
 
-      const jobs = await storage.getJobs({ providerId: req.user!.id })
-      const recentJobs = jobs.slice(0, 10)
+      // 🔥 TIER 5: Cache recent jobs for providers
+      const cacheKey = `provider:recent-jobs:${req.user!.id}`
+      let recentJobs = await cacheService.get(cacheKey)
+      
+      if (!recentJobs) {
+        const jobs = await storage.getJobs({ providerId: req.user!.id })
+        recentJobs = jobs.slice(0, 10)
+        // Cache recent jobs for 5 minutes (300s)
+        await cacheService.set(cacheKey, recentJobs, 300)
+      }
+      
       res.json(recentJobs)
     } catch (error: any) {
       console.error("Get recent jobs error:", error)

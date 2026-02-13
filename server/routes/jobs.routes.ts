@@ -5,6 +5,7 @@ import { storage } from '../storage';
 import { authMiddleware, type AuthRequest } from '../middleware/auth';
 import { companyService } from '../services/company.service';
 import { notificationService } from '../services/notification.service';
+import { cacheService } from '../services/cache.service';
 
 /**
  * SOLID Principle: Single Responsibility
@@ -25,6 +26,16 @@ export function registerJobRoutes(app: Express, injectedVerifyAccess: any): void
 app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
   try {
     const { category, status, sort } = req.query;
+    
+    // 🔥 TIER 5: Cache key for this specific request
+    const cacheKey = `jobs:${req.user!.id}:${category || 'all'}:${status || 'all'}:${sort || 'default'}`;
+    
+    // 🔥 Check cache first (900 = 15 minutes)
+    let cachedJobs = await cacheService.get(cacheKey);
+    if (cachedJobs) {
+      console.log(`✅ Cache hit for ${cacheKey}`);
+      return res.json(cachedJobs);
+    }
     
     // Check if user has a provider profile (works for both individual providers and company providers)
     const providerProfile = await storage.getProvider(req.user!.id);
@@ -47,7 +58,9 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
       if (status) params.status = status as string;
       
       const jobs = await storage.getJobs(params);
-      return res.json(jobs); // 🔥 Added return to prevent further execution
+      // 🔥 Cache before returning
+      await cacheService.set(cacheKey, jobs, 900);
+      return res.json(jobs); to prevent further execution
     }
     
     if (providerProfile) {
@@ -64,9 +77,9 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
       const approvedCategories = await storage.getApprovedCategoriesForProvider(req.user!.id);
 
       // If provider has no approved categories, return empty list
-      if (approvedCategories.length === 0) {
-        return res.json([]);
-      }
+      const emptyJobs: any[] = [];
+      await cacheService.set(cacheKey, emptyJobs, 900);
+      return res.json(emptyJobs);
 
       // Get open AND pending_selection jobs in approved cities
       const openJobs = await storage.getJobsByCity(approvedCities);
@@ -127,11 +140,15 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
         );
       }
 
-      return res.json(jobs); // 🔥 Added return
+      // 🔥 Cache before returning
+      await cacheService.set(cacheKey, jobs, 900);
+      return res.json(jobs);
     }
     
     // Admin sees all jobs
     const jobs = await storage.getJobs({});
+    // 🔥 Cache before returning
+    await cacheService.set(cacheKey, jobs, 900);
     res.json(jobs);
   } catch (error: any) {
     console.error('Get jobs error:', error);

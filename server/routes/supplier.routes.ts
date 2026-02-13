@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { updateSupplierProfileSchema, insertSupplierPromotionSchema } from '@shared/schema';
 import { storage } from '../storage';
 import { authMiddleware, type AuthRequest } from '../middleware/auth';
+import { cacheService } from '../services/cache.service';
 
 /**
  * SOLID Principle: Single Responsibility
@@ -20,7 +21,16 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
    */
   app.get('/api/suppliers', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      const suppliers = await storage.getSuppliers();
+      // 🔥 TIER 5: Cache all suppliers list
+      const cacheKey = 'suppliers:all';
+      let suppliers = await cacheService.get(cacheKey);
+      
+      if (!suppliers) {
+        suppliers = await storage.getSuppliers();
+        // Cache suppliers list for 15 minutes (900s)
+        await cacheService.set(cacheKey, suppliers, 900);
+      }
+      
       res.json(suppliers);
     } catch (error: any) {
       console.error('Get suppliers error:', error);
@@ -34,26 +44,46 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
    */
   app.get('/api/suppliers/:id/details', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      const supplier = await storage.getSupplier(req.params.id);
-      if (!supplier) {
-        return res.status(404).json({ message: 'Supplier not found' });
-      }
-
-      // Get supplier promotions (only active ones)
-      const promotions = await storage.getSupplierPromotions(req.params.id);
+      // 🔥 TIER 5: Cache individual supplier details
+      const cacheKey = `supplier:details:${req.params.id}`;
+      let supplierData = await cacheService.get(cacheKey);
       
-      res.json({
-        ...supplier,
-        promotions: promotions.filter(p => p.isActive),
-      });
+      if (!supplierData) {
+        const supplier = await storage.getSupplier(req.params.id);
+        if (!supplier) {
+          return res.status(404).json({ message: 'Supplier not found' });
+        }
+
+        // Get supplier promotions (only active ones)
+        const promotions = await storage.getSupplierPromotions(req.params.id);
+        
+        supplierData = {
+          ...supplier,
+          promotions: promotions.filter(p => p.isActive),
+        };
+        
+        // Cache supplier details for 30 minutes (1800s)
+        await cacheService.set(cacheKey, supplierData, 1800);
+      }
+      
+      res.json(supplierData);
     } catch (error: any) {
       console.error('Get supplier detail error:', error);
       res.status(500).json({ message: error.message });
     }
   });
-
-  /**
-   * GET /api/supplier/profile
+// 🔥 TIER 5: Cache current supplier profile
+      const cacheKey = `supplier:profile:${req.user!.id}`;
+      let supplier = await cacheService.get(cacheKey);
+      
+      if (!supplier) {
+        supplier = await storage.getSupplier(req.user!.id);
+        if (!supplier) {
+          return res.status(404).json({ message: 'Supplier profile not found' });
+        }
+        
+        // Cache supplier profile for 30 minutes (1800s)
+        await cacheService.set(cacheKey, supplier, 1800
    * Get the current supplier's profile
    */
   app.get('/api/supplier/profile', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {

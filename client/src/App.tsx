@@ -1,4 +1,5 @@
 import { Switch, Route, Redirect, useLocation } from "wouter";
+import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -45,6 +46,46 @@ import AdminChat from "@/pages/admin/messages";
 import AdminChatUserView from "@/pages/messages/admin-chat";
 import AdminMigrations from "@/pages/admin/migrations";
 import AdminCategoryVerifications from "@/pages/admin/category-verifications";
+
+// 🔥 TIER 2 & 3: Cache Management Component
+const APP_VERSION = "1.0.1"; // Increment on each deployment
+
+function CacheManager({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    // TIER 2: Check token expiration
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = JSON.parse(atob(token.split('.')[1]));
+        if (decoded.exp * 1000 < Date.now()) {
+          console.warn('⚠️ Token expired - redirecting to login');
+          localStorage.clear();
+          sessionStorage.clear();
+          queryClient.clear();
+          window.location.href = '/login?expired=true';
+          return;
+        }
+      } catch (error) {
+        console.error('Invalid token format:', error);
+        localStorage.removeItem('token');
+      }
+    }
+
+    // TIER 3: App version cache busting
+    const storedVersion = localStorage.getItem('appVersion');
+    if (storedVersion !== APP_VERSION) {
+      console.log('🔄 App updated - clearing cache...');
+      localStorage.clear();
+      sessionStorage.clear();
+      queryClient.clear();
+      localStorage.setItem('appVersion', APP_VERSION);
+      // Force reload to pick up new assets
+      window.location.reload();
+    }
+  }, []);
+
+  return <>{children}</>;
+}
 
 
 function ProtectedRoute({ component: Component, path, ...rest }: any) {
@@ -218,11 +259,13 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <TooltipProvider>
-            <Router />
-            <Toaster />
-            <PushNotificationContainer />
-          </TooltipProvider>
+          <CacheManager>
+            <TooltipProvider>
+              <Router />
+              <Toaster />
+              <PushNotificationContainer />
+            </TooltipProvider>
+          </CacheManager>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

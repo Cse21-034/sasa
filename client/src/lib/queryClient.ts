@@ -76,13 +76,18 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      // TIER 4: React Query Optimization
+      staleTime: 5 * 60 * 1000,             // 🔥 5 min (don't cache forever)
+      gcTime: 10 * 60 * 1000,               // 🔥 Keep in memory 10 min
+      refetchOnWindowFocus: true,           // 🔥 Refetch when user returns
+      refetchOnMount: 'stale',              // 🔥 Refetch if data is stale on mount
+      refetchInterval: 30 * 60 * 1000,      // 🔥 Background refetch every 30 min
+      retry: 1,                             // 🔥 Retry once on failure
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
-      retry: false,
+      retry: 1,
+      retryDelay: 1000,
     },
   },
 });

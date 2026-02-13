@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { User } from '@shared/schema';
+import { queryClient } from './queryClient';
 
 // 🆕 Extend User type to include verification and status flags
 interface ExtendedUser extends User {
@@ -42,22 +43,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // 🔥 FIXED: Improved logout with proper cleanup and redirect
+  // 🔥 TIER 6: IMPROVED LOGOUT - Complete cache wipeout
   const logout = () => {
-    // Clear user state
+    console.log('🔒 Logging out - clearing all caches...');
+    
+    // 1. Clear auth state
     setUser(null);
     
-    // Clear all auth-related data
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    // 2. Clear all local storage
+    localStorage.clear();
     
-    // Clear any cached queries
+    // 3. Clear session storage
     sessionStorage.clear();
     
-    // Force redirect to landing page
+    // 4. Clear React Query cache completely
+    queryClient.clear();
+    
+    // 5. Clear browser HTTP cache via service worker (if exists)
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(reg => reg.unregister());
+      });
+    }
+    
+    // 6. Redirect to landing
     window.location.href = '/';
     
-    // Force a hard reload to clear all cached data
+    // 7. Force hard reload (bypasses all caches)
     setTimeout(() => {
       window.location.reload();
     }, 100);

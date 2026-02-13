@@ -11,6 +11,7 @@ import {
 import { storage } from "../storage"
 import { notificationService } from "../services"
 import { authMiddleware, generateToken, type AuthRequest } from "../middleware/auth"
+import { cacheService } from "../services/cache.service"
 
 /**
  * SOLID Principle: Single Responsibility
@@ -70,7 +71,16 @@ export function registerMiscRoutes(app: Express, injectedVerifyAccess: any): voi
    */
   app.get("/api/categories", async (req, res) => {
     try {
-      const categories = await storage.getCategories()
+      // 🔥 TIER 5: Cache categories since they're accessed frequently and rarely change
+      const cacheKey = "categories:all"
+      let categories = await cacheService.get(cacheKey)
+      
+      if (!categories) {
+        categories = await storage.getCategories()
+        // Cache categories for 1 hour (3600s) - they change infrequently
+        await cacheService.set(cacheKey, categories, 3600)
+      }
+      
       res.json(categories)
     } catch (error: any) {
       console.error("Get categories error:", error)
@@ -111,7 +121,16 @@ export function registerMiscRoutes(app: Express, injectedVerifyAccess: any): voi
    */
   app.get("/api/ratings/:providerId", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      const ratings = await storage.getProviderRatings(req.params.providerId)
+      // 🔥 TIER 5: Cache provider ratings
+      const cacheKey = `ratings:provider:${req.params.providerId}`
+      let ratings = await cacheService.get(cacheKey)
+      
+      if (!ratings) {
+        ratings = await storage.getProviderRatings(req.params.providerId)
+        // Cache ratings for 30 minutes (1800s)
+        await cacheService.set(cacheKey, ratings, 1800)
+      }
+      
       res.json(ratings)
     } catch (error: any) {
       console.error("Get ratings error:", error)
@@ -218,7 +237,16 @@ export function registerMiscRoutes(app: Express, injectedVerifyAccess: any): voi
    */
   app.get("/api/jobs/:id/feedback", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      const feedback = await storage.getJobFeedback(req.params.id)
+      // 🔥 TIER 5: Cache job feedback
+      const cacheKey = `feedback:job:${req.params.id}`
+      let feedback = await cacheService.get(cacheKey)
+      
+      if (!feedback) {
+        feedback = await storage.getJobFeedback(req.params.id)
+        // Cache feedback for 1 hour (3600s) - rarely changes
+        await cacheService.set(cacheKey, feedback, 3600)
+      }
+      
       res.json(feedback)
     } catch (error: any) {
       console.error("Get feedback error:", error)
@@ -273,7 +301,16 @@ export function registerMiscRoutes(app: Express, injectedVerifyAccess: any): voi
         return res.status(403).json({ message: "Only requesters can access this" })
       }
 
-      const stats = await storage.getRequesterStats(req.user!.id)
+      // 🔥 TIER 5: Cache requester stats
+      const cacheKey = `stats:requester:${req.user!.id}`
+      let stats = await cacheService.get(cacheKey)
+      
+      if (!stats) {
+        stats = await storage.getRequesterStats(req.user!.id)
+        // Cache stats for 10 minutes (600s)
+        await cacheService.set(cacheKey, stats, 600)
+      }
+      
       res.json(stats)
     } catch (error: any) {
       console.error("Get requester stats error:", error)
@@ -291,7 +328,16 @@ export function registerMiscRoutes(app: Express, injectedVerifyAccess: any): voi
         return res.status(403).json({ message: "Only providers can access this" })
       }
 
-      const stats = await storage.getProviderStats(req.user!.id)
+      // 🔥 TIER 5: Cache provider stats
+      const cacheKey = `stats:provider:${req.user!.id}`
+      let stats = await cacheService.get(cacheKey)
+      
+      if (!stats) {
+        stats = await storage.getProviderStats(req.user!.id)
+        // Cache stats for 10 minutes (600s)
+        await cacheService.set(cacheKey, stats, 600)
+      }
+      
       res.json(stats)
     } catch (error: any) {
       console.error("Get provider stats error:", error)

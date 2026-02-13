@@ -37,6 +37,22 @@ app.use(cors({
 }));
 // END ADDED CORS CONFIGURATION
 
+// TIER 1: HTTP CACHE HEADERS - Prevent browser caching stale responses
+app.use((req, res, next) => {
+  // Never cache HTML or API endpoints
+  if (req.path === '/' || req.path.endsWith('.html') || req.path.startsWith('/api')) {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+  // Cache static assets (CSS, JS) forever with versioning
+  else {
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+  next();
+});
+
+// Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

@@ -31,7 +31,16 @@ export function registerMessagingRoutes(
    */
   app.get("/api/messages/conversations", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      const conversations = await storage.getConversations(req.user!.id)
+      // 🔥 TIER 5: Cache user conversations
+      const cacheKey = `messages:conversations:${req.user!.id}`
+      let conversations = await cacheService.get(cacheKey)
+      
+      if (!conversations) {
+        conversations = await storage.getConversations(req.user!.id)
+        // Cache conversations for 5 minutes (300s) as they update frequently
+        await cacheService.set(cacheKey, conversations, 300)
+      }
+      
       res.json(conversations)
     } catch (error: any) {
       console.error("Get conversations error:", error)
@@ -45,13 +54,22 @@ export function registerMessagingRoutes(
    */
   app.get("/api/messages/admin-chat", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      const adminUser = await storage.getAdminUser()
+      // 🔥 TIER 5: Cache admin chat messages
+      const cacheKey = `messages:admin-chat:${req.user!.id}`
+      let messages = await cacheService.get(cacheKey)
+      
+      if (!messages) {
+        const adminUser = await storage.getAdminUser()
 
-      if (!adminUser) {
-        return res.status(500).json({ message: "System Admin account required to fetch chat." })
+        if (!adminUser) {
+          return res.status(500).json({ message: "System Admin account required to fetch chat." })
+        }
+
+        messages = await storage.getAdminChatMessages(adminUser.id, req.user!.id)
+        // Cache admin chat for 3 minutes (180s)
+        await cacheService.set(cacheKey, messages, 180)
       }
-
-      const messages = await storage.getAdminChatMessages(adminUser.id, req.user!.id)
+      
       res.json(messages)
     } catch (error: any) {
       console.error("Get reporter admin chat messages error:", error)
