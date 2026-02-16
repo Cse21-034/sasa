@@ -293,6 +293,11 @@ export function registerInvoiceRoutes(app: Express) {
       }
 
       const updated = await storage.declineInvoice(req.params.id, reason);
+      
+      // Verify the invoice was actually updated to declined status
+      if (!updated || updated.status !== 'declined') {
+        console.error("Warning: Invoice decline may have failed. Expected status 'declined' but got:", updated?.status);
+      }
 
       // 📧 Send notification to provider
       try {
