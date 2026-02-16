@@ -182,6 +182,11 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
         title: 'Success',
         description: 'Invoice reset to draft. You can now edit and send it again.',
       });
+      // Populate form fields with invoice data
+      setAmount(existingInvoice.amount.toString());
+      setDescription(existingInvoice.description);
+      setNotes(existingInvoice.notes || '');
+      setPaymentMethod(existingInvoice.paymentMethod);
       setIsEditMode(true);
       queryClient.invalidateQueries({ queryKey: ['invoice', jobId] });
       refetchInvoice();
