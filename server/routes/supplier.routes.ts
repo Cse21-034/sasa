@@ -72,7 +72,18 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
       res.status(500).json({ message: error.message });
     }
   });
-// 🔥 TIER 5: Cache current supplier profile
+
+  /**
+   * GET /api/supplier/profile
+   * Get the current supplier's profile
+   */
+  app.get('/api/supplier/profile', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'supplier') {
+        return res.status(403).json({ message: 'Only suppliers can access this' });
+      }
+
+      // 🔥 TIER 5: Cache current supplier profile
       const cacheKey = `supplier:profile:${req.user!.id}`;
       let supplier = await cacheService.get(cacheKey);
       
@@ -83,18 +94,7 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
         }
         
         // Cache supplier profile for 30 minutes (1800s)
-        await cacheService.set(cacheKey, supplier, 1800
-   * Get the current supplier's profile
-   */
-  app.get('/api/supplier/profile', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
-    try {
-      if (req.user!.role !== 'supplier') {
-        return res.status(403).json({ message: 'Only suppliers can access this' });
-      }
-
-      const supplier = await storage.getSupplier(req.user!.id);
-      if (!supplier) {
-        return res.status(404).json({ message: 'Supplier profile not found' });
+        await cacheService.set(cacheKey, supplier, 1800);
       }
 
       res.json(supplier);

@@ -60,7 +60,7 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
       const jobs = await storage.getJobs(params);
       // 🔥 Cache before returning
       await cacheService.set(cacheKey, jobs, 900);
-      return res.json(jobs); to prevent further execution
+      return res.json(jobs); // Prevent further execution
     }
     
     if (providerProfile) {
