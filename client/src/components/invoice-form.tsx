@@ -15,8 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Send, Edit2, BadgeCheck } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 interface InvoiceFormProps {
   jobId: string;
@@ -26,15 +28,31 @@ interface InvoiceFormProps {
 
 type PaymentMethod = 'cash' | 'bank_transfer' | 'card';
 
+interface Invoice {
+  id: string;
+  jobId: string;
+  providerId: string;
+  requesterId: string;
+  status: 'draft' | 'sent' | 'approved' | 'declined' | 'paid' | 'cancelled';
+  amount: string | number;
+  currency: string;
+  paymentMethod: PaymentMethod;
+  description: string;
+  notes?: string;
+  sentAt?: string;
+  createdAt: string;
+}
+
 export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) {
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
+  const [isEditMode, setIsEditMode] = useState(false);
   const { toast } = useToast();
 
   // Check if invoice already exists
-  const { data: existingInvoice } = useQuery({
+  const { data: existingInvoice, refetch: refetchInvoice } = useQuery({
     queryKey: ['invoice', jobId],
     queryFn: async () => {
       try {
@@ -49,7 +67,7 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
   const createInvoiceMutation = useMutation({
     mutationFn: async (data: {
       jobId: string;
-      amount: number;
+      amount: string;
       currency: string;
       paymentMethod: PaymentMethod;
       description: string;
@@ -61,13 +79,14 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
     onSuccess: () => {
       toast({
         title: 'Success',
-        description: 'Invoice created successfully',
+        description: 'Invoice created successfully. Review and send to requester.',
       });
       setAmount('');
       setDescription('');
       setNotes('');
       setPaymentMethod('cash');
       queryClient.invalidateQueries({ queryKey: ['invoice', jobId] });
+      refetchInvoice();
       onSuccess?.();
     },
     onError: (error: any) => {
@@ -91,15 +110,40 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
     onSuccess: () => {
       toast({
         title: 'Success',
-        description: 'Invoice updated successfully',
+        description: 'Invoice updated successfully. Ready to send.',
       });
       queryClient.invalidateQueries({ queryKey: ['invoice', jobId] });
+      refetchInvoice();
+      setIsEditMode(false);
       onSuccess?.();
     },
     onError: (error: any) => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to update invoice',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const sendInvoiceMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', `/api/invoices/${existingInvoice.id}/send`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Invoice sent to requester for approval',
+      });
+      queryClient.invalidateQueries({ queryKey: ['invoice', jobId] });
+      refetchInvoice();
+      onSuccess?.();
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to send invoice',
         variant: 'destructive',
       });
     },
@@ -123,7 +167,7 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
       notes,
     };
 
-    if (existingInvoice) {
+    if (existingInvoice && existingInvoice.status === 'draft') {
       updateInvoiceMutation.mutate(invoiceData);
     } else {
       createInvoiceMutation.mutate({
@@ -135,57 +179,216 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
     }
   };
 
-  const isLoading = createInvoiceMutation.isPending || updateInvoiceMutation.isPending;
-  const isEditing = existingInvoice && existingInvoice.status === 'draft';
+  const isLoading = createInvoiceMutation.isPending || updateInvoiceMutation.isPending || sendInvoiceMutation.isPending;
+  const isDraftStatus = existingInvoice && existingInvoice.status === 'draft';
+  const isSentOrAccepted = existingInvoice && (existingInvoice.status === 'sent' || existingInvoice.status === 'approved');
 
-  if (existingInvoice && existingInvoice.status !== 'draft') {
+  // Show invoice preview when sent or accepted
+  if (isSentOrAccepted) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Invoice</CardTitle>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Invoice</CardTitle>
+              <CardDescription>Awaiting requester response</CardDescription>
+            </div>
+            <Badge className={existingInvoice.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
+              {existingInvoice.status.charAt(0).toUpperCase() + existingInvoice.status.slice(1)}
+            </Badge>
+          </div>
         </CardHeader>
-        <CardContent>
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Invoice with status "{existingInvoice.status}" cannot be edited.
-              {existingInvoice.status === 'sent' && ' The requester is reviewing it.'}
-              {existingInvoice.status === 'approved' && ' The invoice has been approved.'}
-              {existingInvoice.status === 'declined' && ' Please create a new invoice.'}
-            </AlertDescription>
-          </Alert>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-600">Amount</p>
+                <p className="text-2xl font-bold">{formatPula(parseFloat(existingInvoice.amount))}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Payment Method</p>
+                <p className="font-semibold capitalize">{existingInvoice.paymentMethod.replace('_', ' ')}</p>
+              </div>
+            </div>
+            <Separator />
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-1">Description</p>
+              <p className="text-gray-700">{existingInvoice.description}</p>
+            </div>
+            {existingInvoice.notes && (
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-1">Notes</p>
+                <p className="text-gray-700">{existingInvoice.notes}</p>
+              </div>
+            )}
+            <Separator />
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Status:</span>
+              <span className="font-medium">{existingInvoice.status === 'approved' ? '✓ Approved' : 'Sent to Requester'}</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{isEditing ? 'Edit Invoice' : 'Create Invoice'}</CardTitle>
-        <CardDescription>
-          {isEditing 
-            ? 'Update your invoice details before sending' 
-            : 'Send an invoice for your work'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount (BWP) *</Label>
-            <Input
-              id="amount"
-              type="number"
-              placeholder="500"
-              step="0.01"
-              min="0"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
+  // Show invoice preview with send button when in draft status
+  if (isDraftStatus && !isEditMode) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Invoice Preview</CardTitle>
+              <CardDescription>Review before sending to requester</CardDescription>
+            </div>
+            <Badge className="bg-gray-100 text-gray-800">Draft</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-600">Amount</p>
+                <p className="text-2xl font-bold">{formatPula(parseFloat(existingInvoice.amount))}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Payment Method</p>
+                <p className="font-semibold capitalize">{existingInvoice.paymentMethod.replace('_', ' ')}</p>
+              </div>
+            </div>
+            <Separator />
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-1">Description</p>
+              <p className="text-gray-700">{existingInvoice.description}</p>
+            </div>
+            {existingInvoice.notes && (
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-1">Notes</p>
+                <p className="text-gray-700">{existingInvoice.notes}</p>
+              </div>
+            )}
           </div>
 
-          {!isEditing && (
+          <Separator />
+
+          <div className="flex gap-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditMode(true)}
+              className="flex-1"
+              disabled={isLoading}
+            >
+              <Edit2 className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+            <Button
+              onClick={() => sendInvoiceMutation.mutate()}
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              disabled={isLoading}
+            >
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Send className="mr-2 h-4 w-4" />
+              Send to Requester
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show edit form when in edit mode
+  if (isDraftStatus && isEditMode) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Edit Invoice</CardTitle>
+          <CardDescription>Update your invoice details before sending</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount (BWP) *</Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="500"
+                step="0.01"
+                min="0"
+                value={amount || existingInvoice.amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description of Work *</Label>
+              <Textarea
+                id="description"
+                placeholder="E.g., Labour for house cleaning, materials included..."
+                value={description || existingInvoice.description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Additional Notes</Label>
+              <Textarea
+                id="notes"
+                placeholder="E.g., Half payment on start, half on completion..."
+                value={notes || existingInvoice.notes || ''}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditMode(false)}
+                className="flex-1"
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isLoading} className="flex-1">
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Invoice
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show create form when no invoice exists
+  if (!existingInvoice) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Create Invoice</CardTitle>
+          <CardDescription>Send an invoice for your work</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount (BWP) *</Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="500"
+                step="0.01"
+                min="0"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="paymentMethod">Payment Method *</Label>
               <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
@@ -199,36 +402,56 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
                 </SelectContent>
               </Select>
             </div>
-          )}
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Description of Work *</Label>
-            <Textarea
-              id="description"
-              placeholder="E.g., Labour for house cleaning, materials included..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-              rows={3}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description of Work *</Label>
+              <Textarea
+                id="description"
+                placeholder="E.g., Labour for house cleaning, materials included..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+                rows={3}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Additional Notes</Label>
-            <Textarea
-              id="notes"
-              placeholder="E.g., Half payment on start, half on completion..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Additional Notes</Label>
+              <Textarea
+                id="notes"
+                placeholder="E.g., Half payment on start, half on completion..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+              />
+            </div>
 
-          <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isEditing ? 'Update Invoice' : 'Create Invoice'}
-          </Button>
-        </form>
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create Invoice
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show message when invoice is not in draft (shouldn't reach here)
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Invoice</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Invoice with status "{existingInvoice.status}" cannot be edited.
+            {existingInvoice.status === 'sent' && ' The requester is reviewing it.'}
+            {existingInvoice.status === 'approved' && ' The invoice has been approved.'}
+            {existingInvoice.status === 'declined' && ' Please create a new invoice.'}
+          </AlertDescription>
+        </Alert>
       </CardContent>
     </Card>
   );
