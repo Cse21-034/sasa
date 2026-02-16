@@ -167,16 +167,22 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
     },
   });
 
-  const deleteInvoiceMutation = useMutation({
+  const resetDeclinedInvoiceMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('DELETE', `/api/invoices/${existingInvoice.id}`);
+      // Update declined invoice back to draft status with cleared reason
+      const response = await apiRequest('PATCH', `/api/invoices/${existingInvoice.id}`, {
+        amount: existingInvoice.amount,
+        description: existingInvoice.description,
+        notes: existingInvoice.notes || '',
+      });
       return response.json();
     },
     onSuccess: () => {
       toast({
         title: 'Success',
-        description: 'Invoice deleted. You can now create a new invoice.',
+        description: 'Invoice reset to draft. You can now edit and send it again.',
       });
+      setIsEditMode(true);
       queryClient.invalidateQueries({ queryKey: ['invoice', jobId] });
       refetchInvoice();
       onSuccess?.();
@@ -184,7 +190,7 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to delete invoice',
+        description: error.message || 'Failed to reset invoice',
         variant: 'destructive',
       });
     },
@@ -359,7 +365,7 @@ Sent via SASA Job Delivery Platform
     }
   };
 
-  const isLoading = createInvoiceMutation.isPending || updateInvoiceMutation.isPending || sendInvoiceMutation.isPending || deleteInvoiceMutation.isPending;
+  const isLoading = createInvoiceMutation.isPending || updateInvoiceMutation.isPending || sendInvoiceMutation.isPending || resetDeclinedInvoiceMutation.isPending;
   const isDraftStatus = existingInvoice && existingInvoice.status === 'draft';
   const isSentOrAccepted = existingInvoice && (existingInvoice.status === 'sent' || existingInvoice.status === 'approved');
   const isDeclinedStatus = existingInvoice && existingInvoice.status === 'declined';
@@ -406,89 +412,18 @@ Sent via SASA Job Delivery Platform
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Options:</p>
             <div className="flex gap-2">
               <Button
-                onClick={() => deleteInvoiceMutation.mutate()}
+                onClick={() => resetDeclinedInvoiceMutation.mutate()}
                 disabled={isLoading}
                 className="flex-1 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white font-semibold"
               >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create New Invoice
+                Edit Invoice
               </Button>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-              This will delete the declined invoice and allow you to create a new one with updated details.
+              Update the invoice details based on the feedback and send it again.
             </p>
           </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Allow creating a new invoice if previous one was cancelled
-  if (isCancelledStatus) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Create Invoice</CardTitle>
-          <CardDescription>Send an invoice for your work</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount (BWP) *</Label>
-              <Input
-                id="amount"
-                type="number"
-                placeholder="500"
-                step="0.01"
-                min="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="paymentMethod">Payment Method *</Label>
-              <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
-                <SelectTrigger id="paymentMethod">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Cash (Manual Confirmation)</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="card">Card Payment</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description of Work *</Label>
-              <Textarea
-                id="description"
-                placeholder="E.g., Labour for house cleaning, materials included..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Additional Notes</Label>
-              <Textarea
-                id="notes"
-                placeholder="E.g., Half payment on start, half on completion..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-              />
-            </div>
-
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Invoice
-            </Button>
-          </form>
         </CardContent>
       </Card>
     );

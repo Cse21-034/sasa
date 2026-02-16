@@ -113,7 +113,7 @@ export function registerInvoiceRoutes(app: Express) {
     }
   });
 
-  // 💰 PATCH /api/invoices/:id - Provider updates invoice (only in draft status)
+  // 💰 PATCH /api/invoices/:id - Provider updates invoice (only in draft status, or to reset declined)
   app.patch("/api/invoices/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
       const invoice = await storage.getInvoice(req.params.id);
@@ -127,8 +127,22 @@ export function registerInvoiceRoutes(app: Express) {
         return res.status(403).json({ message: "Only the provider can update this invoice" });
       }
 
-      // Can only update draft invoices
-      if (invoice.status !== "draft") {
+      // Can only update draft invoices, or reset declined invoices back to draft
+      if (invoice.status === "declined") {
+        // Reset declined invoice back to draft with cleared reason
+        const updated = await storage.updateInvoice(req.params.id, {
+          status: "draft",
+          declineReason: null,
+          amount: req.body.amount,
+          description: req.body.description,
+          notes: req.body.notes || null,
+          updatedAt: new Date()
+        });
+        return res.json({
+          message: "Invoice reset to draft successfully",
+          invoice: updated
+        });
+      } else if (invoice.status !== "draft") {
         return res.status(400).json({ message: `Cannot update invoice in ${invoice.status} status` });
       }
 
@@ -317,8 +331,8 @@ export function registerInvoiceRoutes(app: Express) {
         return res.status(403).json({ message: "Only the provider can delete this invoice" });
       }
 
-      // Can only delete draft or declined invoices
-      if (invoice.status !== "draft" && invoice.status !== "declined") {
+      // Can only delete draft invoices
+      if (invoice.status !== "draft") {
         return res.status(400).json({ message: `Cannot delete invoice in ${invoice.status} status` });
       }
 
