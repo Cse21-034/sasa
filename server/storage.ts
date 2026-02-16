@@ -2048,17 +2048,9 @@ export class DatabaseStorage implements IStorage {
       .where(eq(invoices.id, invoiceId))
       .returning();
     
-    // Reset job invoice status
-    if (updated) {
-      await db
-        .update(jobs)
-        .set({ 
-          invoiceStatus: 'no_invoice',
-          invoiceId: null,
-          updatedAt: new Date()
-        })
-        .where(eq(jobs.id, updated.jobId));
-    }
+    // ⚠️ IMPORTANT: Do NOT clear job.invoiceId or set invoiceStatus to 'no_invoice'
+    // The declined invoice is still the active invoice for the job and needs to be revised
+    // Only clear it when the invoice is cancelled (deleted by provider)
     
     return updated || undefined;
   }

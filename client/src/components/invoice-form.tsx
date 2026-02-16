@@ -384,6 +384,18 @@ Sent via SASA Job Delivery Platform
   // Treat cancelled invoices as non-existent for form purposes
   const hasActiveInvoice = existingInvoice && existingInvoice.status !== 'cancelled';
 
+  // Debug: Log status for troubleshooting
+  if (existingInvoice && existingInvoice.status) {
+    console.log('[InvoiceForm] Invoice status check:', { 
+      status: existingInvoice.status, 
+      isDraftStatus, 
+      isSentOrAccepted, 
+      isDeclinedStatus,
+      isCancelledStatus,
+      invoiceId: existingInvoice.id 
+    });
+  }
+
   // Show decline reason and create new invoice option when declined
   if (isDeclinedStatus) {
     console.log('[InvoiceForm] Rendering declined invoice UI', { invoiceId: existingInvoice.id, declineReason: existingInvoice.declineReason });

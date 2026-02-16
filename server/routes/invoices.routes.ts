@@ -292,12 +292,32 @@ export function registerInvoiceRoutes(app: Express) {
         return res.status(400).json({ message: `Cannot decline invoice in ${invoice.status} status` });
       }
 
+      console.log(`[Decline] Processing decline for invoice ${req.params.id}`, { 
+        currentStatus: invoice.status, 
+        reason 
+      });
+
       const updated = await storage.declineInvoice(req.params.id, reason);
       
       // Verify the invoice was actually updated to declined status
-      if (!updated || updated.status !== 'declined') {
-        console.error("Warning: Invoice decline may have failed. Expected status 'declined' but got:", updated?.status);
+      if (!updated) {
+        console.error(`[Decline] ERROR: declineInvoice returned undefined for ${req.params.id}`);
+        return res.status(500).json({ message: "Failed to decline invoice - update returned no result" });
       }
+      
+      if (updated.status !== 'declined') {
+        console.error(`[Decline] ERROR: Expected status 'declined' but got '${updated.status}' for invoice ${req.params.id}`, {
+          invoiceId: updated.id,
+          status: updated.status,
+          declineReason: updated.declineReason
+        });
+        return res.status(500).json({ message: `Failed to decline invoice - status is '${updated.status}' instead of 'declined'` });
+      }
+
+      console.log(`[Decline] Successfully declined invoice ${req.params.id}`, { 
+        newStatus: updated.status,
+        invoiceId: updated.id
+      });
 
       // 📧 Send notification to provider
       try {
