@@ -317,8 +317,8 @@ export function registerInvoiceRoutes(app: Express) {
         return res.status(403).json({ message: "Only the provider can delete this invoice" });
       }
 
-      // Can only delete draft invoices
-      if (invoice.status !== "draft") {
+      // Can only delete draft or declined invoices
+      if (invoice.status !== "draft" && invoice.status !== "declined") {
         return res.status(400).json({ message: `Cannot delete invoice in ${invoice.status} status` });
       }
 
