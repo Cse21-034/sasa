@@ -14,7 +14,21 @@ export function registerInvoiceRoutes(app: Express) {
       // Validate input
       const validation = createInvoiceSchema.safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid invoice data", errors: validation.error.errors });
+        console.error('Invoice validation errors:', {
+          received: req.body,
+          errors: validation.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message,
+            received: (req.body as any)[e.path[0]]
+          }))
+        });
+        return res.status(400).json({ 
+          message: "Invalid invoice data", 
+          errors: validation.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        });
       }
 
       // Check if job exists and provider is selected

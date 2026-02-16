@@ -81,7 +81,7 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
 
   const updateInvoiceMutation = useMutation({
     mutationFn: async (data: {
-      amount: number;
+      amount: string;
       description: string;
       notes: string;
     }) => {
@@ -118,7 +118,7 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
     }
 
     const invoiceData = {
-      amount: parseFloat(amount),
+      amount: amount.toString(), // 💰 Send as string, not number
       description,
       notes,
     };
