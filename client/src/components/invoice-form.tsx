@@ -215,48 +215,61 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
       tempDiv.id = 'temp-invoice-pdf';
       tempDiv.style.display = 'none';
       tempDiv.innerHTML = `
-        <div style="padding: 40px; background: white;">
-          <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 10px;">INVOICE</h1>
-          <p style="color: #666; font-size: 14px;">Invoice ID: ${existingInvoice.id}</p>
-          <p style="color: #666; font-size: 14px;">Created: ${new Date(existingInvoice.createdAt).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}</p>
-          
-          <hr style="margin: 30px 0;" />
-          
-          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-            <p style="color: #666; font-size: 14px; margin-bottom: 10px;"><strong>Description:</strong> ${existingInvoice.description}</p>
-            <p style="color: #666; font-size: 14px; margin-bottom: 10px;"><strong>Payment Method:</strong> ${existingInvoice.paymentMethod.replace('_', ' ')}</p>
-            ${existingInvoice.notes ? `<p style="color: #666; font-size: 14px;"><strong>Notes:</strong> ${existingInvoice.notes}</p>` : ''}
+        <div style="padding: 40px; background: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="margin-bottom: 30px;">
+            <h1 style="font-size: 36px; font-weight: bold; margin: 0 0 5px 0; color: #1f2937;">INVOICE</h1>
+            <p style="color: #6b7280; font-size: 14px; margin: 0;">Invoice #${existingInvoice.id.substring(0, 8)}</p>
           </div>
           
-          <hr style="margin: 30px 0;" />
+          <hr style="margin: 30px 0; border: none; border-top: 2px solid #e5e7eb;" />
           
-          <div style="background: #eff6ff; padding: 24px; border: 2px solid #bfdbfe; border-radius: 8px; margin-bottom: 30px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-              <span style="color: #666;">Subtotal:</span>
-              <span>${formatPula(typeof existingInvoice.amount === 'string' ? parseFloat(existingInvoice.amount) : existingInvoice.amount)}</span>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
+            <div>
+              <p style="font-size: 12px; color: #9ca3af; font-weight: 600; margin-bottom: 5px; text-transform: uppercase;">Service Provider</p>
+              <p style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0;">Invoice Details</p>
+              <p style="font-size: 14px; color: #6b7280; margin: 5px 0;">Created: ${new Date(existingInvoice.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
-            <hr style="margin: 10px 0;" />
+            <div>
+              <p style="font-size: 12px; color: #9ca3af; font-weight: 600; margin-bottom: 5px; text-transform: uppercase;">Amount Due</p>
+              <p style="font-size: 28px; font-weight: 700; color: #2563eb; margin: 0;">${formatPula(typeof existingInvoice.amount === 'string' ? parseFloat(existingInvoice.amount) : existingInvoice.amount)}</p>
+              <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">Payment Method: ${existingInvoice.paymentMethod === 'bank_transfer' ? 'Bank Transfer' : existingInvoice.paymentMethod === 'card' ? 'Card Payment' : 'Cash'}</p>
+            </div>
+          </div>
+          
+          <hr style="margin: 30px 0; border: none; border-top: 2px solid #e5e7eb;" />
+          
+          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+            <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 14px; font-weight: 600;">Service Description</h3>
+            <p style="color: #374151; font-size: 14px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${existingInvoice.description}</p>
+            ${existingInvoice.notes ? `<hr style="margin: 15px 0; border: none; border-top: 1px solid #d1d5db;" /><h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 13px; font-weight: 600;">Additional Notes</h4><p style="color: #374151; font-size: 13px; margin: 0; white-space: pre-wrap;">${existingInvoice.notes}</p>` : ''}
+          </div>
+          
+          <div style="background: #eff6ff; padding: 24px; border-left: 4px solid #2563eb; margin-bottom: 30px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #bfdbfe;">
+              <span style="color: #374151; font-weight: 600;">Subtotal:</span>
+              <span style="color: #374151; font-weight: 600;">${formatPula(typeof existingInvoice.amount === 'string' ? parseFloat(existingInvoice.amount) : existingInvoice.amount)}</span>
+            </div>
             <div style="display: flex; justify-content: space-between;">
-              <span style="font-weight: bold; font-size: 18px;">Amount Due:</span>
-              <span style="font-weight: bold; font-size: 24px; color: #2563eb;">${formatPula(typeof existingInvoice.amount === 'string' ? parseFloat(existingInvoice.amount) : existingInvoice.amount)}</span>
+              <span style="font-weight: bold; font-size: 16px; color: #1f2937;">Total Amount:</span>
+              <span style="font-weight: bold; font-size: 20px; color: #2563eb;">${formatPula(typeof existingInvoice.amount === 'string' ? parseFloat(existingInvoice.amount) : existingInvoice.amount)}</span>
             </div>
           </div>
           
-          <div style="text-align: center; margin-top: 60px; color: #999; font-size: 12px;">
-            <p>SASA Job Delivery Platform - www.sasajobs.com</p>
-            <p>This is an electronically generated invoice</p>
+          <div style="text-align: center; margin-top: 60px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 12px; margin: 0;">SASA Job Delivery Platform</p>
+            <p style="color: #9ca3af; font-size: 11px; margin: 5px 0 0 0;">This is an electronically generated invoice</p>
           </div>
         </div>
       `;
       document.body.appendChild(tempDiv);
 
-      // Generate PDF from the temporary element
+      // Generate PDF from the temporary element with better error handling
       const element = tempDiv.querySelector('div');
-      if (element) {
+      if (!element) {
+        throw new Error('Could not create PDF element');
+      }
+      
+      try {
         const html2canvas = (await import('html2canvas')).default;
         const jsPDF = (await import('jspdf')).default;
         
@@ -264,6 +277,8 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
           scale: 2,
           useCORS: true,
           backgroundColor: '#ffffff',
+          logging: false,
+          allowTaint: true,
         });
 
         const imgWidth = 210;
@@ -273,16 +288,21 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
         const imgData = canvas.toDataURL('image/png');
         pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
 
-        const fileName = `invoice-${existingInvoice.id}-${new Date().toISOString().split('T')[0]}.pdf`;
+        const fileName = `invoice-${existingInvoice.id.substring(0, 8)}-${new Date().toISOString().split('T')[0]}.pdf`;
         pdf.save(fileName);
 
         toast({
           title: 'Success',
           description: 'Invoice downloaded successfully',
         });
+      } catch (pdferror) {
+        console.error('PDF generation error:', pdferror);
+        throw new Error(`PDF generation failed: ${pdferror.message}`);
       }
 
-      document.body.removeChild(tempDiv);
+      if (document.body.contains(tempDiv)) {
+        document.body.removeChild(tempDiv);
+      }
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
@@ -320,27 +340,29 @@ Service Provider
 
   const handleShareWhatsApp = () => {
     if (!existingInvoice) return;
-    const message = encodeURIComponent(`
-📋 *Invoice #${existingInvoice.id}*
+    
+    // Prepare message with invoice details
+    const statusText = existingInvoice.status.charAt(0).toUpperCase() + existingInvoice.status.slice(1);
+    const message = encodeURIComponent(
+      `📋 *Invoice Details*\n\n` +
+      `*Invoice ID:* ${existingInvoice.id.substring(0, 8)}\n` +
+      `*Amount:* ${formatPula(typeof existingInvoice.amount === 'string' ? parseFloat(existingInvoice.amount) : existingInvoice.amount)}\n` +
+      `*Payment Method:* ${existingInvoice.paymentMethod === 'bank_transfer' ? 'Bank Transfer' : existingInvoice.paymentMethod === 'card' ? 'Card Payment' : 'Cash'}\n\n` +
+      `*Description:*\n${existingInvoice.description}\n\n` +
+      `${existingInvoice.notes ? `*Notes:*\n${existingInvoice.notes}\n\n` : ''}` +
+      `*Status:* ${statusText}\n` +
+      `*Created:* ${new Date(existingInvoice.createdAt).toLocaleDateString()}\n\n` +
+      `---\n` +
+      `Shared via SASA Job Delivery Platform`
+    );
 
-💰 *Amount:* ${formatPula(typeof existingInvoice.amount === 'string' ? parseFloat(existingInvoice.amount) : existingInvoice.amount)}
-💳 *Payment Method:* ${existingInvoice.paymentMethod.replace('_', ' ')}
-
-📝 *Description:* ${existingInvoice.description}
-
-${existingInvoice.notes ? `📌 *Notes:* ${existingInvoice.notes}` : ''}
-
-Status: ${existingInvoice.status}
-Created: ${new Date(existingInvoice.createdAt).toLocaleDateString()}
-
----
-Sent via SASA Job Delivery Platform
-    `);
-
+    // Try to use requester phone if available, otherwise use web WhatsApp
     const phoneNumber = requesterData?.phone?.replace(/\D/g, '');
     if (phoneNumber) {
+      // Open WhatsApp with the specific contact
       window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
     } else {
+      // Fall back to web WhatsApp
       window.open(`https://web.whatsapp.com/send?text=${message}`, '_blank');
     }
   };
@@ -378,6 +400,7 @@ Sent via SASA Job Delivery Platform
   const isLoading = createInvoiceMutation.isPending || updateInvoiceMutation.isPending || sendInvoiceMutation.isPending || resetDeclinedInvoiceMutation.isPending;
   const isDraftStatus = existingInvoice && existingInvoice.status === 'draft';
   const isSentOrAccepted = existingInvoice && (existingInvoice.status === 'sent' || existingInvoice.status === 'approved');
+  const isPaidStatus = existingInvoice && existingInvoice.status === 'paid';
   const isDeclinedStatus = existingInvoice && existingInvoice.status === 'declined';
   const isCancelledStatus = existingInvoice && existingInvoice.status === 'cancelled';
   
@@ -540,6 +563,85 @@ Sent via SASA Job Delivery Platform
                 onClick={handleShareWhatsApp}
                 variant="outline"
                 className="w-full bg-green-50 hover:bg-green-100"
+              >
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Share via WhatsApp
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show invoice when paid (read-only with download and share options)
+  if (isPaidStatus) {
+    return (
+      <Card className="border-green-200 dark:border-green-700">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-green-900 dark:text-green-100">Invoice Paid</CardTitle>
+              <CardDescription className="text-green-700 dark:text-green-300">This invoice has been paid</CardDescription>
+            </div>
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">✓ Paid</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Amount Paid</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatPula(parseFloat(existingInvoice.amount))}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Payment Method</p>
+                <p className="font-semibold capitalize">{existingInvoice.paymentMethod.replace('_', ' ')}</p>
+              </div>
+            </div>
+            <Separator />
+            <div>
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Description</p>
+              <p className="text-gray-700 dark:text-gray-300">{existingInvoice.description}</p>
+            </div>
+            {existingInvoice.notes && (
+              <div>
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Notes</p>
+                <p className="text-gray-700 dark:text-gray-300">{existingInvoice.notes}</p>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Download & Share Options</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <Button
+                onClick={handleDownloadPDF}
+                disabled={isPdfGenerating}
+                variant="outline"
+                className="w-full"
+              >
+                {isPdfGenerating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                Download PDF
+              </Button>
+              <Button
+                onClick={handleShareEmail}
+                variant="outline"
+                className="w-full"
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                Share via Email
+              </Button>
+              <Button
+                onClick={handleShareWhatsApp}
+                variant="outline"
+                className="w-full bg-green-50 hover:bg-green-100 dark:bg-green-900 dark:hover:bg-green-800"
               >
                 <MessageCircle className="mr-2 h-4 w-4" />
                 Share via WhatsApp

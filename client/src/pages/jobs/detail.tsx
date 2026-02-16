@@ -837,8 +837,8 @@ export default function JobDetail() {
           </Card>
         )}
 
-        {/* Provider Charge Input - Update label and placeholder */}
-        {isAssignedProvider && job.status !== 'cancelled' && !(job as any).providerCharge && (
+        {/* Provider Charge Input - COMMENTED OUT: Charges are now in invoice */}
+        {/* isAssignedProvider && job.status !== 'cancelled' && !(job as any).providerCharge && (
           <Card className="border-2">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -871,7 +871,7 @@ export default function JobDetail() {
               </div>
             </CardContent>
           </Card>
-        )}
+        ) */}
 
         {/* Amount Paid Input - Update label and placeholder */}
         {isRequester && job.status === 'completed' && (job as any).providerCharge && !(job as any).amountPaid && (

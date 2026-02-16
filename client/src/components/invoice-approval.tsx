@@ -280,27 +280,29 @@ ${providerData?.name || 'Service Provider'}
 
   const handleShareWhatsApp = () => {
     if (!invoice) return;
-    const message = encodeURIComponent(`
-📋 *Invoice #${invoice.id}*
+    
+    // Prepare message with invoice details
+    const statusText = invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1);
+    const message = encodeURIComponent(
+      `📋 *Invoice Details*\n\n` +
+      `*Invoice ID:* ${invoice.id.substring(0, 8)}\n` +
+      `*Amount:* ${formatPula(typeof invoice.amount === 'string' ? parseFloat(invoice.amount) : invoice.amount)}\n` +
+      `*Payment Method:* ${invoice.paymentMethod === 'bank_transfer' ? 'Bank Transfer' : invoice.paymentMethod === 'card' ? 'Card Payment' : 'Cash'}\n\n` +
+      `*Description:*\n${invoice.description}\n\n` +
+      `${invoice.notes ? `*Notes:*\n${invoice.notes}\n\n` : ''}` +
+      `*Status:* ${statusText}\n` +
+      `*Created:* ${new Date(invoice.createdAt).toLocaleDateString()}\n\n` +
+      `---\n` +
+      `Shared via SASA Job Delivery Platform`
+    );
 
-💰 *Amount:* ${formatPula(typeof invoice.amount === 'string' ? parseFloat(invoice.amount) : invoice.amount)}
-💳 *Payment Method:* ${invoice.paymentMethod.replace('_', ' ')}
-
-📝 *Description:* ${invoice.description}
-
-${invoice.notes ? `📌 *Notes:* ${invoice.notes}` : ''}
-
-Status: ${invoice.status}
-Created: ${new Date(invoice.createdAt).toLocaleDateString()}
-
----
-Sent via SASA Job Delivery Platform
-    `);
-
+    // Try to use provider phone if available, otherwise use web WhatsApp
     const phoneNumber = providerData?.phone?.replace(/\D/g, '');
     if (phoneNumber) {
+      // Open WhatsApp with the specific contact
       window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
     } else {
+      // Fall back to web WhatsApp
       window.open(`https://web.whatsapp.com/send?text=${message}`, '_blank');
     }
   };
