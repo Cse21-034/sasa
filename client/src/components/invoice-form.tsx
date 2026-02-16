@@ -363,6 +363,10 @@ Sent via SASA Job Delivery Platform
   const isDraftStatus = existingInvoice && existingInvoice.status === 'draft';
   const isSentOrAccepted = existingInvoice && (existingInvoice.status === 'sent' || existingInvoice.status === 'approved');
   const isDeclinedStatus = existingInvoice && existingInvoice.status === 'declined';
+  const isCancelledStatus = existingInvoice && existingInvoice.status === 'cancelled';
+
+  // Treat cancelled invoices as non-existent for form purposes
+  const hasActiveInvoice = existingInvoice && existingInvoice.status !== 'cancelled';
 
   // Show decline reason and create new invoice option when declined
   if (isDeclinedStatus) {
@@ -414,6 +418,77 @@ Sent via SASA Job Delivery Platform
               This will delete the declined invoice and allow you to create a new one with updated details.
             </p>
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Allow creating a new invoice if previous one was cancelled
+  if (isCancelledStatus) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Create Invoice</CardTitle>
+          <CardDescription>Send an invoice for your work</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount (BWP) *</Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="500"
+                step="0.01"
+                min="0"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="paymentMethod">Payment Method *</Label>
+              <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+                <SelectTrigger id="paymentMethod">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash (Manual Confirmation)</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="card">Card Payment</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description of Work *</Label>
+              <Textarea
+                id="description"
+                placeholder="E.g., Labour for house cleaning, materials included..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Additional Notes</Label>
+              <Textarea
+                id="notes"
+                placeholder="E.g., Half payment on start, half on completion..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+              />
+            </div>
+
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create Invoice
+            </Button>
+          </form>
         </CardContent>
       </Card>
     );
