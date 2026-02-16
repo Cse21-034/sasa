@@ -417,6 +417,7 @@ export const invoices = pgTable("invoices", {
   description: text("description").notNull(),
   paymentMethod: paymentMethodEnum("payment_method").notNull(),
   notes: text("notes"),
+  declineReason: text("decline_reason"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   sentAt: timestamp("sent_at"),
   approvedAt: timestamp("approved_at"),

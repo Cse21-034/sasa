@@ -39,7 +39,9 @@ interface Invoice {
   paymentMethod: PaymentMethod;
   description: string;
   notes?: string;
+  declineReason?: string;
   sentAt?: string;
+  declinedAt?: string;
   createdAt: string;
 }
 
@@ -160,6 +162,29 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
       toast({
         title: 'Error',
         description: error.message || 'Failed to send invoice',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('DELETE', `/api/invoices/${existingInvoice.id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Invoice deleted. You can now create a new invoice.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['invoice', jobId] });
+      refetchInvoice();
+      onSuccess?.();
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete invoice',
         variant: 'destructive',
       });
     },
@@ -334,9 +359,65 @@ Sent via SASA Job Delivery Platform
     }
   };
 
-  const isLoading = createInvoiceMutation.isPending || updateInvoiceMutation.isPending || sendInvoiceMutation.isPending;
+  const isLoading = createInvoiceMutation.isPending || updateInvoiceMutation.isPending || sendInvoiceMutation.isPending || deleteInvoiceMutation.isPending;
   const isDraftStatus = existingInvoice && existingInvoice.status === 'draft';
   const isSentOrAccepted = existingInvoice && (existingInvoice.status === 'sent' || existingInvoice.status === 'approved');
+  const isDeclinedStatus = existingInvoice && existingInvoice.status === 'declined';
+
+  // Show decline reason and create new invoice option when declined
+  if (isDeclinedStatus) {
+    return (
+      <Card className="border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-red-900 dark:text-red-100">Invoice Declined</CardTitle>
+              <CardDescription className="text-red-700 dark:text-red-300">
+                Your invoice has been declined by the requester
+              </CardDescription>
+            </div>
+            <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">
+              Declined
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {existingInvoice.declineReason && (
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-red-200 dark:border-red-800">
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Reason for Decline:</p>
+              <p className="text-gray-700 dark:text-gray-200 italic">{existingInvoice.declineReason}</p>
+            </div>
+          )}
+
+          {!existingInvoice.declineReason && (
+            <Alert className="border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950">
+              <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              <AlertDescription className="text-orange-800 dark:text-orange-200">
+                No specific reason was provided for the decline. Please review the invoice and make necessary adjustments.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Options:</p>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => deleteInvoiceMutation.mutate()}
+                disabled={isLoading}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Create New Invoice
+              </Button>
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+              This will delete the declined invoice and allow you to create a new one with updated details.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Show invoice preview when sent or accepted
   if (isSentOrAccepted) {

@@ -278,7 +278,7 @@ export interface IStorage {
   updateInvoice(invoiceId: string, data: Partial<any>): Promise<any | undefined>;
   sendInvoice(invoiceId: string): Promise<any | undefined>;
   approveInvoice(invoiceId: string): Promise<any | undefined>;
-  declineInvoice(invoiceId: string): Promise<any | undefined>;
+  declineInvoice(invoiceId: string, reason?: string): Promise<any | undefined>;
   getProviderIncompleteJobs(providerId: string): Promise<Job[]>;
   
   // 💰 Payments
@@ -2036,12 +2036,13 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async declineInvoice(invoiceId: string): Promise<Invoice | undefined> {
+  async declineInvoice(invoiceId: string, reason?: string): Promise<Invoice | undefined> {
     const [updated] = await db
       .update(invoices)
       .set({ 
         status: 'declined',
         declinedAt: new Date(),
+        declineReason: reason || null,
         updatedAt: new Date() 
       })
       .where(eq(invoices.id, invoiceId))

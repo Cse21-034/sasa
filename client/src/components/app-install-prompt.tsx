@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from '@/lib/theme-provider';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt?: () => Promise<void>;
@@ -14,6 +15,7 @@ export function AppInstallPrompt() {
   const [isIOS, setIsIOS] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const { theme } = useTheme();
 
   useEffect(() => {
     // Check if already dismissed in this session
@@ -30,7 +32,7 @@ export function AppInstallPrompt() {
     }
 
     // Detect iOS
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(isIOSDevice);
 
     // Handle beforeinstallprompt event (Android & Desktop)
@@ -95,13 +97,13 @@ export function AppInstallPrompt() {
           transition={{ duration: 0.3 }}
           className="fixed top-16 left-4 right-4 z-50 max-w-md mx-auto"
         >
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-lg p-4">
+          <div className="bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-700 dark:to-slate-600 text-white rounded-lg shadow-lg p-4 border border-slate-700 dark:border-slate-500">
             <div className="flex items-start gap-3">
               <Download className="w-5 h-5 flex-shrink-0 mt-0.5" />
               
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm">Install JobTradeSasa</h3>
-                <p className="text-xs text-blue-100 mt-1">
+                <p className="text-xs text-slate-300 dark:text-slate-200 mt-1">
                   {isIOS 
                     ? 'Get quick access to your app with one tap. Tap Share, then Add to Home Screen.'
                     : 'Get quick access to your app with one tap. Install now for the best experience!'}
@@ -110,7 +112,7 @@ export function AppInstallPrompt() {
 
               <button
                 onClick={handleDismiss}
-                className="flex-shrink-0 text-blue-100 hover:text-white transition-colors"
+                className="flex-shrink-0 text-slate-400 hover:text-white transition-colors"
                 aria-label="Dismiss"
               >
                 <X className="w-4 h-4" />
@@ -122,7 +124,7 @@ export function AppInstallPrompt() {
                 <Button
                   onClick={handleInstall}
                   size="sm"
-                  className="flex-1 bg-white text-blue-600 hover:bg-blue-50 text-xs font-semibold"
+                  className="flex-1 bg-white text-slate-900 hover:bg-slate-100 text-xs font-semibold"
                 >
                   Install
                 </Button>
@@ -130,7 +132,7 @@ export function AppInstallPrompt() {
                   onClick={handleDismiss}
                   size="sm"
                   variant="outline"
-                  className="flex-1 border-blue-300 text-white hover:bg-blue-600 text-xs font-semibold"
+                  className="flex-1 border-slate-600 dark:border-slate-500 text-white hover:bg-slate-700 dark:hover:bg-slate-600 text-xs font-semibold"
                 >
                   Maybe Later
                 </Button>
@@ -142,7 +144,7 @@ export function AppInstallPrompt() {
                 <Button
                   onClick={handleDismiss}
                   size="sm"
-                  className="flex-1 bg-white text-blue-600 hover:bg-blue-50 text-xs font-semibold"
+                  className="flex-1 bg-white text-slate-900 hover:bg-slate-100 text-xs font-semibold"
                 >
                   Got It
                 </Button>

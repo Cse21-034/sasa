@@ -278,7 +278,7 @@ export function registerInvoiceRoutes(app: Express) {
         return res.status(400).json({ message: `Cannot decline invoice in ${invoice.status} status` });
       }
 
-      const updated = await storage.declineInvoice(req.params.id);
+      const updated = await storage.declineInvoice(req.params.id, reason);
 
       // 📧 Send notification to provider
       try {
