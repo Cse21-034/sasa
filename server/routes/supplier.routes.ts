@@ -22,13 +22,12 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
   app.get('/api/suppliers', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       // 🔥 TIER 5: Cache all suppliers list
-      const cacheKey = 'suppliers:all';
-      let suppliers = await cacheService.get(cacheKey);
+      let suppliers = await cacheService.getSuppliers();
       
       if (!suppliers) {
         suppliers = await storage.getSuppliers();
         // Cache suppliers list for 15 minutes (900s)
-        await cacheService.set(cacheKey, suppliers, 900);
+        await cacheService.setSuppliers(suppliers);
       }
       
       res.json(suppliers);
@@ -45,8 +44,7 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
   app.get('/api/suppliers/:id/details', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
       // 🔥 TIER 5: Cache individual supplier details
-      const cacheKey = `supplier:details:${req.params.id}`;
-      let supplierData = await cacheService.get(cacheKey);
+      let supplierData = await cacheService.getSupplierDetails(req.params.id);
       
       if (!supplierData) {
         const supplier = await storage.getSupplier(req.params.id);
@@ -63,7 +61,7 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
         };
         
         // Cache supplier details for 30 minutes (1800s)
-        await cacheService.set(cacheKey, supplierData, 1800);
+        await cacheService.setSupplierDetails(req.params.id, supplierData);
       }
       
       res.json(supplierData);
@@ -84,8 +82,7 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
       }
 
       // 🔥 TIER 5: Cache current supplier profile
-      const cacheKey = `supplier:profile:${req.user!.id}`;
-      let supplier = await cacheService.get(cacheKey);
+      let supplier = await cacheService.getSupplierProfile(req.user!.id);
       
       if (!supplier) {
         supplier = await storage.getSupplier(req.user!.id);
@@ -94,7 +91,7 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
         }
         
         // Cache supplier profile for 30 minutes (1800s)
-        await cacheService.set(cacheKey, supplier, 1800);
+        await cacheService.setSupplierProfile(req.user!.id, supplier);
       }
 
       res.json(supplier);
@@ -120,6 +117,11 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
       if (!updated) {
         return res.status(404).json({ message: 'Supplier not found' });
       }
+
+      // 🔥 Invalidate supplier cache
+      await cacheService.invalidateSupplierProfile(req.user!.id);
+      await cacheService.invalidateSupplierDetails(req.user!.id);
+      await cacheService.invalidateSuppliers();
 
       res.json(updated);
     } catch (error: any) {
@@ -168,6 +170,11 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
         supplierId: req.user!.id,
       });
 
+      // 🔥 Invalidate supplier cache
+      await cacheService.invalidateSupplierDetails(req.user!.id);
+      await cacheService.invalidateSupplierProfile(req.user!.id);
+      await cacheService.invalidateSuppliers();
+
       res.status(201).json(promotion);
     } catch (error: any) {
       if (error instanceof ZodError) {
@@ -198,6 +205,11 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
         return res.status(404).json({ message: 'Promotion not found' });
       }
 
+      // 🔥 Invalidate supplier cache
+      await cacheService.invalidateSupplierDetails(req.user!.id);
+      await cacheService.invalidateSupplierProfile(req.user!.id);
+      await cacheService.invalidateSuppliers();
+
       res.json(updated);
     } catch (error: any) {
       if (error instanceof ZodError) {
@@ -222,6 +234,12 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
       }
       
       await storage.deleteSupplierPromotion(req.params.id);
+
+      // 🔥 Invalidate supplier cache
+      await cacheService.invalidateSupplierDetails(req.user!.id);
+      await cacheService.invalidateSupplierProfile(req.user!.id);
+      await cacheService.invalidateSuppliers();
+
       res.status(204).send();
     } catch (error: any) {
       console.error('Delete supplier promotion error:', error);

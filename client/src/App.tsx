@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/lib/theme-provider";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { Header } from "@/components/layout/header";
 import { PushNotificationContainer } from "@/components/push-notification";
+import { AppInstallPrompt } from "@/components/app-install-prompt";
 import "@/lib/i18n";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Button } from "@/components/ui/button";
@@ -145,6 +146,7 @@ function Router() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
+      <AppInstallPrompt />
       <main className="flex-1 pb-16 md:pb-0">
         <Switch>
           {/* 🔥 FIXED: Use SmartRedirect for root route */}

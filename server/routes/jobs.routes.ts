@@ -77,9 +77,11 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
       const approvedCategories = await storage.getApprovedCategoriesForProvider(req.user!.id);
 
       // If provider has no approved categories, return empty list
-      const emptyJobs: any[] = [];
-      await cacheService.set(cacheKey, emptyJobs, 900);
-      return res.json(emptyJobs);
+      if (approvedCategories.length === 0) {
+        const emptyJobs: any[] = [];
+        await cacheService.set(cacheKey, emptyJobs, 900);
+        return res.json(emptyJobs);
+      }
 
       // Get open AND pending_selection jobs in approved cities
       const openJobs = await storage.getJobsByCity(approvedCities);
@@ -232,6 +234,9 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
         requesterId: req.user!.id,
       });
 
+      // 🔥 Invalidate jobs cache for this requester
+      await cacheService.invalidateByPattern(`jobs:${req.user!.id}:*`);
+
       // 🆕 Send notifications to relevant providers
       const notifiedCount = await notificationService.notifyProvidersOfNewJob({
         jobId: job.id,
@@ -295,6 +300,12 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
 
       const updated = await storage.updateJob(req.params.id, validatedData);
 
+      // 🔥 Invalidate jobs cache for requester and all providers
+      if (job.requesterId) {
+        await cacheService.invalidateByPattern(`jobs:${job.requesterId}:*`);
+      }
+      await cacheService.invalidateByPattern(`jobs:*:*:*:*`);
+
       res.json(updated);
     } catch (error: any) {
       if (error instanceof ZodError) {
@@ -340,6 +351,12 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
       
       if (!acceptedJob) {
         return res.status(404).json({ message: 'Job not found or already accepted' });
+      }
+
+      // 🔥 Invalidate jobs cache for provider and requester
+      await cacheService.invalidateByPattern(`jobs:${req.user!.id}:*`);
+      if (job.requesterId) {
+        await cacheService.invalidateByPattern(`jobs:${job.requesterId}:*`);
       }
 
       res.json(acceptedJob);
@@ -412,6 +429,9 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
         }
         return res.status(400).json({ message: 'This job has reached the maximum number of applicants (4)' });
       }
+
+      // 🔥 Invalidate cache for this provider
+      await cacheService.invalidateByPattern(`jobs:${req.user!.id}:*`);
 
       res.status(201).json({ 
         message: 'Application submitted successfully. Please wait for the requester to select a provider.',
@@ -496,6 +516,10 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
       if (!updatedJob) {
         return res.status(400).json({ message: 'Failed to select provider. Application may not exist.' });
       }
+
+      // 🔥 Invalidate cache for requester and all providers
+      await cacheService.invalidateByPattern(`jobs:${req.user!.id}:*`);
+      await cacheService.invalidateByPattern(`jobs:*:*:*:*`);
 
       res.json({ 
         message: 'Provider selected successfully. The job has been assigned.',

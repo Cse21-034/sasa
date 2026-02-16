@@ -38,8 +38,14 @@ const CACHE_DURATIONS = {
 class CacheService {
   // User Profile Cache
   async getUserProfile(userId: string) {
-    const cached = await redis.get(`user:${userId}`);
-    return cached ? JSON.parse(cached as string) : null;
+    try {
+      const cached = await redis.get(`user:${userId}`);
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error(`Cache error for user profile ${userId}:`, error.message);
+      await redis.del(`user:${userId}`).catch(() => {});
+      return null;
+    }
   }
 
   async setUserProfile(userId: string, data: any) {
@@ -56,8 +62,14 @@ class CacheService {
 
   // Provider Profile Cache
   async getProviderProfile(userId: string) {
-    const cached = await redis.get(`provider:${userId}`);
-    return cached ? JSON.parse(cached as string) : null;
+    try {
+      const cached = await redis.get(`provider:${userId}`);
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error(`Cache error for provider profile ${userId}:`, error.message);
+      await redis.del(`provider:${userId}`).catch(() => {});
+      return null;
+    }
   }
 
   async setProviderProfile(userId: string, data: any) {
@@ -74,16 +86,31 @@ class CacheService {
 
   // Supplier Profile Cache
   async getSupplierProfile(userId: string) {
-    const cached = await redis.get(`supplier:${userId}`);
-    return cached ? JSON.parse(cached as string) : null;
+    try {
+      const cached = await redis.get(`supplier:${userId}`);
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error(`Cache error for supplier profile ${userId}:`, error.message);
+      await redis.del(`supplier:${userId}`).catch(() => {});
+      return null;
+    }
   }
 
   async setSupplierProfile(userId: string, data: any) {
-    await redis.setex(
-      `supplier:${userId}`,
-      CACHE_DURATIONS.SUPPLIER_PROFILE,
-      JSON.stringify(data)
-    );
+    try {
+      const serialized = JSON.stringify(data);
+      if (!serialized || serialized === 'undefined') {
+        console.warn(`Skipping cache for supplier:${userId}: data not serializable`);
+        return;
+      }
+      await redis.setex(
+        `supplier:${userId}`,
+        CACHE_DURATIONS.SUPPLIER_PROFILE,
+        serialized
+      );
+    } catch (error: any) {
+      console.error(`Cache storage error for supplier:${userId}:`, error.message);
+    }
   }
 
   async invalidateSupplierProfile(userId: string) {
@@ -92,8 +119,14 @@ class CacheService {
 
   // Company Profile Cache
   async getCompanyProfile(userId: string) {
-    const cached = await redis.get(`company:${userId}`);
-    return cached ? JSON.parse(cached as string) : null;
+    try {
+      const cached = await redis.get(`company:${userId}`);
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error(`Cache error for company profile ${userId}:`, error.message);
+      await redis.del(`company:${userId}`).catch(() => {});
+      return null;
+    }
   }
 
   async setCompanyProfile(userId: string, data: any) {
@@ -108,10 +141,74 @@ class CacheService {
     await redis.del(`company:${userId}`);
   }
 
+  // Suppliers Cache
+  async getSuppliers() {
+    try {
+      const cached = await redis.get('suppliers:all');
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error('Cache error for suppliers list:', error.message);
+      await redis.del('suppliers:all').catch(() => {});
+      return null;
+    }
+  }
+
+  async setSuppliers(data: any) {
+    try {
+      const serialized = JSON.stringify(data);
+      if (!serialized || serialized === 'undefined') {
+        console.warn('Skipping cache for suppliers:all: data not serializable');
+        return;
+      }
+      await redis.setex('suppliers:all', CACHE_DURATIONS.CATEGORY_LIST, serialized);
+    } catch (error: any) {
+      console.error('Cache storage error for suppliers:all:', error.message);
+    }
+  }
+
+  async invalidateSuppliers() {
+    await redis.del('suppliers:all');
+  }
+
+  // Supplier Details Cache
+  async getSupplierDetails(supplierId: string) {
+    try {
+      const cached = await redis.get(`supplier:details:${supplierId}`);
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error(`Cache error for supplier details ${supplierId}:`, error.message);
+      await redis.del(`supplier:details:${supplierId}`).catch(() => {});
+      return null;
+    }
+  }
+
+  async setSupplierDetails(supplierId: string, data: any) {
+    try {
+      const serialized = JSON.stringify(data);
+      if (!serialized || serialized === 'undefined') {
+        console.warn(`Skipping cache for supplier:details:${supplierId}: data not serializable`);
+        return;
+      }
+      await redis.setex(`supplier:details:${supplierId}`, CACHE_DURATIONS.SUPPLIER_PROFILE, serialized);
+    } catch (error: any) {
+      console.error(`Cache storage error for supplier:details:${supplierId}:`, error.message);
+    }
+  }
+
+  async invalidateSupplierDetails(supplierId: string) {
+    await redis.del(`supplier:details:${supplierId}`);
+  }
+
   // Categories Cache
   async getCategories() {
-    const cached = await redis.get('categories:all');
-    return cached ? JSON.parse(cached as string) : null;
+    try {
+      const cached = await redis.get('categories:all');
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error('Cache error for categories:', error.message);
+      await redis.del('categories:all').catch(() => {});
+      return null;
+    }
   }
 
   async setCategories(data: any) {
@@ -160,8 +257,14 @@ class CacheService {
 
   // Provider Search Cache
   async getProviderSearchResults(key: string) {
-    const cached = await redis.get(`providers:search:${key}`);
-    return cached ? JSON.parse(cached as string) : null;
+    try {
+      const cached = await redis.get(`providers:search:${key}`);
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error(`Cache error for provider search ${key}:`, error.message);
+      await redis.del(`providers:search:${key}`).catch(() => {});
+      return null;
+    }
   }
 
   async setProviderSearchResults(key: string, data: any) {
@@ -186,8 +289,14 @@ class CacheService {
 
   // Email Verification Token Cache
   async getEmailToken(userId: string, code: string) {
-    const cached = await redis.get(`email_token:${userId}:${code}`);
-    return cached ? JSON.parse(cached as string) : null;
+    try {
+      const cached = await redis.get(`email_token:${userId}:${code}`);
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error(`Cache error for email token ${userId}:${code}:`, error.message);
+      await redis.del(`email_token:${userId}:${code}`).catch(() => {});
+      return null;
+    }
   }
 
   async setEmailToken(userId: string, code: string, expiresAt: Date) {
@@ -212,8 +321,14 @@ class CacheService {
 
   // Password Reset Token Cache
   async getPasswordResetToken(userId: string, code: string) {
-    const cached = await redis.get(`password_reset:${userId}:${code}`);
-    return cached ? JSON.parse(cached as string) : null;
+    try {
+      const cached = await redis.get(`password_reset:${userId}:${code}`);
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error(`Cache error for password reset token ${userId}:${code}:`, error.message);
+      await redis.del(`password_reset:${userId}:${code}`).catch(() => {});
+      return null;
+    }
   }
 
   async setPasswordResetToken(userId: string, code: string, expiresAt: Date) {
@@ -238,12 +353,38 @@ class CacheService {
 
   // Generic Cache Methods
   async get(key: string) {
-    const cached = await redis.get(key);
-    return cached ? JSON.parse(cached as string) : null;
+    try {
+      const cached = await redis.get(key);
+      if (!cached) return null;
+      
+      // Ensure we have a string before parsing
+      const cachedStr = typeof cached === 'string' ? cached : String(cached);
+      return JSON.parse(cachedStr);
+    } catch (error: any) {
+      console.error(`Cache retrieval error for key ${key}:`, error.message);
+      // Clear corrupted cache entry
+      try {
+        await redis.del(key);
+      } catch (delError) {
+        console.error(`Failed to delete corrupted cache key ${key}:`, delError);
+      }
+      return null;
+    }
   }
 
   async set(key: string, data: any, ttl: number = 300) {
-    await redis.setex(key, ttl, JSON.stringify(data));
+    try {
+      // Ensure data is serializable (strip ORM metadata if needed)
+      const serialized = JSON.stringify(data);
+      if (!serialized || serialized === 'undefined') {
+        console.warn(`Skipping cache for ${key}: data not serializable`);
+        return;
+      }
+      await redis.setex(key, ttl, serialized);
+    } catch (error: any) {
+      console.error(`Cache storage error for key ${key}:`, error.message);
+      // Don't throw - let the app continue without caching
+    }
   }
 
   async del(key: string) {
@@ -264,8 +405,14 @@ class CacheService {
 
   // 💰 Invoice Cache
   async getInvoice(invoiceId: string) {
-    const cached = await redis.get(`invoice:${invoiceId}`);
-    return cached ? JSON.parse(cached as string) : null;
+    try {
+      const cached = await redis.get(`invoice:${invoiceId}`);
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error(`Cache error for invoice ${invoiceId}:`, error.message);
+      await redis.del(`invoice:${invoiceId}`).catch(() => {});
+      return null;
+    }
   }
 
   async setInvoice(invoiceId: string, data: any) {
@@ -282,8 +429,14 @@ class CacheService {
 
   // 💰 Invoice by Job ID Cache
   async getInvoiceByJobId(jobId: string) {
-    const cached = await redis.get(`invoice:job:${jobId}`);
-    return cached ? JSON.parse(cached as string) : null;
+    try {
+      const cached = await redis.get(`invoice:job:${jobId}`);
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error(`Cache error for invoice by job ${jobId}:`, error.message);
+      await redis.del(`invoice:job:${jobId}`).catch(() => {});
+      return null;
+    }
   }
 
   async setInvoiceByJobId(jobId: string, data: any) {
@@ -300,8 +453,14 @@ class CacheService {
 
   // 💰 Payment Cache
   async getPayment(paymentId: string) {
-    const cached = await redis.get(`payment:${paymentId}`);
-    return cached ? JSON.parse(cached as string) : null;
+    try {
+      const cached = await redis.get(`payment:${paymentId}`);
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error(`Cache error for payment ${paymentId}:`, error.message);
+      await redis.del(`payment:${paymentId}`).catch(() => {});
+      return null;
+    }
   }
 
   async setPayment(paymentId: string, data: any) {
@@ -318,8 +477,14 @@ class CacheService {
 
   // 💰 Payment by Invoice ID Cache
   async getPaymentByInvoiceId(invoiceId: string) {
-    const cached = await redis.get(`payment:invoice:${invoiceId}`);
-    return cached ? JSON.parse(cached as string) : null;
+    try {
+      const cached = await redis.get(`payment:invoice:${invoiceId}`);
+      return cached ? JSON.parse(cached as string) : null;
+    } catch (error: any) {
+      console.error(`Cache error for payment by invoice ${invoiceId}:`, error.message);
+      await redis.del(`payment:invoice:${invoiceId}`).catch(() => {});
+      return null;
+    }
   }
 
   async setPaymentByInvoiceId(invoiceId: string, data: any) {
