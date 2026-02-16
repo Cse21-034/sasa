@@ -404,7 +404,7 @@ Sent via SASA Job Delivery Platform
               <Button
                 onClick={() => deleteInvoiceMutation.mutate()}
                 disabled={isLoading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
+                className="flex-1 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white font-semibold"
               >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create New Invoice
