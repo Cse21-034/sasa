@@ -113,7 +113,7 @@ export function registerInvoiceRoutes(app: Express) {
     }
   });
 
-  // 💰 PATCH /api/invoices/:id - Provider updates invoice (only in draft status, or to reset declined)
+  // 💰 PATCH /api/invoices/:id - Provider updates invoice (only in draft status, or to reset declined/cancelled)
   app.patch("/api/invoices/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
       const invoice = await storage.getInvoice(req.params.id);
@@ -127,9 +127,10 @@ export function registerInvoiceRoutes(app: Express) {
         return res.status(403).json({ message: "Only the provider can update this invoice" });
       }
 
-      // Can only update draft invoices, or reset declined invoices back to draft
-      if (invoice.status === "declined") {
-        // Reset declined invoice back to draft with cleared reason
+      // Can only update draft invoices, or reset declined/cancelled invoices back to draft
+      if (invoice.status === "declined" || invoice.status === "cancelled") {
+        // Reset declined/cancelled invoice back to draft with cleared reason
+        console.log(`[Invoice] Resetting ${invoice.status} invoice ${req.params.id} back to draft`);
         const updated = await storage.updateInvoice(req.params.id, {
           status: "draft",
           declineReason: null,
@@ -138,8 +139,13 @@ export function registerInvoiceRoutes(app: Express) {
           notes: req.body.notes || null,
           updatedAt: new Date()
         });
+        
+        if (updated) {
+          console.log(`[Invoice] Successfully reset invoice ${req.params.id} to draft status`);
+        }
+        
         return res.json({
-          message: "Invoice reset to draft successfully",
+          message: `Invoice reset to draft successfully`,
           invoice: updated
         });
       } else if (invoice.status !== "draft") {

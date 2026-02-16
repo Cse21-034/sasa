@@ -380,6 +380,10 @@ Sent via SASA Job Delivery Platform
   const isSentOrAccepted = existingInvoice && (existingInvoice.status === 'sent' || existingInvoice.status === 'approved');
   const isDeclinedStatus = existingInvoice && existingInvoice.status === 'declined';
   const isCancelledStatus = existingInvoice && existingInvoice.status === 'cancelled';
+  
+  // IMPORTANT: Treat both 'declined' and 'cancelled' as "needs revision" status
+  // Provider should be able to edit and resend in both cases
+  const isNeedsRevisionStatus = isDeclinedStatus || isCancelledStatus;
 
   // Treat cancelled invoices as non-existent for form purposes
   const hasActiveInvoice = existingInvoice && existingInvoice.status !== 'cancelled';
@@ -392,32 +396,41 @@ Sent via SASA Job Delivery Platform
       isSentOrAccepted, 
       isDeclinedStatus,
       isCancelledStatus,
+      isNeedsRevisionStatus,
       invoiceId: existingInvoice.id 
     });
   }
 
-  // Show decline reason and create new invoice option when declined
-  if (isDeclinedStatus) {
-    console.log('[InvoiceForm] Rendering declined invoice UI', { invoiceId: existingInvoice.id, declineReason: existingInvoice.declineReason });
+  // Show edit form for BOTH declined AND cancelled invoices (provider needs to revise)
+  if (isNeedsRevisionStatus) {
+    const statusLabel = isCancelledStatus ? 'Cancelled' : 'Declined';
+    const statusMessage = isCancelledStatus 
+      ? 'This invoice has been cancelled and needs to be revised before resending' 
+      : 'Your invoice has been declined by the requester';
+    
+    console.log(`[InvoiceForm] Rendering ${statusLabel} invoice UI with edit form`, { 
+      invoiceId: existingInvoice.id, 
+      declineReason: existingInvoice.declineReason 
+    });
     return (
       <Card className="border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-red-900 dark:text-red-100">Invoice Declined</CardTitle>
+              <CardTitle className="text-red-900 dark:text-red-100">Invoice {statusLabel}</CardTitle>
               <CardDescription className="text-red-700 dark:text-red-300">
-                Your invoice has been declined by the requester
+                {statusMessage}
               </CardDescription>
             </div>
             <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">
-              Declined
+              {statusLabel}
             </Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {existingInvoice.declineReason && (
             <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-red-200 dark:border-red-800">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Reason for Decline:</p>
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Reason for Change:</p>
               <p className="text-gray-700 dark:text-gray-200 italic">{existingInvoice.declineReason}</p>
             </div>
           )}
@@ -426,7 +439,7 @@ Sent via SASA Job Delivery Platform
             <Alert className="border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950">
               <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
               <AlertDescription className="text-orange-800 dark:text-orange-200">
-                No specific reason was provided for the decline. Please review the invoice and make necessary adjustments.
+                No specific reason was provided. Please review the invoice and make necessary adjustments before resending.
               </AlertDescription>
             </Alert>
           )}
@@ -444,7 +457,7 @@ Sent via SASA Job Delivery Platform
               </Button>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-              Update the invoice details based on the feedback and send it again.
+              Update the invoice details and send it again.
             </p>
           </div>
         </CardContent>
