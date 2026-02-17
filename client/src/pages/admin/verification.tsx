@@ -2,8 +2,6 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Loader2, UserCheck, XCircle, FileText, User, Wrench, Building2, AlertCircle, Trash2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, Suspense } from 'react';
 import { pdfjs, Document as PDFDocument, Page as PDFPage } from 'react-pdf';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
