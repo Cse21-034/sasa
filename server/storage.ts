@@ -55,7 +55,7 @@ import {
   type Payment,
 } from "@shared/schema";
 import { db } from "./db"; // 🚨 CRITICAL FIX: Added missing 'db' import
-import { eq, and, sql, desc, asc, inArray, or } from "drizzle-orm"; // 🚨 FIX: Added 'or' operator
+import { eq, and, sql, desc, asc, inArray, or, ne } from "drizzle-orm"; // 🚨 FIX: Added 'or' operator and 'ne'
 import { InferSelectModel } from 'drizzle-orm'; 
 
 type JobWithRelations = Job & {
@@ -2061,7 +2061,8 @@ export class DatabaseStorage implements IStorage {
       .from(jobs)
       .where(and(
         eq(jobs.providerId, providerId),
-        jobs.status !== 'completed' && jobs.status !== 'cancelled'
+        ne(jobs.status, 'completed'),
+        ne(jobs.status, 'cancelled')
       ));
     return incomplete;
   }
