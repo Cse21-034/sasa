@@ -2115,10 +2115,12 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(invoices.id, invoiceId));
 
+        // 💰 CRITICAL FIX: Update job.amountPaid with invoice amount so earnings calculate correctly
         await db
           .update(jobs)
           .set({ 
             paymentStatus: 'paid',
+            amountPaid: invoiceRecord.amount,
             updatedAt: new Date()
           })
           .where(eq(jobs.id, invoiceRecord.jobId));
