@@ -1,11 +1,19 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Loader2, UserCheck, XCircle, FileText, User, Wrench, Building2, AlertCircle, Trash2 } from 'lucide-react';
+import { Loader2, UserCheck, XCircle, FileText, User, Wrench, Building2, AlertCircle, Trash2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, Suspense } from 'react';
+import { pdfjs, Document as PDFDocument, Page as PDFPage } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+
+// Set up PDF.js worker
+if (typeof window !== 'undefined') {
+  pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+}
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -84,6 +92,92 @@ const useUpdateSubmissionStatus = () => {
 };
 
 // --- COMPONENTS ---
+
+// PDF Preview Component with pagination
+const PDFPreviewComponent = ({ fileUrl }: { fileUrl: string }) => {
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const [pageNumber, setPageNumber] = useState(1);
+
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+    setNumPages(numPages);
+    setPageNumber(1);
+  }
+
+  const handlePreviousPage = () => {
+    setPageNumber(prev => (prev > 1 ? prev - 1 : prev));
+  };
+
+  const handleNextPage = () => {
+    if (numPages) {
+      setPageNumber(prev => (prev < numPages ? prev + 1 : prev));
+    }
+  };
+
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4 rounded-lg">
+      <Suspense fallback={
+        <div className="flex flex-col items-center justify-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading PDF...</p>
+        </div>
+      }>
+        <div className="w-full flex flex-col items-center gap-4">
+          <PDFDocument 
+            file={fileUrl}
+            onLoadSuccess={onDocumentLoadSuccess}
+            loading={
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <p>Loading PDF...</p>
+              </div>
+            }
+            error={
+              <div className="text-red-500 text-sm">
+                <p>Failed to load PDF. Please try downloading the file instead.</p>
+              </div>
+            }
+          >
+            <PDFPage 
+              pageNumber={pageNumber}
+              width={Math.min(600, window.innerWidth - 80)}
+              renderTextLayer={true}
+              renderAnnotationLayer={true}
+            />
+          </PDFDocument>
+
+          {/* PDF Navigation */}
+          {numPages && numPages > 1 && (
+            <div className="flex items-center gap-4 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousPage}
+                disabled={pageNumber <= 1}
+                className="flex items-center gap-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <span className="text-sm font-medium">
+                Page {pageNumber} of {numPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={pageNumber >= numPages}
+                className="flex items-center gap-2"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </Suspense>
+    </div>
+  );
+};
 
 // Helper component for the modal
 const ReviewModal = ({ submission, onClose }: { submission: Submission | null, onClose: () => void }) => {
@@ -219,20 +313,31 @@ const ReviewModal = ({ submission, onClose }: { submission: Submission | null, o
 
         {/* Document Preview Dialog (Used for large image/PDF display) */}
         <Dialog open={!!activeDocument} onOpenChange={() => setActiveDocument(null)}>
-            <DialogContent className="max-w-4xl p-0">
-                {activeDocument && activeDocument.name.toLowerCase().endsWith('.pdf') ? (
-                    <div className="p-6">
-                        <h3 className="font-bold text-lg mb-4">PDF Preview Unavailable</h3>
-                        <p className="text-muted-foreground">PDF files cannot be rendered directly in the preview. Please trust the file name/source or download it separately if needed. Closing preview to avoid rendering issues.</p>
-                        <Button onClick={() => setActiveDocument(null)} className="mt-4">Close</Button>
-                    </div>
-                ) : activeDocument ? (
-                    <img 
-                        src={activeDocument.url} 
-                        alt="Document Preview" 
-                        className="w-full h-auto object-contain max-h-[80vh] rounded-lg" 
-                    />
-                ) : null}
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col">
+                <DialogHeader className="flex flex-row items-center justify-between pb-2">
+                    <DialogTitle>{activeDocument?.name}</DialogTitle>
+                    {activeDocument && (
+                        <a
+                            href={activeDocument.url}
+                            download={activeDocument.name}
+                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                        >
+                            <Download className="h-4 w-4" />
+                            Download
+                        </a>
+                    )}
+                </DialogHeader>
+                <div className="flex-1 flex items-center justify-center min-h-[400px]">
+                    {activeDocument && activeDocument.name.toLowerCase().endsWith('.pdf') ? (
+                        <PDFPreviewComponent fileUrl={activeDocument.url} />
+                    ) : activeDocument ? (
+                        <img 
+                            src={activeDocument.url} 
+                            alt="Document Preview" 
+                            className="w-full h-auto object-contain max-h-[70vh] rounded-lg" 
+                        />
+                    ) : null}
+                </div>
             </DialogContent>
         </Dialog>
       </DialogContent>
