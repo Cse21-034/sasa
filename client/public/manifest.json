@@ -3,14 +3,29 @@
   "short_name": "JobTradeSasa",
   "description": "Connect with trusted local service providers for all your needs",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
+  "background_color": "#ffffff",
   "theme_color": "#2563eb",
   "orientation": "portrait-primary",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/image.png",
       "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/image.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any",
+      "comment": "iOS Apple Touch Icon"
+    },
+    {
+      "src": "/image.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
@@ -32,12 +47,14 @@
     {
       "src": "/screenshot1.png",
       "sizes": "540x720",
-      "type": "image/png"
+      "type": "image/png",
+      "form_factor": "narrow"
     },
     {
       "src": "/screenshot2.png",
       "sizes": "540x720",
-      "type": "image/png"
+      "type": "image/png",
+      "form_factor": "narrow"
     }
   ]
 }
