@@ -1,6 +1,6 @@
 import type { Express } from 'express';
 import { ZodError } from 'zod';
-import { insertJobSchema, updateJobStatusSchema, insertJobApplicationSchema, selectProviderSchema } from '@shared/schema';
+import { insertJobSchema, updateJobStatusSchema, updateJobDetailsSchema, insertJobApplicationSchema, selectProviderSchema } from '@shared/schema';
 import { storage } from '../storage';
 import { authMiddleware, type AuthRequest } from '../middleware/auth';
 import { companyService } from '../services/company.service';
@@ -265,48 +265,100 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
 
   /**
    * PATCH /api/jobs/:id
-   * Update job status
+   * Update job status OR edit job details
+   * - Status updates: Any user can update status (validation applied internally)
+   * - Detail edits: Only requester can edit, and only if job status is 'open' and no applications received
    */
   app.patch('/api/jobs/:id', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
     try {
-      const validatedData = updateJobStatusSchema.parse(req.body);
       const job = await storage.getJob(req.params.id);
 
       if (!job) {
         return res.status(404).json({ message: 'Job not found' });
       }
 
-      // 💰 CHECK: If status is changing to "enroute" or "onsite" (job starting), invoice must be approved
-      if ((validatedData.status === 'enroute' || validatedData.status === 'onsite') && job.status !== 'enroute' && job.status !== 'onsite') {
-        const invoice = await storage.getInvoiceByJobId(req.params.id);
-        if (!invoice || invoice.status !== 'approved') {
+      // 🆕 Check if this is a detail edit request or status update
+      const isDetailEdit = req.body.title || req.body.description || req.body.budgetMin || 
+                          req.body.budgetMax || req.body.photos || req.body.address || 
+                          req.body.latitude || req.body.longitude || req.body.preferredTime;
+
+      if (isDetailEdit) {
+        // 🆕 Detail Edit Mode - Only requester can edit, only when job is open
+        if (req.user!.role !== 'requester' && req.user!.role !== 'company') {
+          return res.status(403).json({ message: 'Only requesters can edit job details' });
+        }
+
+        if (job.requesterId !== req.user!.id) {
+          return res.status(403).json({ message: 'You can only edit your own jobs' });
+        }
+
+        // Only allow editing if job status is 'open'
+        if (job.status !== 'open') {
           return res.status(400).json({ 
-            message: 'Invoice must be approved before starting the job',
-            code: 'INVOICE_NOT_APPROVED'
+            message: `Cannot edit job with status '${job.status}'. You can only edit jobs in 'open' status.`,
+            code: 'INVALID_JOB_STATUS_FOR_EDIT'
           });
         }
-      }
 
-      // 💰 CHECK: If status is changing to "completed", payment must be made
-      if (validatedData.status === 'completed' && job.status !== 'completed') {
-        const payment = await storage.getPaymentByInvoiceId(job.invoiceId || '');
-        if (!payment || payment.paymentStatus !== 'paid') {
+        // Check if any applications exist
+        const appCount = await storage.getJobApplicationCount(req.params.id);
+        if (appCount > 0) {
           return res.status(400).json({ 
-            message: 'Payment must be completed before marking job as completed',
-            code: 'PAYMENT_NOT_COMPLETED'
+            message: 'Cannot edit job after providers have applied. Delete the job or wait for selection.',
+            code: 'APPLICATIONS_EXIST'
           });
         }
+
+        // Validate the detail update fields
+        const validatedData = updateJobDetailsSchema.parse(req.body);
+
+        // Update job with new details
+        const updated = await storage.updateJob(req.params.id, validatedData);
+
+        // 🔥 Invalidate jobs cache
+        await cacheService.invalidateByPattern(`jobs:${req.user!.id}:*`);
+        await cacheService.invalidateByPattern(`jobs:*:*:*:*`);
+
+        return res.json({ 
+          message: 'Job updated successfully',
+          job: updated 
+        });
+      } else {
+        // Status Update Mode - Original logic
+        const validatedData = updateJobStatusSchema.parse(req.body);
+
+        // 💰 CHECK: If status is changing to "enroute" or "onsite" (job starting), invoice must be approved
+        if ((validatedData.status === 'enroute' || validatedData.status === 'onsite') && job.status !== 'enroute' && job.status !== 'onsite') {
+          const invoice = await storage.getInvoiceByJobId(req.params.id);
+          if (!invoice || invoice.status !== 'approved') {
+            return res.status(400).json({ 
+              message: 'Invoice must be approved before starting the job',
+              code: 'INVOICE_NOT_APPROVED'
+            });
+          }
+        }
+
+        // 💰 CHECK: If status is changing to "completed", payment must be made
+        if (validatedData.status === 'completed' && job.status !== 'completed') {
+          const payment = await storage.getPaymentByInvoiceId(job.invoiceId || '');
+          if (!payment || payment.paymentStatus !== 'paid') {
+            return res.status(400).json({ 
+              message: 'Payment must be completed before marking job as completed',
+              code: 'PAYMENT_NOT_COMPLETED'
+            });
+          }
+        }
+
+        const updated = await storage.updateJob(req.params.id, validatedData);
+
+        // 🔥 Invalidate jobs cache for requester and all providers
+        if (job.requesterId) {
+          await cacheService.invalidateByPattern(`jobs:${job.requesterId}:*`);
+        }
+        await cacheService.invalidateByPattern(`jobs:*:*:*:*`);
+
+        return res.json(updated);
       }
-
-      const updated = await storage.updateJob(req.params.id, validatedData);
-
-      // 🔥 Invalidate jobs cache for requester and all providers
-      if (job.requesterId) {
-        await cacheService.invalidateByPattern(`jobs:${job.requesterId}:*`);
-      }
-      await cacheService.invalidateByPattern(`jobs:*:*:*:*`);
-
-      res.json(updated);
     } catch (error: any) {
       if (error instanceof ZodError) {
         return res.status(400).json({ 
@@ -574,6 +626,67 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
       res.json({ message: 'Application withdrawn successfully' });
     } catch (error: any) {
       console.error('Withdraw application error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  /**
+   * DELETE /api/jobs/:id
+   * Delete a job (requester only, only if open or pending_selection)
+   */
+  app.delete('/api/jobs/:id', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+    try {
+      if (req.user!.role !== 'requester' && req.user!.role !== 'company') {
+        return res.status(403).json({ message: 'Only requesters can delete jobs' });
+      }
+
+      const job = await storage.getJob(req.params.id);
+      if (!job) {
+        return res.status(404).json({ message: 'Job not found' });
+      }
+
+      if (job.requesterId !== req.user!.id) {
+        return res.status(403).json({ message: 'You can only delete your own jobs' });
+      }
+
+      // Check if job can be deleted (only open or pending_selection)
+      if (job.status !== 'open' && job.status !== 'pending_selection') {
+        return res.status(400).json({ 
+          message: `Cannot delete job with status '${job.status}'. Only jobs in 'open' or 'pending_selection' status can be deleted.`,
+          code: 'INVALID_JOB_STATUS'
+        });
+      }
+
+      const success = await storage.deleteJob(req.params.id, req.user!.id);
+
+      if (!success) {
+        return res.status(400).json({ message: 'Failed to delete job' });
+      }
+
+      // 🔥 Invalidate jobs cache for requester
+      await cacheService.invalidateByPattern(`jobs:${req.user!.id}:*`);
+      await cacheService.invalidateByPattern(`jobs:*:*:*:*`);
+
+      // 🆕 Send notifications to all applicants if job was in pending_selection
+      if (job.status === 'pending_selection') {
+        const applications = await storage.getJobApplications(req.params.id);
+        
+        for (const app of applications) {
+          if (app.provider?.id) {
+            await notificationService.notifyRecipient(
+              app.provider.id,
+              'job_cancelled',
+              'Job Cancelled',
+              `The job "${job.title}" has been cancelled by the requester.`,
+              req.params.id
+            );
+          }
+        }
+      }
+
+      res.json({ message: 'Job deleted successfully' });
+    } catch (error: any) {
+      console.error('Delete job error:', error);
       res.status(500).json({ message: error.message });
     }
   });

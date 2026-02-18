@@ -218,7 +218,7 @@ export class NotificationService {
    */
   async notifyRecipient(
     recipientId: string,
-    type: 'category_request_approved' | 'category_request_rejected' | 'job_posted' | 'message_received' | 'application_accepted' | 'application_rejected',
+    type: 'category_request_approved' | 'category_request_rejected' | 'job_posted' | 'job_cancelled' | 'message_received' | 'application_accepted' | 'application_rejected',
     title: string,
     message: string,
     jobId?: string

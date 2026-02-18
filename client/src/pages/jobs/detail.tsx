@@ -4,7 +4,7 @@ import { useRoute, useLocation } from 'wouter';
 import { 
   MapPin, Calendar, AlertCircle, MessageSquare, Star, CheckCircle2, 
   ArrowLeft, Flag, DollarSign, Navigation, XCircle, ImageIcon, 
-  Clock, Users, Briefcase, Phone
+  Clock, Users, Briefcase, Phone, Edit, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -85,6 +85,14 @@ export default function JobDetail() {
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState('');
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [applicationMessage, setApplicationMessage] = useState('');
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    description: '',
+    budgetMin: '',
+    budgetMax: '',
+  });
 
 
   const jobId = params?.id;
@@ -329,6 +337,60 @@ export default function JobDetail() {
     },
   });
 
+  // 🆕 Edit Job Mutation
+  const editJobMutation = useMutation({
+    mutationFn: async () => {
+      if (!jobId) throw new Error('Job ID is missing');
+      const res = await apiRequest('PATCH', `/api/jobs/${jobId}`, {
+        title: editFormData.title || undefined,
+        description: editFormData.description || undefined,
+        budgetMin: editFormData.budgetMin || undefined,
+        budgetMax: editFormData.budgetMax || undefined,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['job', jobId] });
+      toast({
+        title: 'Job updated',
+        description: 'Your job has been updated successfully.',
+      });
+      setShowEditDialog(false);
+      setEditFormData({ title: '', description: '', budgetMin: '', budgetMax: '' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to update job',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // 🆕 Delete Job Mutation
+  const deleteJobMutation = useMutation({
+    mutationFn: async () => {
+      if (!jobId) throw new Error('Job ID is missing');
+      const res = await apiRequest('DELETE', `/api/jobs/${jobId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Job deleted',
+        description: 'Your job has been deleted successfully.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
+      setLocation('/jobs');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to delete job',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const openInMaps = () => {
     if (job?.latitude && job?.longitude) {
       const url = `https://www.google.com/maps/dir/?api=1&destination=${job.latitude},${job.longitude}`;
@@ -512,6 +574,56 @@ export default function JobDetail() {
                     <MessageSquare className="mr-2 h-4 w-4" />
                     Message {isRequester ? 'Provider' : 'Requester'}
                   </Button>
+                )}
+                {isRequester && (job.status === 'open' || job.status === 'pending_selection') && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        setEditFormData({
+                          title: job.title || '',
+                          description: job.description || '',
+                          budgetMin: job.budgetMin || '',
+                          budgetMax: job.budgetMax || '',
+                        });
+                        setShowEditDialog(true);
+                      }}
+                      variant="outline"
+                      className="w-full md:w-auto"
+                      disabled={job.status === 'pending_selection'}
+                      title={job.status === 'pending_selection' ? 'Cannot edit when providers have applied' : 'Edit job details'}
+                    >
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Job
+                    </Button>
+                    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full md:w-auto">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Job
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete this job?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {job.status === 'pending_selection' 
+                              ? 'Deleting will notify all applicants that the job was cancelled. This action cannot be undone.'
+                              : 'This action cannot be undone and the job posting will be deleted.'}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteJobMutation.mutate()}
+                            disabled={deleteJobMutation.isPending}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {deleteJobMutation.isPending ? 'Deleting...' : 'Yes, Delete Job'}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>
                 )}
                 {isAssignedProvider && job.status !== 'completed' && job.status !== 'cancelled' && (
                   <AlertDialog>
@@ -1126,6 +1238,72 @@ export default function JobDetail() {
             // Use w-full and object-contain to scale the image appropriately within the dialog
             className="w-full h-auto object-contain max-h-[80vh] rounded-lg" 
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* 🆕 Edit Job Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Job Details</DialogTitle>
+            <DialogDescription>
+              Update your job details. You can only edit if no providers have applied yet.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-title">Job Title</Label>
+              <Input
+                id="edit-title"
+                value={editFormData.title}
+                onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                placeholder="e.g., Plumbing repair needed"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={editFormData.description}
+                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                placeholder="Describe the job in detail..."
+                rows={4}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-budget-min">Min Budget</Label>
+                <Input
+                  id="edit-budget-min"
+                  type="number"
+                  value={editFormData.budgetMin}
+                  onChange={(e) => setEditFormData({ ...editFormData, budgetMin: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-budget-max">Max Budget</Label>
+                <Input
+                  id="edit-budget-max"
+                  type="number"
+                  value={editFormData.budgetMax}
+                  onChange={(e) => setEditFormData({ ...editFormData, budgetMax: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => editJobMutation.mutate()}
+              disabled={editJobMutation.isPending || (!editFormData.title && !editFormData.description && !editFormData.budgetMin && !editFormData.budgetMax)}
+            >
+              {editJobMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
