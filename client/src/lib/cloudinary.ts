@@ -135,6 +135,7 @@ export async function uploadMultipleFiles(
 
 /**
  * Generate optimized Cloudinary URL with transformations
+ * Supports both image and raw (PDF/document) files
  */
 export function generateCloudinaryUrl(params: CloudinaryUrlParams): string {
   if (!CLOUD_NAME) {
@@ -162,7 +163,11 @@ export function generateCloudinaryUrl(params: CloudinaryUrlParams): string {
   }
 
   const transformationPath = transformations.length > 0 ? `${transformations.join('/')}/` : '';
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${transformationPath}${params.publicId}`;
+  
+  // ✅ NEW: Use raw/upload for PDFs (public_ids ending in .pdf), image/upload for images
+  const uploadType = params.publicId.toLowerCase().endsWith('.pdf') ? 'raw/upload' : 'image/upload';
+  
+  return `https://res.cloudinary.com/${CLOUD_NAME}/${uploadType}/${transformationPath}${params.publicId}`;
 }
 
 /**
