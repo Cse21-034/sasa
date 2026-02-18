@@ -2,10 +2,14 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Loader2, UserCheck, XCircle, FileText, User, Wrench, Building2, AlertCircle, Trash2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, Suspense } from 'react';
 import { pdfjs, Document as PDFDocument, Page as PDFPage } from 'react-pdf';
+import * as pdfjsLib from 'pdfjs-dist';
 
-// Set up PDF.js worker
+// Set up PDF.js worker using the bundled worker file
 if (typeof window !== 'undefined') {
-  pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url
+  ).href;
 }
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
