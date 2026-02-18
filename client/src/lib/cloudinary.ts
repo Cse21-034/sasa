@@ -48,7 +48,18 @@ if (!CLOUD_NAME || !UPLOAD_PRESET) {
 }
 
 /**
+ * Determine if a file is a document (not an image)
+ */
+function isDocumentFile(file: File): boolean {
+  const documentTypes = ['application/pdf'];
+  return documentTypes.includes(file.type);
+}
+
+/**
  * Upload a single file to Cloudinary
+ * Dynamically selects the appropriate endpoint based on file type:
+ * - PDFs and documents use /raw/upload (for non-image files)
+ * - Images use /image/upload
  */
 export async function uploadToCloudinary(
   file: File,
@@ -69,7 +80,14 @@ export async function uploadToCloudinary(
   }
 
   try {
-    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    // 💰 CRITICAL FIX: Determine the correct upload endpoint based on file type
+    const isDocument = isDocumentFile(file);
+    const uploadEndpoint = isDocument ? 'raw/upload' : 'image/upload';
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${uploadEndpoint}`;
+
+    console.log(`📤 Uploading file: ${file.name} (type: ${file.type}) to /${uploadEndpoint}`);
+
+    const response = await fetch(uploadUrl, {
       method: 'POST',
       body: formData,
     });
@@ -81,11 +99,13 @@ export async function uploadToCloudinary(
 
     const data = await response.json();
 
+    console.log(`✅ File uploaded successfully: ${file.name}`);
+
     return {
       url: data.secure_url || data.url,
       publicId: data.public_id,
-      width: data.width,
-      height: data.height,
+      width: data.width || 0,
+      height: data.height || 0,
       format: data.format,
       size: data.bytes,
       secureUrl: data.secure_url,
