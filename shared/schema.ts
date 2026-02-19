@@ -48,7 +48,7 @@ export const verificationStatusEnum = pgEnum("verification_status", ["pending", 
 export const messageTypeEnum = pgEnum("message_type", ["job_message", "admin_message", "system_notification"]);
 
 // 🆕 Notification Type Enum
-export const notificationTypeEnum = pgEnum("notification_type", ["job_posted", "job_accepted", "application_received", "application_accepted", "application_rejected", "message_received", "new_report", "new_verification", "new_migration", "category_request_received", "category_request_approved", "category_request_rejected"]);
+export const notificationTypeEnum = pgEnum("notification_type", ["job_posted", "job_accepted", "job_cancelled", "application_received", "application_accepted", "application_rejected", "message_received", "new_report", "new_verification", "new_migration", "category_request_received", "category_request_approved", "category_request_rejected"]);
 
 // 🆕 Category Request Status Enum
 export const categoryRequestStatusEnum = pgEnum("category_request_status", ["pending", "approved", "rejected"]);
@@ -978,6 +978,19 @@ export const updateProviderServiceAreaSchema = z.object({
 // Update Job Status Schema
 export const updateJobStatusSchema = z.object({
   status: z.enum(["open", "pending_selection", "offered", "accepted", "enroute", "onsite", "completed", "cancelled"]),
+});
+
+// 🆕 Update Job Details Schema (requester can edit these fields when job is open)
+export const updateJobDetailsSchema = z.object({
+  title: z.string().min(5).max(200).optional(),
+  description: z.string().min(10).max(5000).optional(),
+  budgetMin: z.string().optional(),
+  budgetMax: z.string().optional(),
+  photos: z.array(z.string()).optional(),
+  address: z.string().optional(),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
+  preferredTime: z.string().datetime().optional(),
 });
 
 // Job Application Schema

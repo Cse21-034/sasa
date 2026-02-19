@@ -176,6 +176,7 @@ export interface IStorage {
   getJobsByCity(cities: string[]): Promise<JobWithRelations[]>;
   createJob(job: InsertJob & { requesterId: string }): Promise<Job>;
   updateJob(id: string, data: Partial<Job>): Promise<Job | undefined>;
+  deleteJob(jobId: string, requesterId: string): Promise<boolean>;
   acceptJob(jobId: string, providerId: string): Promise<Job | undefined>;
   setProviderCharge(jobId: string, charge: string): Promise<Job | undefined>;
   confirmPayment(jobId: string, amount: string): Promise<Job | undefined>;
@@ -1137,6 +1138,30 @@ export class DatabaseStorage implements IStorage {
     }
     
     return updated || undefined;
+  }
+
+  async deleteJob(jobId: string, requesterId: string): Promise<boolean> {
+    // Verify job exists and belongs to requester
+    const [job] = await db
+      .select()
+      .from(jobs)
+      .where(eq(jobs.id, jobId));
+
+    if (!job || job.requesterId !== requesterId) {
+      return false;
+    }
+
+    // Only allow deletion if status is 'open' or 'pending_selection'
+    if (job.status !== 'open' && job.status !== 'pending_selection') {
+      return false;
+    }
+
+    // Delete job (applications cascade delete due to foreign key)
+    const result = await db
+      .delete(jobs)
+      .where(eq(jobs.id, jobId));
+
+    return (result.count ?? 0) > 0;
   }
 
   async acceptJob(jobId: string, providerId: string): Promise<Job | undefined> {
