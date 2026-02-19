@@ -8,7 +8,7 @@
  */
 
 import { db } from "../db";
-import { providers, users, notifications, companies } from "@shared/schema";
+import { providers, users, notifications, companies, providerCategoryVerifications } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 
 type JobNotificationPayload = {
@@ -33,18 +33,21 @@ export class NotificationService {
     try {
       const notifiedProviderIds: string[] = [];
 
-      // Get all active providers with this service category
-      // Use SQL for JSONB contains check - the @> operator checks if array contains value
-      const categoryArray = JSON.stringify([jobPayload.categoryId]);
+      // Get all providers with APPROVED verification for this service category
+      // This ensures only verified providers receive job notifications
       const relevantProviders = await db
-        .select({
+        .selectDistinct({
           userId: providers.userId,
           approvedServiceAreas: providers.approvedServiceAreas,
           primaryCity: providers.primaryCity,
         })
-        .from(providers)
+        .from(providerCategoryVerifications)
+        .innerJoin(providers, eq(providerCategoryVerifications.providerId, providers.userId))
         .where(
-          sql`(${providers.registeredCategories}::jsonb @> ${categoryArray}::jsonb) OR (${providers.additionalCategories}::jsonb @> ${categoryArray}::jsonb)`
+          and(
+            eq(providerCategoryVerifications.categoryId, jobPayload.categoryId),
+            eq(providerCategoryVerifications.status, 'approved')
+          )
         );
 
       if (relevantProviders.length === 0) {
