@@ -190,7 +190,7 @@ export default function BrowseJobs() {
               placeholder={user?.role === 'requester' ? 'Search your jobs...' : 'Search jobs...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 h-10 rounded-lg border border-border/60 bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10"
+              className="w-full pl-9 pr-8 h-10 rounded-lg border-2 border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 transition-colors"
               data-testid="input-search-jobs"
             />
             {searchQuery && (
@@ -260,15 +260,15 @@ export default function BrowseJobs() {
                       <div className="p-4 space-y-2">
                         {/* Status + urgency */}
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                            job.status === 'open'      ? 'border-black text-black dark:border-white dark:text-white' :
-                            job.status === 'completed' ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' :
-                                                         'border-border text-muted-foreground'
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            job.status === 'open'      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' :
+                            job.status === 'completed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' :
+                                                         'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
                           }`}>
-                            {job.status === 'open' ? 'Open' : job.status === 'completed' ? 'Done' : 'Active'}
+                            {job.status === 'open' ? '● Open' : job.status === 'completed' ? '✓ Done' : '↻ Active'}
                           </span>
                           {job.urgency === 'emergency' && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400">
                               Urgent
                             </span>
                           )}
