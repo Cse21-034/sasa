@@ -8,24 +8,12 @@ import { useAuth } from '@/lib/auth-context';
 import type { Job, Category } from '@shared/schema';
 import { apiRequest } from '@/lib/queryClient';
 
-const CATEGORY_GRADIENTS: Record<string, string> = {
-  'Plumbing':    'linear-gradient(135deg,#2563eb,#1742b8)',
-  'Electrical':  'linear-gradient(135deg,#f6a01a,#e07b00)',
-  'Carpentry':   'linear-gradient(135deg,#16a06a,#0d7d4f)',
-  'Painting':    'linear-gradient(135deg,#7c5cff,#5a36e0)',
-  'Cleaning':    'linear-gradient(135deg,#274345,#1a3a3a)',
-  'Mechanics':   'linear-gradient(135deg,#ef4444,#b91c1c)',
-  'Gardening':   'linear-gradient(135deg,#65a30d,#4d7c0f)',
-};
-const DEFAULT_GRADIENT = 'linear-gradient(135deg,#F8992D,#d97406)';
-const getBanner = (name?: string) => name ? (CATEGORY_GRADIENTS[name] ?? DEFAULT_GRADIENT) : DEFAULT_GRADIENT;
-
 export default function BrowseJobs() {
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery]     = useState('');
+  const [searchQuery, setSearchQuery]         = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [sortBy, setSortBy]               = useState<string>('recent');
-  const [statusFilter, setStatusFilter]   = useState<string>('all');
+  const [sortBy, setSortBy]                   = useState<string>('recent');
+  const [statusFilter, setStatusFilter]       = useState<string>('all');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   const { data: jobs, isLoading: jobsLoading } = useQuery<(Job & { requester: any; category: Category })[]>({
@@ -40,6 +28,20 @@ export default function BrowseJobs() {
   });
 
   const { data: categories } = useQuery<Category[]>({ queryKey: ['/api/categories'] });
+
+  // Provider: fetch only approved categories to show in filter
+  const { data: approvedCategoryData } = useQuery<{ approvedCategories: number[] }>({
+    queryKey: ['/api/provider/approved-categories'],
+    enabled: user?.role === 'provider',
+  });
+  const approvedCategoryIds = approvedCategoryData?.approvedCategories ?? [];
+
+  const allCategoryChips = [{ id: 'all', name: 'All' }, ...(categories ?? [])];
+
+  // For providers: only show categories they're approved for
+  const visibleCategoryChips = user?.role === 'provider'
+    ? allCategoryChips.filter(c => c.id === 'all' || approvedCategoryIds.includes(Number(c.id)))
+    : allCategoryChips;
 
   const statusCounts = useMemo(() => {
     if (!jobs) return { all: 0, open: 0, inProgress: 0, completed: 0 };
@@ -65,8 +67,8 @@ export default function BrowseJobs() {
     });
   }, [jobs, searchQuery, statusFilter]);
 
-  const categoryChips = [{ id: 'all', name: 'All' }, ...(categories ?? [])];
   const hasActiveFilters = selectedCategory !== 'all' || statusFilter !== 'all' || sortBy !== 'recent';
+  const resetFilters = () => { setSelectedCategory('all'); setStatusFilter('all'); setSortBy('recent'); };
 
   const statusOptions = [
     { value: 'all',         label: 'All Jobs',                                          count: statusCounts.all },
@@ -76,16 +78,15 @@ export default function BrowseJobs() {
   ];
 
   const sortOptions = [
-    { value: 'recent',   label: 'Newest' },
+    { value: 'recent',   label: 'Newest first' },
     { value: 'urgent',   label: 'Urgent first' },
-    { value: 'distance', label: 'Nearest' },
+    { value: 'distance', label: 'Nearest first' },
   ];
 
-  const resetFilters = () => { setSelectedCategory('all'); setStatusFilter('all'); setSortBy('recent'); };
-
-  // ── Shared filter panel content ─────────────────────────────────────────────
-  const FilterPanel = ({ namePrefix }: { namePrefix: string }) => (
+  // ── Shared filter panel ──────────────────────────────────────────────────────
+  const FilterPanel = () => (
     <div className="space-y-6">
+
       {/* Status */}
       <div>
         <h3 className="font-bold text-base mb-2">Status</h3>
@@ -93,11 +94,10 @@ export default function BrowseJobs() {
           {statusOptions.map((s) => (
             <label key={s.value} className="flex items-center gap-2 cursor-pointer py-0.5">
               <input
-                type="radio"
-                name={`${namePrefix}-status`}
+                type="checkbox"
                 checked={statusFilter === s.value}
-                onChange={() => setStatusFilter(s.value)}
-                className="accent-primary w-4 h-4"
+                onChange={() => setStatusFilter(statusFilter === s.value ? 'all' : s.value)}
+                className="w-4 h-4 rounded-none accent-black dark:accent-white cursor-pointer flex-shrink-0"
               />
               <span className="text-sm flex-1">{s.label}</span>
               <span className="text-xs text-muted-foreground">{s.count}</span>
@@ -114,11 +114,10 @@ export default function BrowseJobs() {
             {sortOptions.map((s) => (
               <label key={s.value} className="flex items-center gap-2 cursor-pointer py-0.5">
                 <input
-                  type="radio"
-                  name={`${namePrefix}-sort`}
+                  type="checkbox"
                   checked={sortBy === s.value}
-                  onChange={() => setSortBy(s.value)}
-                  className="accent-primary w-4 h-4"
+                  onChange={() => setSortBy(sortBy === s.value ? 'recent' : s.value)}
+                  className="w-4 h-4 rounded-none accent-black dark:accent-white cursor-pointer flex-shrink-0"
                 />
                 <span className="text-sm">{s.label}</span>
               </label>
@@ -128,26 +127,27 @@ export default function BrowseJobs() {
       )}
 
       {/* Category */}
-      <div>
-        <h3 className="font-bold text-base mb-2">Category</h3>
-        <div className="space-y-1">
-          {categoryChips.map((cat) => (
-            <label key={cat.id} className="flex items-center gap-2 cursor-pointer py-0.5">
-              <input
-                type="radio"
-                name={`${namePrefix}-category`}
-                checked={selectedCategory === String(cat.id)}
-                onChange={() => setSelectedCategory(String(cat.id))}
-                className="accent-primary w-4 h-4"
-              />
-              <span className="text-sm">{cat.name}</span>
-            </label>
-          ))}
+      {visibleCategoryChips.length > 1 && (
+        <div>
+          <h3 className="font-bold text-base mb-2">Category</h3>
+          <div className="space-y-1">
+            {visibleCategoryChips.map((cat) => (
+              <label key={cat.id} className="flex items-center gap-2 cursor-pointer py-0.5">
+                <input
+                  type="checkbox"
+                  checked={selectedCategory === String(cat.id)}
+                  onChange={() => setSelectedCategory(selectedCategory === String(cat.id) ? 'all' : String(cat.id))}
+                  className="w-4 h-4 rounded-none accent-black dark:accent-white cursor-pointer flex-shrink-0"
+                />
+                <span className="text-sm">{cat.name}</span>
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {hasActiveFilters && (
-        <button onClick={resetFilters} className="text-xs text-primary hover:underline">
+        <button onClick={resetFilters} className="text-xs text-muted-foreground hover:text-foreground underline">
           Clear all filters
         </button>
       )}
@@ -157,7 +157,7 @@ export default function BrowseJobs() {
   return (
     <div className="min-h-screen bg-background">
 
-      {/* Search bar */}
+      {/* ── Search bar ── */}
       <div className="border-b border-border/40 bg-card px-4 py-3 sticky top-14 md:top-20 z-10">
         <div className="max-w-7xl mx-auto flex items-center gap-2">
           <div className="relative flex-1 max-w-xl">
@@ -167,7 +167,7 @@ export default function BrowseJobs() {
               placeholder={user?.role === 'requester' ? 'Search your jobs...' : 'Search jobs...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 h-10 rounded-lg border border-border/60 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full pl-9 pr-8 h-10 rounded-lg border border-border/60 bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10"
               data-testid="input-search-jobs"
             />
             {searchQuery && (
@@ -176,13 +176,12 @@ export default function BrowseJobs() {
               </button>
             )}
           </div>
-
           {/* Mobile filter trigger */}
           <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
             <SheetTrigger asChild>
               <button className="md:hidden relative h-10 w-10 flex-shrink-0 rounded-lg border border-border/60 bg-background flex items-center justify-center hover:bg-muted transition-colors">
                 <SlidersHorizontal className="h-4 w-4 text-foreground/70" />
-                {hasActiveFilters && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />}
+                {hasActiveFilters && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-foreground rounded-full" />}
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="w-72 flex flex-col">
@@ -190,40 +189,45 @@ export default function BrowseJobs() {
                 <SheetTitle className="text-left text-xl font-bold">Filters</SheetTitle>
               </SheetHeader>
               <div className="flex-1 overflow-y-auto py-4">
-                <FilterPanel namePrefix="drawer" />
+                <FilterPanel />
               </div>
             </SheetContent>
           </Sheet>
         </div>
       </div>
 
-      {/* Body */}
-      <div className="max-w-7xl mx-auto px-4 py-8 flex gap-8 items-start pb-24">
+      {/* ── Body ── */}
+      <div className="max-w-7xl mx-auto px-4 py-8 pb-24 flex gap-8 items-start">
 
-        {/* ── Left sidebar ── */}
+        {/* Left sidebar */}
         <aside className="hidden md:block w-56 flex-shrink-0 sticky top-36">
-          <h2 className="text-xl font-bold mb-5">Filters</h2>
-          <FilterPanel namePrefix="rail" />
+          <h2 className="text-2xl font-bold mb-5">Filters</h2>
+          <FilterPanel />
         </aside>
 
-        {/* ── Main content ── */}
+        {/* Main content */}
         <div className="flex-1 min-w-0">
 
-          {/* Page title + count */}
-          <div className="flex items-center justify-between mb-5">
+          {/* Page heading */}
+          <div className="flex items-start justify-between mb-6">
             <div>
-              <h1 className="font-extrabold text-xl text-foreground">
-                {user?.role === 'requester' ? 'My Jobs' : 'Find Jobs Near You'}
+              <h1 className="text-2xl font-bold text-foreground">
+                {user?.role === 'requester' ? 'My Jobs' : 'Browse Jobs'}
               </h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {user?.role === 'requester'
+                  ? 'Manage your active service requests'
+                  : 'Find open service requests near you'}
+              </p>
               {!jobsLoading && (
-                <p className="text-sm text-muted-foreground mt-0.5">
+                <p className="text-sm text-muted-foreground mt-1">
                   {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} found
                 </p>
               )}
             </div>
             {user?.role === 'requester' && (
               <Link href="/post-job">
-                <a className="flex-shrink-0 px-4 py-2 rounded-lg bg-primary text-white font-semibold text-sm hover:bg-primary/90 transition-colors shadow-sm">
+                <a className="flex-shrink-0 px-4 py-2 rounded-lg bg-foreground text-background font-semibold text-sm hover:opacity-80 transition-opacity shadow-sm">
                   + Post Job
                 </a>
               </Link>
@@ -232,10 +236,10 @@ export default function BrowseJobs() {
 
           {/* Skeletons */}
           {jobsLoading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
               {[1,2,3,4,5,6].map((i) => (
                 <div key={i} className="rounded-xl border border-border/40 overflow-hidden">
-                  <Skeleton className="h-32 w-full" />
+                  <Skeleton className="h-36 w-full" />
                   <div className="p-4 space-y-2">
                     <Skeleton className="h-5 w-3/4" />
                     <Skeleton className="h-4 w-1/2" />
@@ -249,34 +253,54 @@ export default function BrowseJobs() {
 
           {/* Job grid */}
           {!jobsLoading && filteredJobs.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
               {filteredJobs.map((job) => (
                 <Link key={job.id} href={`/jobs/${job.id}`}>
                   <a data-testid={`card-job-${job.id}`}>
                     <div className="rounded-xl border border-border/40 bg-card shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col">
 
-                      {/* Banner */}
-                      <div className="h-32 relative flex-shrink-0" style={{ background: getBanner(job.category?.name) }}>
-                        <span className="absolute bottom-2 left-3 text-white/80 text-xs font-medium bg-black/20 px-2 py-0.5 rounded-full">
+                      {/* Banner: show requester photo or app logo on dark bg */}
+                      <div className="h-36 bg-neutral-900 relative overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        {job.requester?.profilePhotoUrl ? (
+                          <img
+                            src={job.requester.profilePhotoUrl}
+                            alt={job.requester.name || ''}
+                            className="w-full h-full object-cover opacity-50"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/logo-icon.png';
+                              (e.target as HTMLImageElement).className = 'h-14 w-14 object-contain opacity-60';
+                            }}
+                          />
+                        ) : (
+                          <img
+                            src="/logo-icon.png"
+                            alt="JobTradeSasa"
+                            className="h-14 w-14 object-contain opacity-60"
+                          />
+                        )}
+                        {/* Category label bottom-left */}
+                        <span className="absolute bottom-2 left-3 text-white/90 text-xs font-medium bg-black/40 px-2 py-0.5 rounded">
                           {job.category?.name || 'General'}
                         </span>
-                        {job.urgency === 'emergency' && (
-                          <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                            🚨 Urgent
-                          </span>
-                        )}
-                        <span className={`absolute top-2 left-3 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          job.status === 'open'      ? 'bg-emerald-500 text-white' :
-                          job.status === 'completed' ? 'bg-blue-500 text-white' :
-                                                       'bg-amber-500 text-white'
+                        {/* Status badge top-left */}
+                        <span className={`absolute top-2 left-3 text-xs font-bold px-2 py-0.5 rounded ${
+                          job.status === 'open'      ? 'bg-white text-black' :
+                          job.status === 'completed' ? 'bg-black text-white' :
+                                                       'bg-white/80 text-black'
                         }`}>
                           {job.status === 'open' ? 'Open' : job.status === 'completed' ? 'Done' : 'Active'}
                         </span>
+                        {/* Urgent badge top-right */}
+                        {job.urgency === 'emergency' && (
+                          <span className="absolute top-2 right-2 bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                            Urgent
+                          </span>
+                        )}
                       </div>
 
-                      {/* Body */}
+                      {/* Card body */}
                       <div className="p-4 flex flex-col flex-1">
-                        <h3 className="text-primary font-semibold text-base leading-snug line-clamp-2 group-hover:underline mb-1">
+                        <h3 className="font-semibold text-foreground text-base leading-snug line-clamp-2 mb-1 group-hover:underline">
                           {job.title}
                         </h3>
                         <p className="text-xs text-muted-foreground mb-2">
@@ -291,7 +315,7 @@ export default function BrowseJobs() {
                             <span className="truncate">{job.address || 'Location TBD'}</span>
                           </div>
                           {job.expiryDate && new Date(job.expiryDate).getTime() - Date.now() < 86400000 && (
-                            <div className="flex items-center gap-1 text-red-500 font-medium flex-shrink-0">
+                            <div className="flex items-center gap-1 font-medium flex-shrink-0">
                               <Clock className="h-3 w-3" />
                               Expires soon
                             </div>
@@ -309,18 +333,20 @@ export default function BrowseJobs() {
           {/* Empty state */}
           {!jobsLoading && filteredJobs.length === 0 && (
             <div className="border-2 border-dashed border-border/40 rounded-xl p-14 text-center">
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4" style={{ background: DEFAULT_GRADIENT }}>
+              <div className="w-14 h-14 rounded-xl bg-neutral-900 flex items-center justify-center mx-auto mb-4">
                 <Filter className="h-6 w-6 text-white" />
               </div>
               <h3 className="text-lg font-semibold mb-1">
                 {user?.role === 'requester' ? 'No jobs found' : 'No jobs available'}
               </h3>
               <p className="text-muted-foreground text-sm mb-4">
-                {user?.role === 'requester' ? 'Try adjusting your filters or post a new job' : 'Try adjusting your filters or check back later'}
+                {user?.role === 'requester'
+                  ? 'Try adjusting your filters or post a new job'
+                  : 'Try adjusting your filters or check back later'}
               </p>
               {user?.role === 'requester' && (
                 <Link href="/post-job">
-                  <a className="inline-block px-5 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary/90 transition-colors">
+                  <a className="inline-block px-5 py-2.5 rounded-xl bg-foreground text-background font-semibold text-sm hover:opacity-80 transition-opacity">
                     Post Your First Job
                   </a>
                 </Link>
