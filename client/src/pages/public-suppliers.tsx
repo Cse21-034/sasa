@@ -1,223 +1,307 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, MapPin, Phone, Mail, Building2, Star, Tag, ExternalLink, ArrowRight, ShieldCheck } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Search, MapPin, Phone, Star, Tag, ArrowRight, ShieldCheck, Building2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 
+const INDUSTRY_GRADIENTS: Record<string, string> = {
+  'Building Materials': 'linear-gradient(135deg,#274345,#1a3a3a)',
+  'Tools & Equipment':  'linear-gradient(135deg,#d97706,#b45309)',
+  'Electrical':         'linear-gradient(135deg,#1d4ed8,#1e40af)',
+  'Plumbing':           'linear-gradient(135deg,#0369a1,#075985)',
+  'Furniture':          'linear-gradient(135deg,#92400e,#78350f)',
+  'Paint & Coatings':   'linear-gradient(135deg,#7c3aed,#6d28d9)',
+  'Hardware':           'linear-gradient(135deg,#065f46,#064e3b)',
+};
+const DEFAULT_GRADIENT = 'linear-gradient(135deg,#F8992D,#d97406)';
+const getBanner = (industry?: string) =>
+  industry ? (INDUSTRY_GRADIENTS[industry] ?? DEFAULT_GRADIENT) : DEFAULT_GRADIENT;
+
 export default function PublicSuppliers() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery]           = useState('');
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
+  const [featuredOnly, setFeaturedOnly]         = useState(false);
   const [, setLocation] = useLocation();
 
   const { data: suppliers, isLoading } = useQuery({
     queryKey: ['public-suppliers'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/public/suppliers');
-      return response.json();
+      const res = await apiRequest('GET', '/api/public/suppliers');
+      return res.json();
     },
   });
 
-  const categories: string[] = suppliers
-    ? Array.from(new Set(suppliers.map((s: any) => s.industryType as string)))
-    : [];
+  const industries: { name: string; count: number }[] = useMemo(() => {
+    if (!suppliers) return [];
+    const map: Record<string, number> = {};
+    suppliers.forEach((s: any) => {
+      if (s.industryType) map[s.industryType] = (map[s.industryType] || 0) + 1;
+    });
+    return Object.entries(map).map(([name, count]) => ({ name, count }));
+  }, [suppliers]);
 
-  const filteredSuppliers = suppliers?.filter((supplier: any) => {
-    const matchesSearch =
-      supplier.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      supplier.industryType?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || supplier.industryType === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const featuredCount: number = useMemo(
+    () => suppliers?.filter((s: any) => s.featured).length ?? 0,
+    [suppliers],
+  );
+
+  const filteredSuppliers = useMemo(() => {
+    if (!suppliers) return [];
+    return suppliers.filter((s: any) => {
+      const q = searchQuery.toLowerCase();
+      const matchSearch =
+        !q ||
+        s.companyName?.toLowerCase().includes(q) ||
+        s.industryType?.toLowerCase().includes(q) ||
+        s.physicalAddress?.toLowerCase().includes(q);
+      const matchIndustry =
+        selectedIndustries.length === 0 || selectedIndustries.includes(s.industryType);
+      const matchFeatured = !featuredOnly || s.featured;
+      return matchSearch && matchIndustry && matchFeatured;
+    });
+  }, [suppliers, searchQuery, selectedIndustries, featuredOnly]);
+
+  const toggleIndustry = (name: string) =>
+    setSelectedIndustries((prev) =>
+      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name],
+    );
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <div className="bg-gradient-to-br from-[#1a3a3a] via-[#274345] to-[#2a4d4f] text-white py-14 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-5">
-            <ShieldCheck className="h-4 w-4 text-orange-300" />
-            Verified Suppliers Network
-          </div>
-          <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight">
-            Find Trusted Suppliers<br className="hidden md:block" /> in Botswana
-          </h1>
-          <p className="text-white/70 text-base md:text-lg max-w-2xl mx-auto mb-8">
-            Browse our network of verified suppliers for building materials, tools, and equipment — all in one place.
-          </p>
-          {/* Search */}
-          <div className="relative max-w-xl mx-auto">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Search by company name or industry..."
+      {/* Top bar */}
+      <div className="bg-[#1a3a3a] text-white px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-semibold tracking-wide">
+          <ShieldCheck className="h-4 w-4 text-orange-300" />
+          Supplier Catalogue
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/login">
+            <button className="text-white/80 hover:text-white text-sm transition-colors">Log In</button>
+          </Link>
+          <Link href="/signup">
+            <button className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">
+              Sign Up Free
+            </button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Search bar */}
+      <div className="border-b border-border/40 bg-card px-6 py-3">
+        <div className="max-w-7xl mx-auto">
+          <div className="relative max-w-xl">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search by company name, industry or location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-11 h-13 text-base rounded-2xl border-0 shadow-xl bg-white text-foreground"
+              className="w-full pl-9 pr-4 h-10 rounded-lg border border-border/60 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-10">
-        {/* Category filter chips */}
-        {categories.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 flex gap-8 items-start">
+
+        {/* ── Filter sidebar ── */}
+        <aside className="hidden md:block w-56 flex-shrink-0 sticky top-20">
+          <h2 className="text-xl font-bold mb-5">Filters</h2>
+
+          {/* Featured */}
+          <div className="mb-6">
+            <h3 className="font-bold text-base mb-2">Type</h3>
+            <label className="flex items-center gap-2 cursor-pointer py-0.5">
+              <input
+                type="checkbox"
+                checked={featuredOnly}
+                onChange={(e) => setFeaturedOnly(e.target.checked)}
+                className="accent-primary w-4 h-4"
+              />
+              <span className="text-sm">Featured only ({featuredCount})</span>
+            </label>
+          </div>
+
+          {/* Industry */}
+          {industries.length > 0 && (
+            <div className="mb-6">
+              <h3 className="font-bold text-base mb-2">Industry</h3>
+              <div className="space-y-1">
+                {industries.map(({ name, count }) => (
+                  <label key={name} className="flex items-center gap-2 cursor-pointer py-0.5">
+                    <input
+                      type="checkbox"
+                      checked={selectedIndustries.includes(name)}
+                      onChange={() => toggleIndustry(name)}
+                      className="accent-primary w-4 h-4"
+                    />
+                    <span className="text-sm">{name} ({count})</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Reset */}
+          {(selectedIndustries.length > 0 || featuredOnly || searchQuery) && (
             <button
-              onClick={() => setSelectedCategory('all')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                selectedCategory === 'all'
-                  ? 'bg-primary text-white border-primary'
-                  : 'bg-background border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground'
-              }`}
+              onClick={() => { setSelectedIndustries([]); setFeaturedOnly(false); setSearchQuery(''); }}
+              className="text-xs text-primary hover:underline mt-1"
             >
-              All
+              Clear all filters
             </button>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                  selectedCategory === cat
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-background border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        )}
+          )}
+        </aside>
 
-        {/* Loading skeletons */}
-        {isLoading && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i}>
-                <CardContent className="p-6">
-                  <Skeleton className="h-16 w-16 rounded-full mb-4" />
-                  <Skeleton className="h-6 w-3/4 mb-2" />
-                  <Skeleton className="h-4 w-full mb-2" />
-                  <Skeleton className="h-4 w-2/3" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Supplier grid */}
-        {!isLoading && filteredSuppliers && filteredSuppliers.length > 0 && (
-          <>
+        {/* ── Main content ── */}
+        <div className="flex-1 min-w-0">
+          {/* Result count */}
+          {!isLoading && (
             <p className="text-sm text-muted-foreground mb-5">
               {filteredSuppliers.length} supplier{filteredSuppliers.length !== 1 ? 's' : ''} found
             </p>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          )}
+
+          {/* Skeletons */}
+          {isLoading && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[1,2,3,4,5,6].map((i) => (
+                <div key={i} className="rounded-xl border border-border/40 overflow-hidden">
+                  <Skeleton className="h-40 w-full" />
+                  <div className="p-4 space-y-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Supplier grid */}
+          {!isLoading && filteredSuppliers.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredSuppliers.map((supplier: any) => (
-                <Card
+                <div
                   key={supplier.userId}
-                  className={`shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_28px_rgba(0,0,0,0.13)] hover:-translate-y-1 transition-all duration-200 border-border/40 ${
-                    supplier.featured ? 'border-2 border-primary/30' : 'border'
-                  }`}
+                  className="rounded-xl border border-border/40 bg-card shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col"
                 >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <Avatar className="h-14 w-14 border-2">
-                        <AvatarImage src={supplier.logo || supplier.user?.profilePhotoUrl} />
-                        <AvatarFallback className="text-base font-bold bg-primary/10 text-primary">
+                  {/* Banner image area */}
+                  <div
+                    className="h-36 flex items-center justify-center relative flex-shrink-0"
+                    style={{ background: getBanner(supplier.industryType) }}
+                  >
+                    {supplier.logo ? (
+                      <img
+                        src={supplier.logo}
+                        alt={supplier.companyName}
+                        className="h-20 w-auto object-contain drop-shadow-lg"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-white/90 font-extrabold text-2xl tracking-wide drop-shadow">
                           {supplier.companyName?.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      {supplier.featured && (
-                        <Badge className="bg-primary text-white text-xs">Featured</Badge>
+                        </span>
+                      </div>
+                    )}
+                    {supplier.featured && (
+                      <span className="absolute top-2 right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        Featured
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Card body */}
+                  <div className="p-4 flex flex-col flex-1">
+                    {/* Title */}
+                    <button
+                      onClick={() => setLocation('/login')}
+                      className="text-primary font-semibold text-base text-left hover:underline leading-snug mb-1"
+                    >
+                      {supplier.companyName}
+                    </button>
+
+                    {/* Rating */}
+                    <div className="flex items-center gap-1 mb-2">
+                      <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm font-semibold">{supplier.ratingAverage || '0.0'}</span>
+                      <span className="text-xs text-muted-foreground">({supplier.reviewCount || 0} reviews)</span>
+                      {supplier.industryType && (
+                        <span className="ml-auto text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                          {supplier.industryType}
+                        </span>
                       )}
                     </div>
-                    <CardTitle className="text-lg mt-3 leading-snug">{supplier.companyName}</CardTitle>
-                    <CardDescription className="flex items-center gap-1">
-                      <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                      <span className="font-semibold text-foreground text-sm">{supplier.ratingAverage || '0.0'}</span>
-                      <span className="text-muted-foreground text-xs">({supplier.reviewCount || 0} reviews)</span>
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Badge variant="outline" className="text-xs">{supplier.industryType}</Badge>
 
-                    <div className="space-y-1.5 text-sm">
+                    {/* Details */}
+                    <div className="space-y-1 text-xs text-muted-foreground flex-1">
                       {supplier.physicalAddress && (
-                        <div className="flex items-start gap-2">
-                          <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                          <span className="text-muted-foreground line-clamp-1">{supplier.physicalAddress}</span>
+                        <div className="flex items-start gap-1.5">
+                          <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                          <span className="line-clamp-1">{supplier.physicalAddress}</span>
                         </div>
                       )}
                       {supplier.companyPhone && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                          <span className="text-muted-foreground">{supplier.companyPhone}</span>
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="h-3 w-3 flex-shrink-0" />
+                          <span>{supplier.companyPhone}</span>
                         </div>
                       )}
-                      {supplier.companyEmail && (
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                          <span className="text-muted-foreground truncate">{supplier.companyEmail}</span>
-                        </div>
+                      {supplier.contactPerson && (
+                        <p>Contact: <span className="text-foreground font-medium">{supplier.contactPerson}</span></p>
                       )}
                     </div>
 
+                    {/* Special offer */}
                     {supplier.specialOffer && (
-                      <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg">
-                        <div className="flex items-start gap-1.5">
-                          <Tag className="h-3.5 w-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                          <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">{supplier.specialOffer}</p>
-                        </div>
+                      <div className="mt-3 flex items-start gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-2.5 py-2">
+                        <Tag className="h-3 w-3 text-emerald-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium line-clamp-2">{supplier.specialOffer}</p>
                       </div>
                     )}
 
-                    <Button
-                      className="w-full mt-2"
-                      variant={supplier.featured ? 'default' : 'outline'}
+                    {/* CTA */}
+                    <button
                       onClick={() => setLocation('/login')}
+                      className="mt-4 w-full h-9 rounded-lg border border-primary text-primary text-sm font-semibold hover:bg-primary hover:text-white transition-colors"
                     >
-                      <ExternalLink className="h-4 w-4 mr-2" />
                       View Supplier
-                    </Button>
-                  </CardContent>
-                </Card>
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
-          </>
-        )}
+          )}
 
-        {/* Empty state */}
-        {!isLoading && filteredSuppliers && filteredSuppliers.length === 0 && (
-          <Card className="border-2 border-dashed border-border/40">
-            <CardContent className="p-14 text-center">
+          {/* Empty */}
+          {!isLoading && filteredSuppliers.length === 0 && (
+            <div className="border-2 border-dashed border-border/40 rounded-xl p-14 text-center">
               <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No suppliers found</h3>
-              <p className="text-muted-foreground text-sm">Try a different search term or category</p>
-            </CardContent>
-          </Card>
-        )}
+              <h3 className="text-lg font-semibold mb-1">No suppliers found</h3>
+              <p className="text-muted-foreground text-sm">Try adjusting your filters or search term</p>
+            </div>
+          )}
 
-        {/* Sign-up CTA */}
-        <div className="mt-14 rounded-2xl bg-gradient-to-br from-[#1a3a3a] via-[#274345] to-[#2a4d4f] text-white p-8 md:p-12 text-center shadow-xl">
-          <h2 className="text-2xl md:text-3xl font-extrabold mb-3">Ready to connect with suppliers?</h2>
-          <p className="text-white/70 mb-7 max-w-xl mx-auto">
-            Sign up for free to view full supplier profiles, contact them directly, and manage your projects.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/signup">
-              <Button size="lg" className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 shadow-lg">
-                Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 px-8">
-                Log In
-              </Button>
-            </Link>
+          {/* Sign-up CTA */}
+          <div className="mt-14 rounded-2xl bg-gradient-to-br from-[#1a3a3a] via-[#274345] to-[#2a4d4f] text-white p-8 md:p-10 text-center shadow-xl">
+            <h2 className="text-2xl md:text-3xl font-extrabold mb-3">Ready to connect with suppliers?</h2>
+            <p className="text-white/70 mb-7 max-w-xl mx-auto text-sm md:text-base">
+              Sign up for free to view full profiles, contact suppliers directly, and manage your projects.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/signup">
+                <button className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-2.5 rounded-xl shadow-lg transition-colors flex items-center gap-2 mx-auto sm:mx-0">
+                  Get Started Free <ArrowRight className="h-4 w-4" />
+                </button>
+              </Link>
+              <Link href="/login">
+                <button className="border border-white/30 text-white hover:bg-white/10 px-8 py-2.5 rounded-xl transition-colors mx-auto sm:mx-0">
+                  Log In
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
