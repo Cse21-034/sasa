@@ -101,19 +101,21 @@ export default function BrowseJobs() {
     <div className="min-h-screen bg-background">
 
       {/* ── Title heading — all screens ── */}
-      <div className="px-4 pt-6 pb-3 max-w-7xl mx-auto">
-        <h1 className="font-display font-extrabold text-3xl md:text-4xl text-foreground mb-0.5">
-          {user?.role === 'requester' ? (
-            <>
-              <em className="not-italic" style={{ background: 'linear-gradient(90deg,#F8992D,#274345)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>My</em>{' '}Jobs
-            </>
-          ) : (
-            <>Find <em className="not-italic" style={{ background: 'linear-gradient(90deg,#F8992D,#274345)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Jobs</em> Near You</>
-          )}
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          {user?.role === 'requester' ? 'Manage your service requests' : 'Browse open service requests in your area'}
-        </p>
+      <div className="px-4 pt-5 pb-3 max-w-7xl mx-auto">
+        <div className="w-[60%]">
+          <h1 className="font-display font-extrabold text-xl md:text-3xl text-foreground mb-0.5">
+            {user?.role === 'requester' ? (
+              <>
+                <em className="not-italic" style={{ background: 'linear-gradient(90deg,#F8992D,#274345)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>My</em>{' '}Jobs
+              </>
+            ) : (
+              <>Find <em className="not-italic" style={{ background: 'linear-gradient(90deg,#F8992D,#274345)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Jobs</em> Near You</>
+            )}
+          </h1>
+          <p className="text-muted-foreground text-xs md:text-sm">
+            {user?.role === 'requester' ? 'Manage your service requests' : 'Browse open service requests in your area'}
+          </p>
+        </div>
       </div>
 
       {/* ── Sticky search + filter icon ── */}
