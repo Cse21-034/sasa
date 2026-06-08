@@ -255,15 +255,15 @@ export default function ForgotPassword() {
 
           <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-border flex-wrap">
             <Link href="/">
-              <a className="text-xs text-muted-foreground hover:text-foreground transition-colors">← Home</a>
+              <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Home</a>
             </Link>
-            <span className="text-border text-xs">·</span>
+            <span className="text-border text-sm">·</span>
             <Link href="/support">
-              <a className="text-xs text-muted-foreground hover:text-foreground transition-colors">Support</a>
+              <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">Support</a>
             </Link>
-            <span className="text-border text-xs">·</span>
+            <span className="text-border text-sm">·</span>
             <Link href="/terms">
-              <a className="text-xs text-muted-foreground hover:text-foreground transition-colors">Terms & Conditions</a>
+              <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms & Conditions</a>
             </Link>
           </div>
         </div>
