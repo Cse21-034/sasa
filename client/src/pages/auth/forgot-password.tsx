@@ -252,6 +252,20 @@ export default function ForgotPassword() {
               </Link>
             </p>
           )}
+
+          <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-border flex-wrap">
+            <Link href="/">
+              <a className="text-xs text-muted-foreground hover:text-foreground transition-colors">← Home</a>
+            </Link>
+            <span className="text-border text-xs">·</span>
+            <Link href="/support">
+              <a className="text-xs text-muted-foreground hover:text-foreground transition-colors">Support</a>
+            </Link>
+            <span className="text-border text-xs">·</span>
+            <Link href="/terms">
+              <a className="text-xs text-muted-foreground hover:text-foreground transition-colors">Terms & Conditions</a>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
