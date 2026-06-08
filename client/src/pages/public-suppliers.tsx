@@ -18,7 +18,7 @@ export default function PublicSuppliers() {
   const { data: suppliers, isLoading } = useQuery({
     queryKey: ['public-suppliers'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/suppliers');
+      const response = await apiRequest('GET', '/api/public/suppliers');
       return response.json();
     },
   });

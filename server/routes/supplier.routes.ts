@@ -16,6 +16,24 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
   verifyAccess = injectedVerifyAccess;
 
   /**
+   * GET /api/public/suppliers
+   * Public endpoint — no auth required (used by browse-suppliers page)
+   */
+  app.get('/api/public/suppliers', async (_req, res) => {
+    try {
+      let suppliers = await cacheService.getSuppliers();
+      if (!suppliers) {
+        suppliers = await storage.getSuppliers();
+        await cacheService.setSuppliers(suppliers);
+      }
+      res.json(suppliers);
+    } catch (error: any) {
+      console.error('Public get suppliers error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  /**
    * GET /api/suppliers
    * Get list of all suppliers (for requesters to browse)
    */
