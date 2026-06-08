@@ -8,29 +8,7 @@ import { useAuth } from '@/lib/auth-context';
 import type { Job, Category } from '@shared/schema';
 import { apiRequest } from '@/lib/queryClient';
 
-const CATEGORY_GRADIENTS: Record<string, string> = {
-  'Plumbing':   'linear-gradient(135deg, #2563eb, #1742b8)',
-  'Electrical': 'linear-gradient(135deg, #f6a01a, #e07b00)',
-  'Carpentry':  'linear-gradient(135deg, #16a06a, #0d7d4f)',
-  'Painting':   'linear-gradient(135deg, #7c5cff, #5a36e0)',
-  'Cleaning':   'linear-gradient(135deg, #274345, #1a3a3a)',
-  'Mechanics':  'linear-gradient(135deg, #ef4444, #b91c1c)',
-  'Gardening':  'linear-gradient(135deg, #65a30d, #4d7c0f)',
-};
 const DEFAULT_GRADIENT = 'linear-gradient(135deg, #F8992D, #d97406)';
-
-const CATEGORY_ICONS: Record<string, string> = {
-  'Plumbing': '🔧', 'Electrical': '⚡', 'Carpentry': '🔨',
-  'Painting': '🎨', 'Cleaning': '🧹', 'Mechanics': '🚗', 'Gardening': '🌿',
-};
-
-function getCategoryGradient(name?: string) {
-  return name ? (CATEGORY_GRADIENTS[name] ?? DEFAULT_GRADIENT) : DEFAULT_GRADIENT;
-}
-
-function getInitials(title: string) {
-  return title.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
-}
 
 export default function BrowseJobs() {
   const { user } = useAuth();
@@ -371,22 +349,7 @@ export default function BrowseJobs() {
                     >
                       <div className="p-4">
                         {/* Card header */}
-                        <div className="flex gap-3 items-start mb-3">
-                          <div
-                            className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-sm select-none overflow-hidden"
-                            style={{ background: getCategoryGradient(job.category?.name) }}
-                          >
-                            {job.requester?.profilePhotoUrl ? (
-                              <img
-                                src={job.requester.profilePhotoUrl}
-                                alt={job.requester.name || 'Poster'}
-                                className="w-full h-full object-cover"
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                              />
-                            ) : (
-                              getInitials(job.title)
-                            )}
-                          </div>
+                        <div className="flex gap-2 items-start mb-3">
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-foreground text-base leading-snug line-clamp-1 group-hover:text-primary transition-colors">
                               {job.title}
