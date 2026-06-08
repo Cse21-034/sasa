@@ -359,7 +359,7 @@ export default function Landing() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
             Browse our network of verified suppliers to find and purchase high-quality building and repair materials for your projects.
           </p>
-          <Link href="/login">
+          <Link href="/browse-suppliers">
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl">
               Browse Suppliers <ArrowRight className="ml-2 h-5 w-5" />
             </Button>

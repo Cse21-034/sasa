@@ -28,6 +28,7 @@ import Chat from "@/pages/messages/chat";
 import Profile from "@/pages/profile";
 import Reports from "@/pages/reports";
 import Suppliers from "@/pages/suppliers";
+import PublicSuppliers from "@/pages/public-suppliers";
 import NotFound from "@/pages/not-found";
 import VerificationPage from "@/pages/verification";
 import SupplierDetail from "@/pages/supplier-detail";
@@ -232,6 +233,7 @@ function Router() {
           </Route>
           
           {/* Public Routes */}
+          <Route path="/browse-suppliers" component={PublicSuppliers} />
           <Route path="/suppliers" component={Suppliers} /> 
           <Route path="/my-jobs">
             {() => <ProtectedRoute component={BrowseJobs} path="/my-jobs" />}
