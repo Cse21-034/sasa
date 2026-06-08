@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'wouter';
-import { Menu, Bell, User, Briefcase, MessageSquare, LayoutDashboard, FileText, Plus, Sparkles, Tag, ArrowRight, ShoppingBag, LogOut, Search, X, ArrowLeft } from 'lucide-react';
+import { Menu, Bell, User, Briefcase, MessageSquare, LayoutDashboard, FileText, Plus, Sparkles, Tag, ArrowRight, ShoppingBag, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -25,8 +25,6 @@ export function Header() {
   const { t } = useTranslation();
   const [prevNotificationCount, setPrevNotificationCount] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [mobileSearchQuery, setMobileSearchQuery] = useState('');
    
   const isLandingPage = location === '/'; 
    
@@ -83,123 +81,70 @@ export function Header() {
     setPrevNotificationCount(totalNotifications);
   }, [totalNotifications, prevNotificationCount]);
 
-  const handleMobileSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && mobileSearchQuery.trim()) {
-      setLocation('/jobs');
-      setMobileSearchOpen(false);
-      setMobileSearchQuery('');
-    }
-    if (e.key === 'Escape') {
-      setMobileSearchOpen(false);
-      setMobileSearchQuery('');
-    }
-  };
-
   return (
     <header className="sticky top-0 z-50 w-full">
       {/* ── Mobile header (< md) — clean, no background ── */}
       <div className="md:hidden flex h-14 items-center px-4 gap-3 bg-background border-b border-border/20">
-        {mobileSearchOpen ? (
-          /* WhatsApp-style: header transforms into search input */
-          <>
-            <button
-              onClick={() => { setMobileSearchOpen(false); setMobileSearchQuery(''); }}
-              className="flex-shrink-0 text-foreground/70 hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div className="flex-1 relative">
-              <input
-                autoFocus
-                type="text"
-                value={mobileSearchQuery}
-                onChange={(e) => setMobileSearchQuery(e.target.value)}
-                onKeyDown={handleMobileSearch}
-                placeholder="Search jobs..."
-                className="w-full h-9 rounded-full bg-muted/70 text-foreground placeholder-muted-foreground/60 pl-4 pr-9 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-              />
-              {mobileSearchQuery && (
-                <button
-                  onClick={() => setMobileSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-4 w-4" />
+        <Link href="/" className="flex items-center gap-2 flex-1">
+          <img src="/image.png" alt="JobTradeSasa" className="h-8 w-auto object-contain flex-shrink-0" />
+          <span className="font-extrabold text-xl text-foreground leading-none">JobTradeSasa</span>
+        </Link>
+        <div className="flex items-center gap-0.5">
+          <ThemeToggle />
+          {isAuthenticated && <NotificationPanel />}
+          {isAuthenticated && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-orange-400 flex-shrink-0 ml-0.5">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.profilePhotoUrl ?? undefined} alt={user?.name ?? undefined} />
+                    <AvatarFallback className="bg-orange-500 text-white font-bold text-xs">
+                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
                 </button>
-              )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 border-2 border-orange-200 dark:border-orange-900">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-base font-bold truncate">{user?.name}</p>
+                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setLocation('/profile')} className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4 text-orange-500" /> {t('Profile')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" /> {t('Logout')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {!isAuthenticated && (
+            <div className="flex items-center gap-2">
+              <Link href="/login">
+                <Button variant="ghost" size="sm" className="text-foreground hover:bg-muted text-sm px-3">
+                  {t('Login')}
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button size="sm" className="bg-orange-500 text-white hover:bg-orange-600 text-sm px-3">
+                  {t('Sign Up')}
+                </Button>
+              </Link>
             </div>
-          </>
-        ) : (
-          /* Normal mobile header: logo + icon buttons */
-          <>
-            <Link href="/" className="flex items-center gap-2 flex-1">
-              <img src="/image.png" alt="JobTradeSasa" className="h-8 w-auto object-contain flex-shrink-0" />
-              <span className="font-bold text-base text-foreground leading-none">JobTradeSasa</span>
-            </Link>
-            <div className="flex items-center gap-0.5">
-              <ThemeToggle />
-              {isAuthenticated && (
-                <button
-                  onClick={() => setMobileSearchOpen(true)}
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-foreground/70 hover:bg-muted transition-colors"
-                >
-                  <Search className="h-5 w-5" />
-                </button>
-              )}
-              {isAuthenticated && <NotificationPanel />}
-              {isAuthenticated && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-orange-400 flex-shrink-0 ml-0.5">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user?.profilePhotoUrl ?? undefined} alt={user?.name ?? undefined} />
-                        <AvatarFallback className="bg-orange-500 text-white font-bold text-xs">
-                          {user?.name?.charAt(0).toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64 border-2 border-orange-200 dark:border-orange-900">
-                    <DropdownMenuLabel>
-                      <div className="flex flex-col gap-1">
-                        <p className="text-base font-bold truncate">{user?.name}</p>
-                        <p className="text-xs text-muted-foreground">{user?.email}</p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setLocation('/profile')} className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4 text-orange-500" /> {t('Profile')}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive">
-                      <LogOut className="mr-2 h-4 w-4" /> {t('Logout')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-              {!isAuthenticated && (
-                <div className="flex items-center gap-2">
-                  <Link href="/login">
-                    <Button variant="ghost" size="sm" className="text-foreground hover:bg-muted text-sm px-3">
-                      {t('Login')}
-                    </Button>
-                  </Link>
-                  <Link href="/signup">
-                    <Button size="sm" className="bg-orange-500 text-white hover:bg-orange-600 text-sm px-3">
-                      {t('Sign Up')}
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* ── Desktop header (>= md) — keeps gradient ── */}
+      {/* ── Desktop header (>= md) — keeps gradient, full width ── */}
       <div
-        className="hidden md:flex container mx-auto h-20 items-center justify-between px-4 shadow-2xl"
+        className="hidden md:block w-full shadow-2xl"
         style={{ background: 'linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%)' }}
       >
+      <div className="flex h-20 items-center justify-between px-6">
         {/* Logo Section */}
         <div className="flex items-center gap-8">
           <Link href="/">
@@ -394,6 +339,7 @@ export function Header() {
             </div>
           )}
         </div>
+      </div>
       </div>
       {/* end desktop */}
     </header>
