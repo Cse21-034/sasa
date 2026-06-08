@@ -86,7 +86,7 @@ export function Header() {
       {/* ── Mobile header (< md) — clean, no background ── */}
       <div className="md:hidden flex h-14 items-center px-4 gap-3 bg-background border-b border-border/20">
         <Link href="/" className="flex items-center gap-2 flex-1">
-          <img src="/image.png" alt="JobTradeSasa" className="h-8 w-auto object-contain flex-shrink-0" />
+          <img src="/logo-icon.png" alt="JobTradeSasa" className="h-8 w-auto object-contain flex-shrink-0" />
           <span className="font-extrabold text-xl text-foreground leading-none">JobTradeSasa</span>
         </Link>
         <div className="flex items-center gap-0.5">
@@ -150,7 +150,7 @@ export function Header() {
           <Link href="/">
             <div className="flex items-center gap-4 hover:opacity-90 transition-opacity rounded-xl px-4 py-2 cursor-pointer group">
               <img
-                src="/image.png"
+                src="/logo-icon.png"
                 alt="JobTradeSasa"
                 className="h-12 lg:h-16 w-auto object-contain drop-shadow-lg"
               />

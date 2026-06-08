@@ -1060,7 +1060,7 @@ export default function Signup() {
           </svg>
 
           <div className="relative z-10 text-center">
-            <img src="/image.png" alt="JobTradeSasa" className="h-16 w-auto object-contain mx-auto mb-2 drop-shadow-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            <img src="/logo-full.png" alt="JobTradeSasa" className="h-20 w-auto object-contain mx-auto mb-2 drop-shadow-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             <h1 className="text-2xl font-bold text-white">Create an Account</h1>
             <p className="text-white/70 text-base mt-1">Join our community of service providers and requesters</p>
           </div>

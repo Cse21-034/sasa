@@ -48,7 +48,7 @@ function WaveTop({ step }: { step: Step }) {
       </svg>
 
       <div className="relative z-10 text-center">
-        <img src="/image.png" alt="JobTradeSasa" className="h-14 w-auto object-contain mx-auto mb-4 drop-shadow-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+        <img src="/logo-full.png" alt="JobTradeSasa" className="h-20 w-auto object-contain mx-auto mb-4 drop-shadow-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
         <div className="w-16 h-16 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
           <Icon className="h-8 w-8 text-white" />
         </div>
