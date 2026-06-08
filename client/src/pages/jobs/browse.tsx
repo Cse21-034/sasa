@@ -340,16 +340,11 @@ export default function BrowseJobs() {
             </div>
           ) : filteredJobs && filteredJobs.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredJobs.map((job) => {
-                const accentColor =
-                  job.status === 'open' ? '#10b981' :
-                  job.status === 'completed' ? '#3b82f6' : '#f59e0b';
-                return (
+              {filteredJobs.map((job) => (
                   <Link key={job.id} href={`/jobs/${job.id}`}>
                     <a>
                       <div
                         className="bg-card rounded-2xl border border-border/40 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_28px_rgba(0,0,0,0.13)] hover:-translate-y-1 transition-all duration-200 cursor-pointer group overflow-hidden"
-                        style={{ borderLeft: `4px solid ${accentColor}` }}
                         data-testid={`card-job-${job.id}`}
                       >
                         <div className="p-4 space-y-3">
@@ -410,8 +405,7 @@ export default function BrowseJobs() {
                       </div>
                     </a>
                   </Link>
-                );
-              })}
+              ))}
             </div>
           ) : (
             <div className="bg-card rounded-2xl border-2 border-dashed border-border/40 p-12 text-center">
