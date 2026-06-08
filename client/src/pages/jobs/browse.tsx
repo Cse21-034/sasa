@@ -82,13 +82,7 @@ export default function BrowseJobs() {
   const categoryChips = [{ id: 'all', name: 'All' }, ...(categories ?? [])];
 
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        background:
-          'radial-gradient(900px 500px at 10% -5%, rgba(249,153,45,.10), transparent 55%), radial-gradient(700px 500px at 95% 0%, rgba(39,67,69,.08), transparent 50%), #f3efe7',
-      }}
-    >
+    <div className="min-h-screen bg-background">
       {/* ── Hero ── */}
       <div className="px-4 pt-8 pb-5 max-w-7xl mx-auto">
         <h1 className="font-display font-extrabold text-3xl md:text-4xl text-foreground mb-1">
@@ -120,7 +114,7 @@ export default function BrowseJobs() {
         </p>
 
         {/* Search row */}
-        <div className="bg-white rounded-2xl shadow-md border border-black/5 p-3 flex flex-col sm:flex-row gap-2 mb-4">
+        <div className="bg-card rounded-2xl shadow-md border border-border/30 p-3 flex flex-col sm:flex-row gap-2 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <input
@@ -154,7 +148,7 @@ export default function BrowseJobs() {
               className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${
                 selectedCategory === String(cat.id)
                   ? 'bg-primary text-white border-primary shadow-sm'
-                  : 'bg-white text-foreground border-border/50 hover:border-primary/40 hover:bg-primary/5'
+                  : 'bg-card text-foreground border-border/50 hover:border-primary/40 hover:bg-primary/5'
               }`}
             >
               {cat.id !== 'all' && CATEGORY_ICONS[(cat as Category).name]
@@ -171,7 +165,7 @@ export default function BrowseJobs() {
 
         {/* Desktop Filter Rail */}
         <aside className="hidden lg:block w-44 flex-shrink-0 sticky top-20">
-          <div className="bg-white rounded-2xl shadow-sm border border-black/5 p-4 space-y-5">
+          <div className="bg-card rounded-2xl shadow-sm border border-border/30 p-4 space-y-5">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Status</p>
               <div className="space-y-2.5">
@@ -239,7 +233,7 @@ export default function BrowseJobs() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="text-sm border border-border/50 rounded-xl px-3 py-2 bg-white text-foreground outline-none"
+                className="text-sm border border-border/50 rounded-xl px-3 py-2 bg-card text-foreground outline-none"
               >
                 <option value="all">All Jobs</option>
                 <option value="open">{user?.role === 'provider' ? 'Available' : 'Pending'}</option>
@@ -264,7 +258,7 @@ export default function BrowseJobs() {
           {jobsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-white rounded-2xl p-4 border border-black/5 space-y-3">
+                <div key={i} className="bg-card rounded-2xl p-4 border border-border/30 space-y-3">
                   <div className="flex gap-3 items-center">
                     <Skeleton className="h-12 w-12 rounded-xl flex-shrink-0" />
                     <div className="flex-1 space-y-2">
@@ -283,17 +277,26 @@ export default function BrowseJobs() {
                 <Link key={job.id} href={`/jobs/${job.id}`}>
                   <a>
                     <div
-                      className="bg-white rounded-2xl border border-black/5 hover:border-primary/30 hover:shadow-lg transition-all duration-200 cursor-pointer group overflow-hidden"
+                      className="bg-card rounded-2xl border border-border/30 hover:border-primary/30 hover:shadow-lg transition-all duration-200 cursor-pointer group overflow-hidden"
                       data-testid={`card-job-${job.id}`}
                     >
                       <div className="p-4">
                         {/* Card header */}
                         <div className="flex gap-3 items-start mb-3">
                           <div
-                            className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-sm select-none"
+                            className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-sm select-none overflow-hidden"
                             style={{ background: getCategoryGradient(job.category?.name) }}
                           >
-                            {getInitials(job.title)}
+                            {job.requester?.profilePhotoUrl ? (
+                              <img
+                                src={job.requester.profilePhotoUrl}
+                                alt={job.requester.name || 'Poster'}
+                                className="w-full h-full object-cover"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                              />
+                            ) : (
+                              getInitials(job.title)
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-foreground text-base leading-snug line-clamp-1 group-hover:text-primary transition-colors">
