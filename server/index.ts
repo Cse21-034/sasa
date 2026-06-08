@@ -31,7 +31,9 @@ app.use(cors({
     'http://localhost:5173',
     'http://localhost:5000',
     'https://sasa-hazel.vercel.app',
-    'https://sasa-indol.vercel.app' // NOTE: Replace with your actual Vercel domain
+    'https://sasa-indol.vercel.app',
+    'https://jobtradesasa.com',
+    'https://www.jobtradesasa.com'
   ],
   credentials: true
 }));
