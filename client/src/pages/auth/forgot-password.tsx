@@ -3,9 +3,8 @@ import { Link, useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Briefcase, Loader2, ArrowLeft, Mail, KeyRound } from 'lucide-react';
+import { Mail, KeyRound, Loader2, ArrowLeft, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
@@ -26,8 +25,41 @@ const resetSchema = z.object({
 
 type EmailForm = z.infer<typeof emailSchema>;
 type ResetForm = z.infer<typeof resetSchema>;
-
 type Step = 'email' | 'code' | 'reset' | 'success';
+
+const stepMeta: Record<Step, { icon: typeof Mail; title: string; subtitle: string }> = {
+  email: { icon: Mail, title: 'Forgot Password?', subtitle: "Enter your email and we'll send a reset code" },
+  code: { icon: KeyRound, title: 'Enter Reset Code', subtitle: "We've sent a 6-digit code to your email" },
+  reset: { icon: KeyRound, title: 'New Password', subtitle: 'Create a strong new password for your account' },
+  success: { icon: CheckCircle, title: 'All Done!', subtitle: 'Your password has been reset successfully' },
+};
+
+function WaveTop({ step }: { step: Step }) {
+  const { icon: Icon, title, subtitle } = stepMeta[step];
+  return (
+    <div className="relative bg-primary px-8 pt-14 pb-20 flex-shrink-0">
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 220" fill="none" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M-80 180 C40 60 200 260 380 80" stroke="white" strokeWidth="50" strokeLinecap="round" opacity="0.06"/>
+        <path d="M-40 280 C80 160 240 320 440 180" stroke="white" strokeWidth="35" strokeLinecap="round" opacity="0.06"/>
+        <path d="M120 -40 C180 80 60 200 260 300" stroke="white" strokeWidth="40" strokeLinecap="round" opacity="0.06"/>
+      </svg>
+
+      <div className="relative z-10 text-center">
+        <div className="w-16 h-16 bg-primary-foreground/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+          <Icon className="h-8 w-8 text-primary-foreground" />
+        </div>
+        <h1 className="text-2xl font-bold text-primary-foreground">{title}</h1>
+        <p className="text-primary-foreground/75 text-sm mt-1">{subtitle}</p>
+      </div>
+
+      <div className="absolute bottom-0 left-0 right-0 leading-none">
+        <svg viewBox="0 0 500 48" preserveAspectRatio="none" className="w-full h-12 block" style={{ fill: 'hsl(var(--background))' }}>
+          <path d="M0,48 L0,28 Q125,0 250,24 Q375,48 500,20 L500,48 Z" />
+        </svg>
+      </div>
+    </div>
+  );
+}
 
 export default function ForgotPassword() {
   const [, setLocation] = useLocation();
@@ -36,6 +68,8 @@ export default function ForgotPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [code, setCode] = useState('');
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const emailForm = useForm<EmailForm>({
     resolver: zodResolver(emailSchema),
@@ -52,23 +86,11 @@ export default function ForgotPassword() {
     try {
       const response = await apiRequest('POST', '/api/auth/forgot-password', data);
       const result = await response.json();
-      
-      if (result.userId) {
-        setUserId(result.userId);
-      }
-      
-      toast({
-        title: 'Check your email',
-        description: 'If an account exists with that email, a reset code has been sent.',
-      });
-      
+      if (result.userId) setUserId(result.userId);
+      toast({ title: 'Check your email', description: 'If an account exists with that email, a reset code has been sent.' });
       setStep('code');
-    } catch (error: any) {
-      toast({
-        title: 'Request failed',
-        description: 'Unable to process your request. Please try again.',
-        variant: 'destructive',
-      });
+    } catch {
+      toast({ title: 'Request failed', description: 'Unable to process your request. Please try again.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -76,11 +98,7 @@ export default function ForgotPassword() {
 
   const handleCodeVerify = () => {
     if (code.length !== 6) {
-      toast({
-        title: 'Invalid code',
-        description: 'Please enter the complete 6-digit code.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Invalid code', description: 'Please enter the complete 6-digit code.', variant: 'destructive' });
       return;
     }
     setStep('reset');
@@ -89,155 +107,64 @@ export default function ForgotPassword() {
   const handleResetSubmit = async (data: ResetForm) => {
     setIsLoading(true);
     try {
-      await apiRequest('POST', '/api/auth/reset-password', {
-        userId,
-        code,
-        newPassword: data.newPassword,
-        confirmPassword: data.confirmPassword,
-      });
-      
-      toast({
-        title: 'Password reset!',
-        description: 'Your password has been reset successfully.',
-      });
-      
+      await apiRequest('POST', '/api/auth/reset-password', { userId, code, newPassword: data.newPassword, confirmPassword: data.confirmPassword });
+      toast({ title: 'Password reset!', description: 'Your password has been reset successfully.' });
       setStep('success');
     } catch (error: any) {
       let message = error.message || 'Password reset failed';
-      if (message.includes(':')) {
-        message = message.substring(message.indexOf(':') + 1).trim();
-      }
-      
-      toast({
-        title: 'Reset failed',
-        description: message,
-        variant: 'destructive',
-      });
+      if (message.includes(':')) message = message.substring(message.indexOf(':') + 1).trim();
+      toast({ title: 'Reset failed', description: message, variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-4">
-          <div className="flex justify-center">
-            <div className="flex items-center gap-2">
-              <Briefcase className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold">JobTradeSasa</span>
-            </div>
-          </div>
+    <div className="min-h-screen flex flex-col md:items-center md:justify-center md:bg-muted/40 md:p-6">
+      <div className="flex-1 flex flex-col w-full md:flex-none md:w-full md:max-w-md md:rounded-3xl md:shadow-2xl md:overflow-hidden">
 
-          {step === 'email' && (
-            <>
-              <div className="flex justify-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Mail className="h-8 w-8 text-primary" />
-                </div>
-              </div>
-              <CardTitle className="text-2xl text-center">Forgot Password?</CardTitle>
-              <CardDescription className="text-center">
-                Enter your email address and we'll send you a code to reset your password.
-              </CardDescription>
-            </>
-          )}
+        <WaveTop step={step} />
 
-          {step === 'code' && (
-            <>
-              <div className="flex justify-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-                  <KeyRound className="h-8 w-8 text-primary" />
-                </div>
-              </div>
-              <CardTitle className="text-2xl text-center">Enter Reset Code</CardTitle>
-              <CardDescription className="text-center">
-                We've sent a 6-digit code to your email. Enter it below.
-              </CardDescription>
-            </>
-          )}
+        <div className="flex-1 bg-background px-8 pb-10 pt-4 overflow-y-auto space-y-5">
 
-          {step === 'reset' && (
-            <>
-              <div className="flex justify-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-                  <KeyRound className="h-8 w-8 text-primary" />
-                </div>
-              </div>
-              <CardTitle className="text-2xl text-center">Create New Password</CardTitle>
-              <CardDescription className="text-center">
-                Enter a new password for your account.
-              </CardDescription>
-            </>
-          )}
-
-          {step === 'success' && (
-            <>
-              <div className="flex justify-center">
-                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                  <KeyRound className="h-8 w-8 text-green-600 dark:text-green-400" />
-                </div>
-              </div>
-              <CardTitle className="text-2xl text-center text-green-600 dark:text-green-400">
-                Password Reset Successful!
-              </CardTitle>
-              <CardDescription className="text-center">
-                You can now log in with your new password.
-              </CardDescription>
-            </>
-          )}
-        </CardHeader>
-
-        <CardContent className="space-y-4">
+          {/* Step: email */}
           {step === 'email' && (
             <Form {...emailForm}>
-              <form onSubmit={emailForm.handleSubmit(handleEmailSubmit)} className="space-y-4">
+              <form onSubmit={emailForm.handleSubmit(handleEmailSubmit)} className="space-y-5">
                 <FormField
                   control={emailForm.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email Address</FormLabel>
+                      <FormLabel className="text-sm font-medium">Email Address</FormLabel>
                       <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="you@example.com"
-                          data-testid="input-email"
-                          {...field}
-                        />
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            type="email"
+                            placeholder="you@example.com"
+                            className="pl-10 h-12 rounded-xl border-border bg-muted/30 focus:bg-background"
+                            data-testid="input-email"
+                            {...field}
+                          />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isLoading}
-                  data-testid="button-send-code"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    'Send Reset Code'
-                  )}
+                <Button type="submit" className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg" disabled={isLoading} data-testid="button-send-code">
+                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</> : 'Send Reset Code'}
                 </Button>
               </form>
             </Form>
           )}
 
+          {/* Step: code */}
           {step === 'code' && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div className="flex justify-center">
-                <InputOTP 
-                  maxLength={6} 
-                  value={code} 
-                  onChange={setCode}
-                  data-testid="input-reset-code"
-                >
+                <InputOTP maxLength={6} value={code} onChange={setCode} data-testid="input-reset-code">
                   <InputOTPGroup>
                     <InputOTPSlot index={0} />
                     <InputOTPSlot index={1} />
@@ -248,41 +175,33 @@ export default function ForgotPassword() {
                   </InputOTPGroup>
                 </InputOTP>
               </div>
-              <Button
-                className="w-full"
-                onClick={handleCodeVerify}
-                disabled={code.length !== 6}
-                data-testid="button-verify-code"
-              >
+              <Button className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg" onClick={handleCodeVerify} disabled={code.length !== 6} data-testid="button-verify-code">
                 Verify Code
               </Button>
-              <Button
-                variant="ghost"
-                className="w-full"
-                onClick={() => setStep('email')}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Email
+              <Button variant="ghost" className="w-full rounded-xl" onClick={() => setStep('email')}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Email
               </Button>
             </div>
           )}
 
+          {/* Step: reset */}
           {step === 'reset' && (
             <Form {...resetForm}>
-              <form onSubmit={resetForm.handleSubmit(handleResetSubmit)} className="space-y-4">
+              <form onSubmit={resetForm.handleSubmit(handleResetSubmit)} className="space-y-5">
                 <FormField
                   control={resetForm.control}
                   name="newPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>New Password</FormLabel>
+                      <FormLabel className="text-sm font-medium">New Password</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Enter new password"
-                          data-testid="input-new-password"
-                          {...field}
-                        />
+                        <div className="relative">
+                          <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input type={showNew ? 'text' : 'password'} placeholder="Enter new password" className="pl-10 pr-10 h-12 rounded-xl border-border bg-muted/30 focus:bg-background" data-testid="input-new-password" {...field} />
+                          <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -293,62 +212,44 @@ export default function ForgotPassword() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
+                      <FormLabel className="text-sm font-medium">Confirm Password</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Confirm new password"
-                          data-testid="input-confirm-password"
-                          {...field}
-                        />
+                        <div className="relative">
+                          <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input type={showConfirm ? 'text' : 'password'} placeholder="Confirm new password" className="pl-10 pr-10 h-12 rounded-xl border-border bg-muted/30 focus:bg-background" data-testid="input-confirm-password" {...field} />
+                          <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isLoading}
-                  data-testid="button-reset-password"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Resetting...
-                    </>
-                  ) : (
-                    'Reset Password'
-                  )}
+                <Button type="submit" className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg" disabled={isLoading} data-testid="button-reset-password">
+                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Resetting...</> : 'Reset Password'}
                 </Button>
               </form>
             </Form>
           )}
 
+          {/* Step: success */}
           {step === 'success' && (
-            <Button
-              className="w-full"
-              onClick={() => setLocation('/login')}
-              data-testid="button-goto-login"
-            >
+            <Button className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg" onClick={() => setLocation('/login')} data-testid="button-goto-login">
               Go to Login
             </Button>
           )}
 
           {step !== 'success' && (
-            <div className="text-center text-sm">
-              <p className="text-muted-foreground">
-                Remember your password?{' '}
-                <Link href="/login">
-                  <a className="text-primary hover:underline font-medium" data-testid="link-login">
-                    Back to Login
-                  </a>
-                </Link>
-              </p>
-            </div>
+            <p className="text-center text-sm text-muted-foreground pt-2">
+              Remember your password?{' '}
+              <Link href="/login">
+                <a className="text-primary hover:underline font-semibold" data-testid="link-login">Back to Login</a>
+              </Link>
+            </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

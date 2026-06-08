@@ -142,11 +142,14 @@ function SmartRedirect() {
 
 function Router() {
   const { isAuthenticated, user } = useAuth();
+  const [location] = useLocation();
+
+  const hideHeader = ['/login', '/signup', '/forgot-password'].includes(location);
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
-      <AppInstallPrompt />
+      {!hideHeader && <Header />}
+      {!hideHeader && <AppInstallPrompt />}
       <main className="flex-1 pb-16 md:pb-0">
         <Switch>
           {/* 🔥 FIXED: Use SmartRedirect for root route */}

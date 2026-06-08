@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Briefcase, Loader2, UserCircle, Wrench, Building2, MapPin, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -1045,115 +1044,86 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="space-y-4">
-        <div className="flex justify-center">
-  <img 
-    src="/image.png" 
-    alt="JobTradeSasa Logo" 
-    className="h-14 w-auto object-contain"
-  />
-</div>
+    <div className="min-h-screen flex flex-col md:items-center md:justify-center md:bg-muted/40 md:p-6">
+      <div className="flex-1 flex flex-col w-full md:flex-none md:w-full md:max-w-2xl md:rounded-3xl md:shadow-2xl md:overflow-hidden">
 
-          <CardTitle className="text-2xl text-center">Create an Account</CardTitle>
-          <CardDescription className="text-center">
-            Join our community of service providers and requesters
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Main Tab Navigation */}
+        {/* ── Colored top section ── */}
+        <div className="relative bg-primary px-8 pt-12 pb-20 flex-shrink-0">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 220" fill="none" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M-80 180 C40 60 200 260 380 80" stroke="white" strokeWidth="50" strokeLinecap="round" opacity="0.06"/>
+            <path d="M-40 280 C80 160 240 320 440 180" stroke="white" strokeWidth="35" strokeLinecap="round" opacity="0.06"/>
+            <path d="M120 -40 C180 80 60 200 260 300" stroke="white" strokeWidth="40" strokeLinecap="round" opacity="0.06"/>
+            <path d="M300 -60 C360 60 200 180 400 260" stroke="white" strokeWidth="30" strokeLinecap="round" opacity="0.05"/>
+          </svg>
+
+          <div className="relative z-10 text-center">
+            <img src="/image.png" alt="JobTradeSasa" className="h-12 w-auto object-contain mx-auto mb-2" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            <h1 className="text-xl font-bold text-primary-foreground">Create an Account</h1>
+            <p className="text-primary-foreground/75 text-sm mt-1">Join our community of service providers and requesters</p>
+          </div>
+
+          <div className="absolute bottom-0 left-0 right-0 leading-none">
+            <svg viewBox="0 0 500 48" preserveAspectRatio="none" className="w-full h-12 block" style={{ fill: 'hsl(var(--background))' }}>
+              <path d="M0,48 L0,28 Q125,0 250,24 Q375,48 500,20 L500,48 Z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* ── Form section ── */}
+        <div className="flex-1 bg-background px-6 pb-10 pt-4 overflow-y-auto">
+          {/* Tab Navigation */}
           <Tabs value={mainTab} onValueChange={(v) => handleMainTabChange(v as any)} className="mb-6">
-            <TabsList className="grid w-full grid-cols-3 h-12">
-              <TabsTrigger value="find-service" className="text-xs sm:text-sm">
+            <TabsList className="grid w-full grid-cols-3 h-12 rounded-xl">
+              <TabsTrigger value="find-service" className="text-xs sm:text-sm rounded-lg">
                 <UserCircle className="h-4 w-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">User</span>
                 <span className="sm:hidden">Find</span>
               </TabsTrigger>
-              <TabsTrigger value="provide-service" className="text-xs sm:text-sm">
+              <TabsTrigger value="provide-service" className="text-xs sm:text-sm rounded-lg">
                 <Wrench className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Service provider</span>
+                <span className="hidden sm:inline">Service Provider</span>
                 <span className="sm:hidden">Provide</span>
               </TabsTrigger>
-              <TabsTrigger value="supplier" className="text-xs sm:text-sm">
+              <TabsTrigger value="supplier" className="text-xs sm:text-sm rounded-lg">
                 <ShoppingBag className="h-4 w-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Supplier</span>
                 <span className="sm:hidden">Supp.</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          
-          {/* Find Service Tab */}
+
           {mainTab === 'find-service' && (
             <>
               {requesterUserType === 'individual' ? (
-                <IndividualForm 
-                  form={individualRequesterForm}
-                  selectedRole="requester"
-                  isLoading={isLoading}
-                  onSubmit={onSubmit}
-                  userType={requesterUserType}
-                  onUserTypeChange={setRequesterUserType}
-                />
+                <IndividualForm form={individualRequesterForm} selectedRole="requester" isLoading={isLoading} onSubmit={onSubmit} userType={requesterUserType} onUserTypeChange={setRequesterUserType} />
               ) : (
-                <CompanyForm 
-                  form={companyRequesterForm}
-                  selectedCompanyRole="requester"
-                  isLoading={isLoading}
-                  onSubmit={onSubmit}
-                />
+                <CompanyForm form={companyRequesterForm} selectedCompanyRole="requester" isLoading={isLoading} onSubmit={onSubmit} />
               )}
             </>
           )}
 
-          {/* Provide Service Tab */}
           {mainTab === 'provide-service' && (
             <>
               {providerUserType === 'individual' ? (
-                <IndividualForm 
-                  form={individualProviderForm}
-                  selectedRole="provider"
-                  isLoading={isLoading}
-                  onSubmit={onSubmit}
-                  userType={providerUserType}
-                  onUserTypeChange={setProviderUserType}
-                  selectedCategories={selectedCategories}
-                  onCategoriesChange={setSelectedCategories}
-                />
+                <IndividualForm form={individualProviderForm} selectedRole="provider" isLoading={isLoading} onSubmit={onSubmit} userType={providerUserType} onUserTypeChange={setProviderUserType} selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
               ) : (
-                <CompanyForm 
-                  form={companyProviderForm}
-                  selectedCompanyRole="provider"
-                  isLoading={isLoading}
-                  onSubmit={onSubmit}
-                  selectedCategories={selectedCategories}
-                  onCategoriesChange={setSelectedCategories}
-                />
+                <CompanyForm form={companyProviderForm} selectedCompanyRole="provider" isLoading={isLoading} onSubmit={onSubmit} selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
               )}
             </>
           )}
 
-          {/* Supplier Tab */}
           {mainTab === 'supplier' && (
-            <SupplierForm 
-              form={supplierForm}
-              isLoading={isLoading}
-              onSubmit={onSubmit}
-            />
+            <SupplierForm form={supplierForm} isLoading={isLoading} onSubmit={onSubmit} />
           )}
 
-          <div className="mt-6 text-center text-sm">
-            <p className="text-muted-foreground">
-              Already have an account?{' '}
-              <Link href="/login">
-                <a className="text-primary hover:underline font-medium">
-                  Login
-                </a>
-              </Link>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            Already have an account?{' '}
+            <Link href="/login">
+              <a className="text-primary hover:underline font-semibold">Login</a>
+            </Link>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
