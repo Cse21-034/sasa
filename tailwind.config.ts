@@ -94,6 +94,7 @@ export default {
         sans: ["var(--font-sans)"],
         serif: ["var(--font-serif)"],
         mono: ["var(--font-mono)"],
+        display: ['"Bricolage Grotesque"', 'sans-serif'],
       },
       keyframes: {
         "accordion-down": {
