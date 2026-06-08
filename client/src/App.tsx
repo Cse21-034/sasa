@@ -142,10 +142,13 @@ function SmartRedirect() {
 
 function Router() {
   const { isAuthenticated, user } = useAuth();
+  const [location] = useLocation();
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
+      <div className={location === '/' ? 'hidden md:block' : ''}>
+        <Header />
+      </div>
       <AppInstallPrompt />
       <main className="flex-1 pb-16 md:pb-0">
         <Switch>
