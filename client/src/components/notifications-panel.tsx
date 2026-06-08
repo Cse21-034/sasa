@@ -5,7 +5,7 @@ import { useNotifications } from '@/hooks/use-notifications';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'wouter';
 
-export function NotificationPanel() {
+export function NotificationPanel({ className }: { className?: string }) {
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const [playedNotificationIds, setPlayedNotificationIds] = useState<Set<string>>(new Set());
@@ -111,9 +111,9 @@ export function NotificationPanel() {
       {/* Notification Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 hover:bg-white/10 rounded-lg transition-colors duration-200"
+        className={`relative p-2 rounded-lg transition-colors duration-200 ${className ?? 'hover:bg-muted text-foreground'}`}
       >
-        <Bell className="w-4 h-4 md:w-5 md:h-5 text-white" />
+        <Bell className="w-4 h-4 md:w-5 md:h-5" />
         {unreadCount > 0 && (
           <span className="absolute top-1 right-1 w-4 h-4 md:w-5 md:h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold text-[10px] md:text-xs">
             {unreadCount > 9 ? '9+' : unreadCount}

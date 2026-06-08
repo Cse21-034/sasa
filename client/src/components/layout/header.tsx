@@ -277,12 +277,12 @@ export function Header() {
         
         {/* Right Section */}
         <div className="flex items-center gap-3">
-          <ThemeToggle />
+          <ThemeToggle className="text-white hover:bg-white/10 transition-colors" />
 
           {isAuthenticated ? (
             <>
               {/* 🆕 Notification Panel */}
-              <NotificationPanel />
+              <NotificationPanel className="hover:bg-white/10 text-white" />
 
               {user?.role === 'requester' && (
                 <Link href="/post-job">
