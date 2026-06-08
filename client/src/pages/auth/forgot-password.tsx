@@ -37,7 +37,10 @@ const stepMeta: Record<Step, { icon: typeof Mail; title: string; subtitle: strin
 function WaveTop({ step }: { step: Step }) {
   const { icon: Icon, title, subtitle } = stepMeta[step];
   return (
-    <div className="relative bg-primary px-8 pt-14 pb-20 flex-shrink-0">
+    <div
+      className="relative px-8 pt-12 pb-20 flex-shrink-0"
+      style={{ background: 'linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%)' }}
+    >
       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 220" fill="none" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M-80 180 C40 60 200 260 380 80" stroke="white" strokeWidth="50" strokeLinecap="round" opacity="0.06"/>
         <path d="M-40 280 C80 160 240 320 440 180" stroke="white" strokeWidth="35" strokeLinecap="round" opacity="0.06"/>
@@ -45,11 +48,12 @@ function WaveTop({ step }: { step: Step }) {
       </svg>
 
       <div className="relative z-10 text-center">
-        <div className="w-16 h-16 bg-primary-foreground/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-          <Icon className="h-8 w-8 text-primary-foreground" />
+        <img src="/image.png" alt="JobTradeSasa" className="h-14 w-auto object-contain mx-auto mb-4 drop-shadow-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+        <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
+          <Icon className="h-7 w-7 text-white" />
         </div>
-        <h1 className="text-2xl font-bold text-primary-foreground">{title}</h1>
-        <p className="text-primary-foreground/75 text-sm mt-1">{subtitle}</p>
+        <h1 className="text-xl font-bold text-white">{title}</h1>
+        <p className="text-white/70 text-sm mt-1">{subtitle}</p>
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 leading-none">

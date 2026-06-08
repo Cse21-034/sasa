@@ -1048,7 +1048,10 @@ export default function Signup() {
       <div className="flex-1 flex flex-col w-full md:flex-none md:w-full md:max-w-2xl md:rounded-3xl md:shadow-2xl md:overflow-hidden">
 
         {/* ── Colored top section ── */}
-        <div className="relative bg-primary px-8 pt-12 pb-20 flex-shrink-0">
+        <div
+          className="relative px-8 pt-10 pb-20 flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%)' }}
+        >
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 220" fill="none" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M-80 180 C40 60 200 260 380 80" stroke="white" strokeWidth="50" strokeLinecap="round" opacity="0.06"/>
             <path d="M-40 280 C80 160 240 320 440 180" stroke="white" strokeWidth="35" strokeLinecap="round" opacity="0.06"/>
@@ -1057,9 +1060,9 @@ export default function Signup() {
           </svg>
 
           <div className="relative z-10 text-center">
-            <img src="/image.png" alt="JobTradeSasa" className="h-12 w-auto object-contain mx-auto mb-2" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-            <h1 className="text-xl font-bold text-primary-foreground">Create an Account</h1>
-            <p className="text-primary-foreground/75 text-sm mt-1">Join our community of service providers and requesters</p>
+            <img src="/image.png" alt="JobTradeSasa" className="h-16 w-auto object-contain mx-auto mb-2 drop-shadow-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            <h1 className="text-xl font-bold text-white">Create an Account</h1>
+            <p className="text-white/70 text-sm mt-1">Join our community of service providers and requesters</p>
           </div>
 
           <div className="absolute bottom-0 left-0 right-0 leading-none">

@@ -64,7 +64,10 @@ export default function Login() {
       <div className="flex-1 flex flex-col w-full md:flex-none md:w-full md:max-w-md md:rounded-3xl md:shadow-2xl md:overflow-hidden">
 
         {/* ── Colored top section ── */}
-        <div className="relative bg-primary px-8 pt-14 pb-20 flex-shrink-0">
+        <div
+          className="relative px-8 pt-14 pb-20 flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%)' }}
+        >
           {/* Decorative abstract lines */}
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 220" fill="none" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M-80 180 C40 60 200 260 380 80" stroke="white" strokeWidth="50" strokeLinecap="round" opacity="0.06"/>
@@ -75,8 +78,7 @@ export default function Login() {
 
           {/* Brand */}
           <div className="relative z-10 text-center">
-            <img src="/image.png" alt="JobTradeSasa" className="h-14 w-auto object-contain mx-auto mb-3" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-            <p className="text-primary-foreground/80 text-sm font-medium tracking-wide">Find. Connect. Hire.</p>
+            <img src="/image.png" alt="JobTradeSasa" className="h-20 w-auto object-contain mx-auto drop-shadow-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           </div>
 
           {/* Wave */}
