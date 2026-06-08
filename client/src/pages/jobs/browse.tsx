@@ -83,80 +83,66 @@ export default function BrowseJobs() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* ── Hero ── */}
-      <div className="px-4 pt-8 pb-5 max-w-7xl mx-auto">
+      {/* ── Title — desktop only (mobile goes straight to search) ── */}
+      <div className="hidden md:block px-4 pt-8 pb-3 max-w-7xl mx-auto">
         <h1 className="font-display font-extrabold text-3xl md:text-4xl text-foreground mb-1">
           {user?.role === 'requester' ? (
             <>
-              <em
-                className="not-italic"
-                style={{ background: 'linear-gradient(90deg,#F8992D,#274345)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-              >
-                My
-              </em>{' '}
-              Jobs
+              <em className="not-italic" style={{ background: 'linear-gradient(90deg,#F8992D,#274345)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>My</em>{' '}Jobs
             </>
           ) : (
-            <>
-              Find{' '}
-              <em
-                className="not-italic"
-                style={{ background: 'linear-gradient(90deg,#F8992D,#274345)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-              >
-                Jobs
-              </em>{' '}
-              Near You
-            </>
+            <>Find <em className="not-italic" style={{ background: 'linear-gradient(90deg,#F8992D,#274345)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Jobs</em> Near You</>
           )}
         </h1>
-        <p className="text-muted-foreground text-base mb-5">
+        <p className="text-muted-foreground text-sm">
           {user?.role === 'requester' ? 'Manage your service requests' : 'Browse open service requests in your area'}
         </p>
+      </div>
 
-        {/* Search row */}
-        <div className="bg-card rounded-2xl shadow-md border border-border/30 p-3 flex flex-col sm:flex-row gap-2 mb-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+      {/* ── Sticky search bar + category chips (Instagram/WhatsApp style) ── */}
+      <div className="sticky top-14 md:top-20 z-10 bg-background/95 backdrop-blur-sm border-b border-border/20">
+        <div className="max-w-7xl mx-auto px-4 pt-3 pb-2 space-y-2.5">
+
+          {/* Instagram-style pill search */}
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <input
               type="text"
-              placeholder="Search jobs by title or description..."
+              placeholder="Search jobs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 h-11 rounded-xl bg-muted/30 border border-transparent focus:border-primary/40 focus:bg-white outline-none text-sm transition-all"
+              className="w-full pl-10 pr-10 h-10 rounded-full bg-muted/80 dark:bg-muted/50 border-0 outline-none text-sm transition-all placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/20"
               data-testid="input-search-jobs"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Filter className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
-          <div className="relative sm:w-40">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Location..."
-              className="w-full pl-9 pr-3 h-11 rounded-xl bg-muted/30 border border-transparent focus:border-primary/40 focus:bg-white outline-none text-sm transition-all"
-            />
-          </div>
-          <button className="h-11 px-5 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 flex-shrink-0">
-            <Search className="h-4 w-4" /> Search
-          </button>
-        </div>
 
-        {/* Category chips */}
-        <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-          {categoryChips.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(String(cat.id))}
-              className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${
-                selectedCategory === String(cat.id)
-                  ? 'bg-primary text-white border-primary shadow-sm'
-                  : 'bg-card text-foreground border-border/50 hover:border-primary/40 hover:bg-primary/5'
-              }`}
-            >
-              {cat.id !== 'all' && CATEGORY_ICONS[(cat as Category).name]
-                ? `${CATEGORY_ICONS[(cat as Category).name]} `
-                : ''}
-              {cat.name}
-            </button>
-          ))}
+          {/* Category chips — horizontal scroll */}
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+            {categoryChips.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(String(cat.id))}
+                className={`flex-shrink-0 px-3.5 py-1 rounded-full text-xs font-semibold border transition-all ${
+                  selectedCategory === String(cat.id)
+                    ? 'bg-primary text-white border-primary shadow-sm'
+                    : 'bg-card text-foreground border-border/50 hover:border-primary/30 hover:bg-primary/5'
+                }`}
+              >
+                {cat.id !== 'all' && CATEGORY_ICONS[(cat as Category).name]
+                  ? `${CATEGORY_ICONS[(cat as Category).name]} `
+                  : ''}
+                {cat.name}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -164,7 +150,7 @@ export default function BrowseJobs() {
       <div className="max-w-7xl mx-auto px-4 pb-24 flex gap-6 items-start">
 
         {/* Desktop Filter Rail */}
-        <aside className="hidden lg:block w-44 flex-shrink-0 sticky top-20">
+        <aside className="hidden lg:block w-44 flex-shrink-0 sticky top-40">
           <div className="bg-card rounded-2xl shadow-sm border border-border/30 p-4 space-y-5">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Status</p>
