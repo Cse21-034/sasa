@@ -340,67 +340,78 @@ export default function BrowseJobs() {
             </div>
           ) : filteredJobs && filteredJobs.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredJobs.map((job) => (
-                <Link key={job.id} href={`/jobs/${job.id}`}>
-                  <a>
-                    <div
-                      className="bg-card rounded-2xl border border-border/30 hover:border-primary/30 hover:shadow-lg transition-all duration-200 cursor-pointer group overflow-hidden"
-                      data-testid={`card-job-${job.id}`}
-                    >
-                      <div className="p-4">
-                        {/* Card header */}
-                        <div className="flex gap-2 items-start mb-3">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-foreground text-base leading-snug line-clamp-1 group-hover:text-primary transition-colors">
-                              {job.title}
-                            </h3>
-                            <p className="text-muted-foreground text-xs mt-0.5">
-                              {job.category?.name || 'General'} · {new Date(job.createdAt).toLocaleDateString()}
-                            </p>
+              {filteredJobs.map((job) => {
+                const accentColor =
+                  job.status === 'open' ? '#10b981' :
+                  job.status === 'completed' ? '#3b82f6' : '#f59e0b';
+                return (
+                  <Link key={job.id} href={`/jobs/${job.id}`}>
+                    <a>
+                      <div
+                        className="bg-card rounded-2xl border border-border/40 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_28px_rgba(0,0,0,0.13)] hover:-translate-y-1 transition-all duration-200 cursor-pointer group overflow-hidden"
+                        style={{ borderLeft: `4px solid ${accentColor}` }}
+                        data-testid={`card-job-${job.id}`}
+                      >
+                        <div className="p-4 space-y-3">
+                          {/* Top row */}
+                          <div className="flex gap-2 items-start">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-bold text-foreground text-[15px] leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                                {job.title}
+                              </h3>
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                  {job.category?.name || 'General'}
+                                </span>
+                                <span className="text-muted-foreground text-xs">
+                                  {new Date(job.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                              <span
+                                className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                                  job.status === 'open'
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                                    : job.status === 'completed'
+                                    ? 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800'
+                                    : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800'
+                                }`}
+                              >
+                                {job.status === 'open' ? '● Open' : job.status === 'completed' ? '✓ Done' : '↻ Active'}
+                              </span>
+                              {job.urgency === 'emergency' && (
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800">
+                                  🚨 Urgent
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          {job.urgency === 'emergency' && (
-                            <span className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">
-                              🚨 Urgent
-                            </span>
-                          )}
+
+                          {/* Description */}
+                          <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                            {job.description}
+                          </p>
+
+                          {/* Footer */}
+                          <div className="border-t border-border/30 pt-2.5 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1 text-muted-foreground text-xs min-w-0">
+                              <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="truncate">{job.address || 'Location TBD'}</span>
+                            </div>
+                            {job.expiryDate && new Date(job.expiryDate).getTime() - Date.now() < 86400000 && (
+                              <div className="flex items-center gap-1 text-xs text-red-500 font-medium flex-shrink-0">
+                                <Clock className="h-3.5 w-3.5" />
+                                Expires soon
+                              </div>
+                            )}
+                          </div>
                         </div>
-
-                        {/* Description */}
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3 leading-relaxed">
-                          {job.description}
-                        </p>
-
-                        {/* Footer */}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1 text-muted-foreground text-xs min-w-0">
-                            <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                            <span className="truncate">{job.address || 'Location TBD'}</span>
-                          </div>
-                          <span
-                            className={`flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full ${
-                              job.status === 'open'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : job.status === 'completed'
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                : 'bg-amber-50 text-amber-700 border border-amber-200'
-                            }`}
-                          >
-                            {job.status === 'open' ? '● Open' : job.status === 'completed' ? '✓ Done' : '↻ Active'}
-                          </span>
-                        </div>
-
-                        {/* Expiry warning */}
-                        {job.expiryDate && new Date(job.expiryDate).getTime() - Date.now() < 86400000 && (
-                          <div className="mt-2 flex items-center gap-1 text-xs text-red-500 font-medium">
-                            <Clock className="h-3.5 w-3.5" />
-                            Expires soon: {new Date(job.expiryDate).toLocaleDateString()}
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  </a>
-                </Link>
-              ))}
+                    </a>
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <div className="bg-card rounded-2xl border-2 border-dashed border-border/40 p-12 text-center">
