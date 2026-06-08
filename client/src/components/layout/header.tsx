@@ -96,18 +96,15 @@ export function Header() {
   };
 
   return (
-    <header
-      className="sticky top-0 z-50 w-full shadow-lg"
-      style={{ background: 'linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%)' }}
-    >
-      {/* ── Mobile header (< md) ── */}
-      <div className="md:hidden flex h-14 items-center px-4 gap-3">
+    <header className="sticky top-0 z-50 w-full">
+      {/* ── Mobile header (< md) — clean, no background ── */}
+      <div className="md:hidden flex h-14 items-center px-4 gap-3 bg-background border-b border-border/20">
         {mobileSearchOpen ? (
           /* WhatsApp-style: header transforms into search input */
           <>
             <button
               onClick={() => { setMobileSearchOpen(false); setMobileSearchQuery(''); }}
-              className="flex-shrink-0 text-white/80 hover:text-white transition-colors"
+              className="flex-shrink-0 text-foreground/70 hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
@@ -119,12 +116,12 @@ export function Header() {
                 onChange={(e) => setMobileSearchQuery(e.target.value)}
                 onKeyDown={handleMobileSearch}
                 placeholder="Search jobs..."
-                className="w-full h-9 rounded-full bg-white/15 text-white placeholder-white/50 pl-4 pr-9 text-sm outline-none focus:bg-white/20 transition-colors"
+                className="w-full h-9 rounded-full bg-muted/70 text-foreground placeholder-muted-foreground/60 pl-4 pr-9 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               />
               {mobileSearchQuery && (
                 <button
                   onClick={() => setMobileSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -134,14 +131,16 @@ export function Header() {
         ) : (
           /* Normal mobile header: logo + icon buttons */
           <>
-            <Link href="/" className="flex-1">
-              <img src="/image.png" alt="JobTradeSasa" className="h-9 w-auto object-contain drop-shadow-md" />
+            <Link href="/" className="flex items-center gap-2 flex-1">
+              <img src="/image.png" alt="JobTradeSasa" className="h-8 w-auto object-contain flex-shrink-0" />
+              <span className="font-bold text-base text-foreground leading-none">JobTradeSasa</span>
             </Link>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
+              <ThemeToggle />
               {isAuthenticated && (
                 <button
                   onClick={() => setMobileSearchOpen(true)}
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-white/80 hover:bg-white/10 transition-colors"
+                  className="w-9 h-9 flex items-center justify-center rounded-full text-foreground/70 hover:bg-muted transition-colors"
                 >
                   <Search className="h-5 w-5" />
                 </button>
@@ -150,9 +149,9 @@ export function Header() {
               {isAuthenticated && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-orange-400 flex-shrink-0 ml-1">
+                    <button className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-orange-400 flex-shrink-0 ml-0.5">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user?.profilePhotoUrl} alt={user?.name} />
+                        <AvatarImage src={user?.profilePhotoUrl ?? undefined} alt={user?.name ?? undefined} />
                         <AvatarFallback className="bg-orange-500 text-white font-bold text-xs">
                           {user?.name?.charAt(0).toUpperCase() || 'U'}
                         </AvatarFallback>
@@ -180,7 +179,7 @@ export function Header() {
               {!isAuthenticated && (
                 <div className="flex items-center gap-2">
                   <Link href="/login">
-                    <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 text-sm px-3">
+                    <Button variant="ghost" size="sm" className="text-foreground hover:bg-muted text-sm px-3">
                       {t('Login')}
                     </Button>
                   </Link>
@@ -196,8 +195,11 @@ export function Header() {
         )}
       </div>
 
-      {/* ── Desktop header (>= md) — unchanged ── */}
-      <div className="hidden md:flex container mx-auto h-20 items-center justify-between px-4">
+      {/* ── Desktop header (>= md) — keeps gradient ── */}
+      <div
+        className="hidden md:flex container mx-auto h-20 items-center justify-between px-4 shadow-2xl"
+        style={{ background: 'linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%)' }}
+      >
         {/* Logo Section */}
         <div className="flex items-center gap-8">
           <Link href="/">
