@@ -1061,8 +1061,8 @@ export default function Signup() {
 
           <div className="relative z-10 text-center">
             <img src="/image.png" alt="JobTradeSasa" className="h-16 w-auto object-contain mx-auto mb-2 drop-shadow-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-            <h1 className="text-xl font-bold text-white">Create an Account</h1>
-            <p className="text-white/70 text-sm mt-1">Join our community of service providers and requesters</p>
+            <h1 className="text-2xl font-bold text-white">Create an Account</h1>
+            <p className="text-white/70 text-base mt-1">Join our community of service providers and requesters</p>
           </div>
 
           <div className="absolute bottom-0 left-0 right-0 leading-none">
@@ -1076,19 +1076,19 @@ export default function Signup() {
         <div className="flex-1 bg-background px-6 pb-10 pt-4 overflow-y-auto">
           {/* Tab Navigation */}
           <Tabs value={mainTab} onValueChange={(v) => handleMainTabChange(v as any)} className="mb-6">
-            <TabsList className="grid w-full grid-cols-3 h-12 rounded-xl">
-              <TabsTrigger value="find-service" className="text-xs sm:text-sm rounded-lg">
-                <UserCircle className="h-4 w-4 mr-1 sm:mr-2" />
+            <TabsList className="grid w-full grid-cols-3 h-14 rounded-xl">
+              <TabsTrigger value="find-service" className="text-sm sm:text-base rounded-lg">
+                <UserCircle className="h-5 w-5 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">User</span>
                 <span className="sm:hidden">Find</span>
               </TabsTrigger>
-              <TabsTrigger value="provide-service" className="text-xs sm:text-sm rounded-lg">
-                <Wrench className="h-4 w-4 mr-1 sm:mr-2" />
+              <TabsTrigger value="provide-service" className="text-sm sm:text-base rounded-lg">
+                <Wrench className="h-5 w-5 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Service Provider</span>
                 <span className="sm:hidden">Provide</span>
               </TabsTrigger>
-              <TabsTrigger value="supplier" className="text-xs sm:text-sm rounded-lg">
-                <ShoppingBag className="h-4 w-4 mr-1 sm:mr-2" />
+              <TabsTrigger value="supplier" className="text-sm sm:text-base rounded-lg">
+                <ShoppingBag className="h-5 w-5 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Supplier</span>
                 <span className="sm:hidden">Supp.</span>
               </TabsTrigger>
@@ -1119,7 +1119,7 @@ export default function Signup() {
             <SupplierForm form={supplierForm} isLoading={isLoading} onSubmit={onSubmit} />
           )}
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
+          <p className="text-center text-base text-muted-foreground mt-6">
             Already have an account?{' '}
             <Link href="/login">
               <a className="text-primary hover:underline font-semibold">Login</a>

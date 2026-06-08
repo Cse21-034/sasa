@@ -91,8 +91,8 @@ export default function Login() {
 
         {/* ── Form section ── */}
         <div className="flex-1 bg-background px-8 pb-10 pt-4 overflow-y-auto">
-          <h1 className="text-2xl font-bold text-foreground mb-1">Sign in</h1>
-          <p className="text-muted-foreground text-sm mb-7">Enter your credentials to access your account</p>
+          <h1 className="text-3xl font-bold text-foreground mb-1">Sign in</h1>
+          <p className="text-muted-foreground text-base mb-7">Enter your credentials to access your account</p>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -101,20 +101,20 @@ export default function Login() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">Email</FormLabel>
+                    <FormLabel className="text-base font-medium">Email</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <Input
                           type="email"
                           placeholder="demo@email.com"
-                          className="pl-10 h-12 rounded-xl border-border bg-muted/30 focus:bg-background"
+                          className="pl-11 h-14 rounded-xl border-border bg-muted/30 focus:bg-background text-base"
                           data-testid="input-email"
                           {...field}
                         />
                       </div>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-sm" />
                   </FormItem>
                 )}
               />
@@ -125,20 +125,20 @@ export default function Login() {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-between">
-                      <FormLabel className="text-sm font-medium">Password</FormLabel>
+                      <FormLabel className="text-base font-medium">Password</FormLabel>
                       <Link href="/forgot-password">
-                        <a className="text-xs text-primary hover:underline font-medium" data-testid="link-forgot-password">
+                        <a className="text-sm text-primary hover:underline font-medium" data-testid="link-forgot-password">
                           Forgot Password?
                         </a>
                       </Link>
                     </div>
                     <FormControl>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <Input
                           type={showPassword ? 'text' : 'password'}
                           placeholder="enter your password"
-                          className="pl-10 pr-10 h-12 rounded-xl border-border bg-muted/30 focus:bg-background"
+                          className="pl-11 pr-11 h-14 rounded-xl border-border bg-muted/30 focus:bg-background text-base"
                           data-testid="input-password"
                           {...field}
                         />
@@ -147,23 +147,23 @@ export default function Login() {
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
                       </div>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-sm" />
                   </FormItem>
                 )}
               />
 
               <Button
                 type="submit"
-                className="w-full h-12 rounded-xl text-base font-semibold mt-2 bg-primary hover:bg-primary/90 shadow-lg"
+                className="w-full h-14 rounded-xl text-lg font-semibold mt-2 bg-primary hover:bg-primary/90 shadow-lg"
                 disabled={isLoading}
                 data-testid="button-login-submit"
               >
                 {isLoading ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...</>
+                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Logging in...</>
                 ) : (
                   'Login'
                 )}
@@ -171,7 +171,7 @@ export default function Login() {
             </form>
           </Form>
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
+          <p className="text-center text-base text-muted-foreground mt-6">
             Don't have an Account?{' '}
             <Link href="/signup">
               <a className="text-primary hover:underline font-semibold" data-testid="link-signup">Sign up</a>

@@ -49,11 +49,11 @@ function WaveTop({ step }: { step: Step }) {
 
       <div className="relative z-10 text-center">
         <img src="/image.png" alt="JobTradeSasa" className="h-14 w-auto object-contain mx-auto mb-4 drop-shadow-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-        <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
-          <Icon className="h-7 w-7 text-white" />
+        <div className="w-16 h-16 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
+          <Icon className="h-8 w-8 text-white" />
         </div>
-        <h1 className="text-xl font-bold text-white">{title}</h1>
-        <p className="text-white/70 text-sm mt-1">{subtitle}</p>
+        <h1 className="text-2xl font-bold text-white">{title}</h1>
+        <p className="text-white/70 text-base mt-1">{subtitle}</p>
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 leading-none">
@@ -140,25 +140,25 @@ export default function ForgotPassword() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Email Address</FormLabel>
+                      <FormLabel className="text-base font-medium">Email Address</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                           <Input
                             type="email"
                             placeholder="you@example.com"
-                            className="pl-10 h-12 rounded-xl border-border bg-muted/30 focus:bg-background"
+                            className="pl-11 h-14 rounded-xl border-border bg-muted/30 focus:bg-background text-base"
                             data-testid="input-email"
                             {...field}
                           />
                         </div>
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-sm" />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg" disabled={isLoading} data-testid="button-send-code">
-                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</> : 'Send Reset Code'}
+                <Button type="submit" className="w-full h-14 rounded-xl text-lg font-semibold bg-primary hover:bg-primary/90 shadow-lg" disabled={isLoading} data-testid="button-send-code">
+                  {isLoading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Sending...</> : 'Send Reset Code'}
                 </Button>
               </form>
             </Form>
@@ -179,11 +179,11 @@ export default function ForgotPassword() {
                   </InputOTPGroup>
                 </InputOTP>
               </div>
-              <Button className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg" onClick={handleCodeVerify} disabled={code.length !== 6} data-testid="button-verify-code">
+              <Button className="w-full h-14 rounded-xl text-lg font-semibold bg-primary hover:bg-primary/90 shadow-lg" onClick={handleCodeVerify} disabled={code.length !== 6} data-testid="button-verify-code">
                 Verify Code
               </Button>
-              <Button variant="ghost" className="w-full rounded-xl" onClick={() => setStep('email')}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Email
+              <Button variant="ghost" className="w-full h-12 rounded-xl text-base" onClick={() => setStep('email')}>
+                <ArrowLeft className="mr-2 h-5 w-5" /> Back to Email
               </Button>
             </div>
           )}
@@ -197,17 +197,17 @@ export default function ForgotPassword() {
                   name="newPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">New Password</FormLabel>
+                      <FormLabel className="text-base font-medium">New Password</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input type={showNew ? 'text' : 'password'} placeholder="Enter new password" className="pl-10 pr-10 h-12 rounded-xl border-border bg-muted/30 focus:bg-background" data-testid="input-new-password" {...field} />
+                          <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                          <Input type={showNew ? 'text' : 'password'} placeholder="Enter new password" className="pl-11 pr-11 h-14 rounded-xl border-border bg-muted/30 focus:bg-background text-base" data-testid="input-new-password" {...field} />
                           <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                            {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            {showNew ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                           </button>
                         </div>
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-sm" />
                     </FormItem>
                   )}
                 />
@@ -216,22 +216,22 @@ export default function ForgotPassword() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Confirm Password</FormLabel>
+                      <FormLabel className="text-base font-medium">Confirm Password</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input type={showConfirm ? 'text' : 'password'} placeholder="Confirm new password" className="pl-10 pr-10 h-12 rounded-xl border-border bg-muted/30 focus:bg-background" data-testid="input-confirm-password" {...field} />
+                          <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                          <Input type={showConfirm ? 'text' : 'password'} placeholder="Confirm new password" className="pl-11 pr-11 h-14 rounded-xl border-border bg-muted/30 focus:bg-background text-base" data-testid="input-confirm-password" {...field} />
                           <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                            {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                           </button>
                         </div>
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-sm" />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg" disabled={isLoading} data-testid="button-reset-password">
-                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Resetting...</> : 'Reset Password'}
+                <Button type="submit" className="w-full h-14 rounded-xl text-lg font-semibold bg-primary hover:bg-primary/90 shadow-lg" disabled={isLoading} data-testid="button-reset-password">
+                  {isLoading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Resetting...</> : 'Reset Password'}
                 </Button>
               </form>
             </Form>
@@ -239,13 +239,13 @@ export default function ForgotPassword() {
 
           {/* Step: success */}
           {step === 'success' && (
-            <Button className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg" onClick={() => setLocation('/login')} data-testid="button-goto-login">
+            <Button className="w-full h-14 rounded-xl text-lg font-semibold bg-primary hover:bg-primary/90 shadow-lg" onClick={() => setLocation('/login')} data-testid="button-goto-login">
               Go to Login
             </Button>
           )}
 
           {step !== 'success' && (
-            <p className="text-center text-sm text-muted-foreground pt-2">
+            <p className="text-center text-base text-muted-foreground pt-2">
               Remember your password?{' '}
               <Link href="/login">
                 <a className="text-primary hover:underline font-semibold" data-testid="link-login">Back to Login</a>
