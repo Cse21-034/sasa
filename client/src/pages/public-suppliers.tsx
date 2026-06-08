@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, MapPin, Phone, Star, Tag, ArrowRight, ShieldCheck, Building2 } from 'lucide-react';
+import { Search, MapPin, Phone, Star, Tag, ArrowRight, Building2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
@@ -69,22 +69,11 @@ export default function PublicSuppliers() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top bar */}
-      <div className="bg-[#1a3a3a] text-white px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-semibold tracking-wide">
-          <ShieldCheck className="h-4 w-4 text-orange-300" />
-          Supplier Catalogue
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href="/login">
-            <button className="text-white/80 hover:text-white text-sm transition-colors">Log In</button>
-          </Link>
-          <Link href="/signup">
-            <button className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">
-              Sign Up Free
-            </button>
-          </Link>
-        </div>
+
+      {/* Page title */}
+      <div className="max-w-7xl mx-auto px-4 pt-8 pb-4 text-center">
+        <h1 className="text-2xl font-bold text-foreground">Supplier Catalogue</h1>
+        <p className="text-sm text-muted-foreground mt-1">Browse verified suppliers for materials, tools and equipment</p>
       </div>
 
       {/* Search bar */}

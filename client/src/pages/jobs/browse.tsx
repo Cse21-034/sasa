@@ -157,6 +157,29 @@ export default function BrowseJobs() {
   return (
     <div className="min-h-screen bg-background">
 
+      {/* ── Page title ── */}
+      <div className="max-w-7xl mx-auto px-4 pt-8 pb-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              {user?.role === 'requester' ? 'My Jobs' : 'Browse Jobs'}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {user?.role === 'requester'
+                ? 'Manage your active service requests'
+                : 'Find open service requests near you'}
+            </p>
+          </div>
+          {user?.role === 'requester' && (
+            <Link href="/post-job">
+              <a className="flex-shrink-0 px-4 py-2 rounded-lg bg-foreground text-background font-semibold text-sm hover:opacity-80 transition-opacity shadow-sm">
+                + Post Job
+              </a>
+            </Link>
+          )}
+        </div>
+      </div>
+
       {/* ── Search bar ── */}
       <div className="border-b border-border/40 bg-card px-4 py-3 sticky top-14 md:top-20 z-10">
         <div className="max-w-7xl mx-auto flex items-center gap-2">
@@ -197,55 +220,31 @@ export default function BrowseJobs() {
       </div>
 
       {/* ── Body ── */}
-      <div className="max-w-7xl mx-auto px-4 py-8 pb-24 flex gap-8 items-start">
+      <div className="max-w-7xl mx-auto px-4 py-8 pb-28 flex gap-10 items-start">
 
         {/* Left sidebar */}
         <aside className="hidden md:block w-56 flex-shrink-0 sticky top-36">
-          <h2 className="text-2xl font-bold mb-5">Filters</h2>
+          <h2 className="text-2xl font-bold mb-6">Filters</h2>
           <FilterPanel />
         </aside>
 
         {/* Main content */}
         <div className="flex-1 min-w-0">
-
-          {/* Page heading */}
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">
-                {user?.role === 'requester' ? 'My Jobs' : 'Browse Jobs'}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {user?.role === 'requester'
-                  ? 'Manage your active service requests'
-                  : 'Find open service requests near you'}
-              </p>
-              {!jobsLoading && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} found
-                </p>
-              )}
-            </div>
-            {user?.role === 'requester' && (
-              <Link href="/post-job">
-                <a className="flex-shrink-0 px-4 py-2 rounded-lg bg-foreground text-background font-semibold text-sm hover:opacity-80 transition-opacity shadow-sm">
-                  + Post Job
-                </a>
-              </Link>
-            )}
-          </div>
+          {!jobsLoading && (
+            <p className="text-sm text-muted-foreground mb-5">
+              {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} found
+            </p>
+          )}
 
           {/* Skeletons */}
           {jobsLoading && (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
               {[1,2,3,4,5,6].map((i) => (
-                <div key={i} className="rounded-xl border border-border/40 overflow-hidden">
-                  <Skeleton className="h-36 w-full" />
-                  <div className="p-4 space-y-2">
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-2/3" />
-                  </div>
+                <div key={i} className="rounded-xl border border-border/40 p-4 space-y-2">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
                 </div>
               ))}
             </div>
@@ -257,59 +256,37 @@ export default function BrowseJobs() {
               {filteredJobs.map((job) => (
                 <Link key={job.id} href={`/jobs/${job.id}`}>
                   <a data-testid={`card-job-${job.id}`}>
-                    <div className="rounded-xl border border-border/40 bg-card shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col">
-
-                      {/* Banner: show requester photo or app logo on dark bg */}
-                      <div className="h-36 bg-neutral-900 relative overflow-hidden flex-shrink-0 flex items-center justify-center">
-                        {job.requester?.profilePhotoUrl ? (
-                          <img
-                            src={job.requester.profilePhotoUrl}
-                            alt={job.requester.name || ''}
-                            className="w-full h-full object-cover opacity-50"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/logo-icon.png';
-                              (e.target as HTMLImageElement).className = 'h-14 w-14 object-contain opacity-60';
-                            }}
-                          />
-                        ) : (
-                          <img
-                            src="/logo-icon.png"
-                            alt="JobTradeSasa"
-                            className="h-14 w-14 object-contain opacity-60"
-                          />
-                        )}
-                        {/* Category label bottom-left */}
-                        <span className="absolute bottom-2 left-3 text-white/90 text-xs font-medium bg-black/40 px-2 py-0.5 rounded">
-                          {job.category?.name || 'General'}
-                        </span>
-                        {/* Status badge top-left */}
-                        <span className={`absolute top-2 left-3 text-xs font-bold px-2 py-0.5 rounded ${
-                          job.status === 'open'      ? 'bg-white text-black' :
-                          job.status === 'completed' ? 'bg-black text-white' :
-                                                       'bg-white/80 text-black'
-                        }`}>
-                          {job.status === 'open' ? 'Open' : job.status === 'completed' ? 'Done' : 'Active'}
-                        </span>
-                        {/* Urgent badge top-right */}
-                        {job.urgency === 'emergency' && (
-                          <span className="absolute top-2 right-2 bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                            Urgent
+                    <div className="rounded-xl border border-border/40 bg-card shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-200 overflow-hidden">
+                      <div className="p-4 space-y-2">
+                        {/* Status + urgency */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                            job.status === 'open'      ? 'border-black text-black dark:border-white dark:text-white' :
+                            job.status === 'completed' ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' :
+                                                         'border-border text-muted-foreground'
+                          }`}>
+                            {job.status === 'open' ? 'Open' : job.status === 'completed' ? 'Done' : 'Active'}
                           </span>
-                        )}
-                      </div>
-
-                      {/* Card body */}
-                      <div className="p-4 flex flex-col flex-1">
-                        <h3 className="font-semibold text-foreground text-base leading-snug line-clamp-2 mb-1 group-hover:underline">
+                          {job.urgency === 'emergency' && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">
+                              Urgent
+                            </span>
+                          )}
+                        </div>
+                        {/* Title */}
+                        <h3 className="font-semibold text-foreground text-sm leading-snug line-clamp-2">
                           {job.title}
                         </h3>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          {new Date(job.createdAt).toLocaleDateString()}
+                        {/* Category + date */}
+                        <p className="text-xs text-muted-foreground">
+                          {job.category?.name || 'General'} · {new Date(job.createdAt).toLocaleDateString()}
                         </p>
-                        <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed flex-1">
+                        {/* Description */}
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                           {job.description}
                         </p>
-                        <div className="border-t border-border/30 pt-2.5 mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                        {/* Footer */}
+                        <div className="border-t border-border/20 pt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1 min-w-0">
                             <MapPin className="h-3 w-3 flex-shrink-0" />
                             <span className="truncate">{job.address || 'Location TBD'}</span>
@@ -317,12 +294,11 @@ export default function BrowseJobs() {
                           {job.expiryDate && new Date(job.expiryDate).getTime() - Date.now() < 86400000 && (
                             <div className="flex items-center gap-1 font-medium flex-shrink-0">
                               <Clock className="h-3 w-3" />
-                              Expires soon
+                              Soon
                             </div>
                           )}
                         </div>
                       </div>
-
                     </div>
                   </a>
                 </Link>
