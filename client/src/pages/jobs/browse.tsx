@@ -256,8 +256,8 @@ export default function BrowseJobs() {
               {filteredJobs.map((job) => (
                 <Link key={job.id} href={`/jobs/${job.id}`}>
                   <a data-testid={`card-job-${job.id}`}>
-                    <div className="rounded-xl border border-border/40 bg-card shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-200 overflow-hidden">
-                      <div className="p-4 space-y-2">
+                    <div className="rounded-2xl border border-border/50 bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.18),0_8px_16px_rgba(0,0,0,0.10)] hover:scale-[1.03] hover:-translate-y-1 transition-all duration-200 overflow-hidden will-change-transform">
+                      <div className="p-4 space-y-2.5">
                         {/* Status + urgency */}
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
