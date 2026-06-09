@@ -81,6 +81,11 @@ export function Header() {
     setPrevNotificationCount(totalNotifications);
   }, [totalNotifications, prevNotificationCount]);
 
+  const navCls = (path: string) =>
+    location === path
+      ? "bg-primary !text-white hover:bg-primary/90 transition-colors"
+      : "!text-foreground dark:!text-white hover:bg-black/5 dark:hover:bg-white/10 hover:!text-primary dark:hover:!text-orange-300 transition-colors";
+
   return (
     <header className="sticky top-0 z-50 w-full">
       {/* ── Mobile header (< md) — clean, no background ── */}
@@ -156,17 +161,17 @@ export function Header() {
           {/* Landing Page Desktop Navigation */}
           {isLandingPage && !isAuthenticated && (
             <nav className="hidden lg:flex items-center gap-2 text-sm font-medium">
-              <a href="/#popular-services" className="px-4 py-2 text-white/90 hover:text-orange-300 transition-colors rounded-lg hover:bg-white/5">
+              <a href="/#popular-services" className="px-4 py-2 text-foreground dark:text-white/90 hover:text-primary dark:hover:text-orange-300 transition-colors rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
                 Services
               </a>
-              <a href="/#why-choose-us" className="px-4 py-2 text-white/90 hover:text-orange-300 transition-colors rounded-lg hover:bg-white/5">
+              <a href="/#why-choose-us" className="px-4 py-2 text-foreground dark:text-white/90 hover:text-primary dark:hover:text-orange-300 transition-colors rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
                 About
               </a>
-              <a href="/#suppliers-section" className="px-4 py-2 text-white/90 hover:text-orange-300 transition-colors rounded-lg hover:bg-white/5">
+              <a href="/#suppliers-section" className="px-4 py-2 text-foreground dark:text-white/90 hover:text-primary dark:hover:text-orange-300 transition-colors rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
                 Suppliers
               </a>
               <Link href="/promotions">
-                <a className="px-4 py-2 text-white/90 hover:text-orange-300 transition-colors rounded-lg hover:bg-white/5">
+                <a className="px-4 py-2 text-foreground dark:text-white/90 hover:text-primary dark:hover:text-orange-300 transition-colors rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
                   Promotions
                 </a>
               </Link>
@@ -179,20 +184,20 @@ export function Header() {
               {user?.role === 'requester' && (
                 <>
                   <Link href="/jobs">
-                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className={navCls('/jobs')}>
                       <Briefcase className="h-4 w-4 mr-2" />
                       {t('My Jobs')}
                     </Button>
                   </Link>
                   <Link href="/suppliers">
-                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className={navCls('/suppliers')}>
                       <ShoppingBag className="h-4 w-4 mr-2" />
                       {t('Suppliers')}
                     </Button>
                   </Link>
                   <Link href="/messages">
-                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
-                      <MessageSquare className="h-4 w-4 mr-2" /> 
+                    <Button variant="ghost" className={navCls('/messages')}>
+                      <MessageSquare className="h-4 w-4 mr-2" />
                       {t('Messages')}
                     </Button>
                   </Link>
@@ -201,32 +206,32 @@ export function Header() {
               {user?.role === 'provider' && (
                 <>
                   <Link href="/jobs">
-                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className={navCls('/jobs')}>
                       <Briefcase className="h-4 w-4 mr-2" />
                       {t('Browse Jobs')}
                     </Button>
                   </Link>
                   <Link href="/suppliers">
-                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className={navCls('/suppliers')}>
                       <ShoppingBag className="h-4 w-4 mr-2" />
                       {t('Suppliers')}
                     </Button>
                   </Link>
                   <Link href="/dashboard">
-                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className={navCls('/dashboard')}>
                       <LayoutDashboard className="h-4 w-4 mr-2" />
                       {t('Dashboard')}
                     </Button>
                   </Link>
                   <Link href="/provider/applications">
-                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className={navCls('/provider/applications')}>
                       <FileText className="h-4 w-4 mr-2" />
                       {t('Applications')}
                     </Button>
                   </Link>
                   <Link href="/messages">
-                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
-                      <MessageSquare className="h-4 w-4 mr-2" /> 
+                    <Button variant="ghost" className={navCls('/messages')}>
+                      <MessageSquare className="h-4 w-4 mr-2" />
                       {t('Messages')}
                     </Button>
                   </Link>
@@ -235,20 +240,20 @@ export function Header() {
               {user?.role === 'supplier' && (
                 <>
                   <Link href="/suppliers">
-                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className={navCls('/suppliers')}>
                       <ShoppingBag className="h-4 w-4 mr-2" />
                       {t('Browse')}
                     </Button>
                   </Link>
                   <Link href="/supplier/dashboard">
-                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
-                      <LayoutDashboard className="h-4 w-4 mr-2" /> 
+                    <Button variant="ghost" className={navCls('/supplier/dashboard')}>
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
                       {t('Dashboard')}
                     </Button>
                   </Link>
                   <Link href="/messages">
-                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
-                      <MessageSquare className="h-4 w-4 mr-2" /> 
+                    <Button variant="ghost" className={navCls('/messages')}>
+                      <MessageSquare className="h-4 w-4 mr-2" />
                       {t('Messages')}
                     </Button>
                   </Link>
@@ -256,13 +261,13 @@ export function Header() {
               )}
               {user?.role === 'admin' && (
                 <Link href="/admin">
-                  <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
+                  <Button variant="ghost" className={navCls('/admin')}>
                     <LayoutDashboard className="h-4 w-4 mr-2" /> {t('Dashboard')}
                   </Button>
                 </Link>
               )}
               <Link href="/promotions">
-                <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
+                <Button variant="ghost" className={navCls('/promotions')}>
                   <Tag className="h-4 w-4 mr-2" />
                   {t('Promotions')}
                 </Button>
@@ -273,7 +278,7 @@ export function Header() {
         
         {/* Right Section */}
         <div className="flex items-center gap-3">
-          <ThemeToggle className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors" />
+          <ThemeToggle className="!text-foreground dark:!text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors" />
 
           {isAuthenticated ? (
             <>
@@ -291,7 +296,7 @@ export function Header() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-all">
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full !text-foreground dark:!text-white hover:bg-black/5 dark:hover:bg-white/10 transition-all">
                     <Avatar className="h-10 w-10 ring-2 ring-orange-400">
                       <AvatarImage src={user?.profilePhotoUrl} alt={user?.name} />
                       <AvatarFallback className="bg-orange-500 text-white font-bold">
@@ -323,7 +328,7 @@ export function Header() {
           ) : (
             <div className="flex items-center gap-2">
               <Link href="/login">
-                <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
+                <Button variant="ghost" className="!text-foreground dark:!text-white hover:bg-black/5 dark:hover:bg-white/10 hover:!text-primary dark:hover:!text-orange-300 transition-colors">
                   {t('Login')}
                 </Button>
               </Link>
