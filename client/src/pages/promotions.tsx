@@ -172,12 +172,7 @@ function HeroSection({ totalPromos, suppliers }: { totalPromos: number; supplier
 
         {/* Promotional text content */}
         <div className="relative z-10 text-center max-w-2xl mx-auto">
-          <div className="promo-hero-in inline-flex items-center gap-2 bg-orange-500/20 border border-orange-500/40 text-orange-300 text-[11px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-5">
-            <Sparkles className="h-3 w-3" />
-            Exclusive Marketplace Deals
-          </div>
-
-          <h1 className="promo-hero-in-2 text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-4 tracking-tight">
+          <h1 className="promo-hero-in text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-4 tracking-tight">
             Discover the Best<br />
             <span className="text-orange-400">Supplier Promotions</span>
           </h1>
@@ -226,26 +221,46 @@ function HeroSection({ totalPromos, suppliers }: { totalPromos: number; supplier
 // ── CountdownTimer ─────────────────────────────────────────────────────────────
 
 function CountdownTimer({ validUntil }: { validUntil: string | Date }) {
-  const { days, hours, minutes, seconds, expired, color } = useCountdown(validUntil);
+  const { days, hours, minutes, seconds, expired, totalSeconds } = useCountdown(validUntil);
 
-  if (expired) return <span className="text-xs text-muted-foreground font-bold">Expired</span>;
+  if (expired) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-muted-foreground bg-muted px-2.5 py-1 rounded-lg">
+        <Clock className="h-3 w-3" /> Expired
+      </span>
+    );
+  }
+
+  const blockBg = totalSeconds < 86400
+    ? "bg-red-500"
+    : totalSeconds < 172800
+      ? "bg-amber-500"
+      : "bg-emerald-600";
+
+  const units = days > 0
+    ? [
+        { val: String(days).padStart(2, "0"),     label: "d" },
+        { val: String(hours).padStart(2, "0"),    label: "h" },
+        { val: String(minutes).padStart(2, "0"),  label: "m" },
+        { val: String(seconds).padStart(2, "0"),  label: "s" },
+      ]
+    : [
+        { val: String(hours).padStart(2, "0"),    label: "h" },
+        { val: String(minutes).padStart(2, "0"),  label: "m" },
+        { val: String(seconds).padStart(2, "0"),  label: "s" },
+      ];
 
   return (
-    <div className="flex items-center gap-1.5">
-      <Clock className={`h-3.5 w-3.5 ${color} flex-shrink-0`} />
-      <div className={`flex items-center gap-0.5 font-mono text-xs font-bold ${color}`}>
-        {days > 0 && (
-          <>
-            <span>{days}<span className="text-[9px] font-normal ml-0.5 opacity-70">d</span></span>
-            <span className="opacity-30 mx-0.5">:</span>
-          </>
-        )}
-        <span>{String(hours).padStart(2, "0")}<span className="text-[9px] font-normal ml-0.5 opacity-70">h</span></span>
-        <span className="opacity-30 mx-0.5">:</span>
-        <span>{String(minutes).padStart(2, "0")}<span className="text-[9px] font-normal ml-0.5 opacity-70">m</span></span>
-        <span className="opacity-30 mx-0.5">:</span>
-        <span>{String(seconds).padStart(2, "0")}<span className="text-[9px] font-normal ml-0.5 opacity-70">s</span></span>
-      </div>
+    <div className="flex items-center gap-1">
+      {units.map((u, i) => (
+        <div key={u.label} className="flex items-center gap-1">
+          {i > 0 && <span className="text-muted-foreground font-black text-xs mb-2 opacity-50">:</span>}
+          <div className={`${blockBg} rounded-lg px-1.5 pt-1.5 pb-1 text-center min-w-[30px] shadow-sm`}>
+            <div className="text-white font-black text-sm font-mono leading-none">{u.val}</div>
+            <div className="text-white/70 text-[8px] font-bold uppercase leading-none mt-0.5">{u.label}</div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -358,8 +373,10 @@ function QuickViewModal({
           </div>
 
           {/* Countdown row */}
-          <div className="bg-muted/60 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Deal expires in</span>
+          <div className="space-y-2">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+              <Clock className="h-3 w-3" /> Deal expires in
+            </span>
             <CountdownTimer validUntil={promo.validUntil as unknown as string} />
           </div>
 
@@ -681,8 +698,10 @@ function PromotionCard({
         </p>
 
         {/* Countdown */}
-        <div className="bg-muted/50 rounded-lg px-3 py-2 flex items-center justify-between gap-2">
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Expires</span>
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+            <Clock className="h-3 w-3" /> Ends in
+          </span>
           <CountdownTimer validUntil={promo.validUntil as unknown as string} />
         </div>
 
