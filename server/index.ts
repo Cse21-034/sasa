@@ -2,7 +2,7 @@ import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { seedDatabase } from "./seed";
+import { seedDatabase, seedSuppliers } from "./seed";
 import cors from "cors"; // <--- ADDED
 
 const app = express();
@@ -107,6 +107,7 @@ app.use((req, res, next) => {
 
   // Seed database
   await seedDatabase();
+  await seedSuppliers();
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
