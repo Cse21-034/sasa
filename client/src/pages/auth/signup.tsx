@@ -1020,7 +1020,12 @@ export default function Signup() {
         description: `Welcome to JobTradeSasa${result.user.role === 'supplier' ? ', ' + payload.companyName : result.user.role === 'company' ? ', ' + payload.companyName : ''}.`,
       });
 
-      setLocation(result.user.role === 'provider' || result.user.role === 'company' ? '/dashboard' : '/jobs');
+      const role = result.user.role;
+      const dest = (role === 'provider' || role === 'company') ? '/dashboard'
+                 : role === 'supplier' ? '/supplier/dashboard'
+                 : role === 'admin'    ? '/admin'
+                 : '/jobs';
+      setLocation(dest);
     } catch (error: any) {
       let message = error.message || 'An unknown error occurred.';
       if (message.startsWith('400:')) {

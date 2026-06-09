@@ -132,11 +132,9 @@ function SmartRedirect() {
     return <Landing />;
   }
   
-  // 🔥 FIXED: Admins go to admin panel, others to jobs
-  if (user.role === 'admin') {
-    return <Redirect to="/admin" />;
-  }
-  
+  if (user.role === 'admin')    return <Redirect to="/admin" />;
+  if (user.role === 'supplier') return <Redirect to="/supplier/dashboard" />;
+  if (user.role === 'provider') return <Redirect to="/dashboard" />;
   return <Redirect to="/jobs" />;
 }
 

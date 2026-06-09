@@ -47,7 +47,12 @@ export default function Login() {
       }
 
       toast({ title: 'Welcome back!', description: 'You have successfully logged in.' });
-      setLocation(result.user.role === 'provider' ? '/dashboard' : '/jobs');
+      const role = result.user.role;
+      const dest = role === 'provider' ? '/dashboard'
+                 : role === 'supplier' ? '/supplier/dashboard'
+                 : role === 'admin'    ? '/admin'
+                 : '/jobs';
+      setLocation(dest);
     } catch (error: any) {
       let message = error.message || 'An unexpected error occurred';
       if (message.startsWith('400:') || message.startsWith('401:')) {
