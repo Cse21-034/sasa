@@ -43,7 +43,7 @@ function Sidebar({ open, onClose, location, userName, userEmail }: {
       >
         {/* Logo */}
         <div className="h-16 flex items-center px-5 border-b border-white/10 flex-shrink-0">
-          <img src="/logo-icon.png" alt="JobTradeSasa" className="h-8 w-auto max-w-[140px] object-contain" />
+          <img src="/logo-icon-darkmode.png" alt="JobTradeSasa" className="h-8 w-auto max-w-[140px] object-contain" />
         </div>
 
         {/* Nav */}

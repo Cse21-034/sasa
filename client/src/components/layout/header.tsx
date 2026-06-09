@@ -15,12 +15,15 @@ import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { NotificationPanel } from '@/components/notifications-panel';
 import { useAuth } from '@/lib/auth-context';
+import { useTheme } from '@/lib/theme-provider';
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 
 export function Header() {
   const { user, logout, isAuthenticated } = useAuth();
+  const { theme } = useTheme();
+  const logoSrc = theme === 'dark' ? '/logo-icon-darkmode.png' : '/logo-icon-lightmode.png';
   const [location, setLocation] = useLocation();
   const { t } = useTranslation();
   const [prevNotificationCount, setPrevNotificationCount] = useState(0);
@@ -98,7 +101,7 @@ export function Header() {
       {/* ── Mobile header (< md) — clean, no background ── */}
       <div className="md:hidden flex h-14 items-center px-4 gap-3 bg-background border-b border-border/20">
         <Link href="/" className="flex items-center flex-1 min-w-0">
-          <img src="/logo-icon.png" alt="JobTradeSasa" className="h-10 w-auto max-w-[180px] object-contain flex-shrink-0" />
+          <img src={logoSrc} alt="JobTradeSasa" className="h-10 w-auto max-w-[180px] object-contain flex-shrink-0" />
         </Link>
         <div className="flex items-center gap-0.5">
           <ThemeToggle />
@@ -158,7 +161,7 @@ export function Header() {
           <Link href="/">
             <div className="flex items-center gap-4 hover:opacity-90 transition-opacity rounded-xl px-4 py-2 cursor-pointer group">
               <img
-                src="/logo-icon.png"
+                src={logoSrc}
                 alt="JobTradeSasa"
                 className="h-14 lg:h-16 w-auto max-w-[200px] lg:max-w-[240px] object-contain drop-shadow-lg"
               />
