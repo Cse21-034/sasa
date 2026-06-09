@@ -16,21 +16,23 @@ interface AuthContextType {
   setUser: (user: ExtendedUser | null) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<ExtendedUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        setUser({ 
+        setUser({
           ...parsedUser,
-          isVerified: parsedUser.isVerified ?? false, 
+          isVerified: parsedUser.isVerified ?? false,
           isIdentityVerified: parsedUser.isIdentityVerified ?? false,
           status: parsedUser.status ?? 'active',
           preferredLanguage: parsedUser.preferredLanguage ?? 'en',
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('token');
       }
     }
+    setIsLoading(false);
   }, []);
 
   // 🔥 TIER 6: IMPROVED LOGOUT - Complete cache wipeout
@@ -76,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, setUser, logout, isAuthenticated: !!user, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

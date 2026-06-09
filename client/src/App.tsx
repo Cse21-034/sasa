@@ -93,17 +93,14 @@ function CacheManager({ children }: { children: React.ReactNode }) {
 
 
 function ProtectedRoute({ component: Component, path, ...rest }: any) {
-  const { isAuthenticated, user } = useAuth();
-  
-  if (!isAuthenticated) {
-    return <Redirect to="/login" />;
-  }
+  const { isAuthenticated, isLoading, user } = useAuth();
 
-  // Verification Gate: If authenticated but not fully verified (and not admin), redirect to verification page.
+  if (isLoading) return null;
+  if (!isAuthenticated) return <Redirect to="/login" />;
+
   if (user && user.role !== 'admin' && !user.isVerified) {
-    // Allow access to Profile/Verification page for verification steps
     if (path !== '/profile' && path !== '/verification') {
-        return <Redirect to="/verification" />;
+      return <Redirect to="/verification" />;
     }
   }
 
@@ -111,7 +108,8 @@ function ProtectedRoute({ component: Component, path, ...rest }: any) {
 }
 
 function AdminRoute({ component: Component, ...rest }: any) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  if (isLoading) return null;
   if (!isAuthenticated || user?.role !== 'admin') {
     return <Redirect to={isAuthenticated ? "/404" : "/login"} />;
   }
@@ -119,28 +117,27 @@ function AdminRoute({ component: Component, ...rest }: any) {
 }
 
 function SupplierRoute({ component: Component, path, ...rest }: any) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  if (isLoading) return null;
   if (!isAuthenticated) return <Redirect to="/login" />;
   if (user && !user.isVerified) return <Redirect to="/verification" />;
   if (user?.role !== 'supplier') return <Redirect to="/jobs" />;
   return <SupplierLayout><Component {...rest} /></SupplierLayout>;
 }
 
-
 function PublicRoute({ component: Component, ...rest }: any) {
-  const { isAuthenticated } = useAuth();
-  
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null;
   return !isAuthenticated ? <Component {...rest} /> : <Redirect to="/jobs" />;
 }
 
 // 🔥 ADDED: Smart redirect based on user role
 function SmartRedirect() {
-  const { user } = useAuth();
-  
-  if (!user) {
-    return <Landing />;
-  }
-  
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return null;
+  if (!user) return <Landing />;
+
   if (user.role === 'admin')    return <Redirect to="/admin" />;
   if (user.role === 'supplier') return <Redirect to="/supplier/dashboard" />;
   if (user.role === 'provider') return <Redirect to="/dashboard" />;
