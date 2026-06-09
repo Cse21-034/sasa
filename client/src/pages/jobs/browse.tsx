@@ -190,7 +190,7 @@ export default function BrowseJobs() {
               placeholder={user?.role === 'requester' ? 'Search your jobs...' : 'Search jobs...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 h-10 rounded-lg border-2 border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 transition-colors"
+              className="w-full pl-9 pr-8 h-10 rounded-lg border-2 border-primary/60 bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
               data-testid="input-search-jobs"
             />
             {searchQuery && (

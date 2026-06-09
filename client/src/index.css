@@ -237,6 +237,14 @@
   }
 }
 
+/* Desktop navbar: white in light mode, dark teal gradient in dark mode */
+.nav-desktop-bg {
+  background: #ffffff;
+}
+.dark .nav-desktop-bg {
+  background: linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%);
+}
+
 @layer utilities {
   /* Glass morphism effect - iOS 26 Style */
   .glass {

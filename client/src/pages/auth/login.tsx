@@ -78,7 +78,7 @@ export default function Login() {
 
           {/* Brand */}
           <div className="relative z-10 text-center">
-            <img src="/logo-full.png" alt="JobTradeSasa" className="h-24 w-auto object-contain mx-auto drop-shadow-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            <img src="/logo-full.png" alt="JobTradeSasa" className="h-32 w-auto max-w-[280px] object-contain mx-auto drop-shadow-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           </div>
 
           {/* Wave */}

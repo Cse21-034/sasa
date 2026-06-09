@@ -86,7 +86,7 @@ export function Header() {
       {/* ── Mobile header (< md) — clean, no background ── */}
       <div className="md:hidden flex h-14 items-center px-4 gap-3 bg-background border-b border-border/20">
         <Link href="/" className="flex items-center flex-1 min-w-0">
-          <img src="/logo-icon.png" alt="JobTradeSasa" className="h-8 w-auto max-w-[160px] object-contain flex-shrink-0" />
+          <img src="/logo-icon.png" alt="JobTradeSasa" className="h-10 w-auto max-w-[180px] object-contain flex-shrink-0" />
         </Link>
         <div className="flex items-center gap-0.5">
           <ThemeToggle />
@@ -138,11 +138,8 @@ export function Header() {
         </div>
       </div>
 
-      {/* ── Desktop header (>= md) — keeps gradient, full width ── */}
-      <div
-        className="hidden md:block w-full shadow-2xl"
-        style={{ background: 'linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%)' }}
-      >
+      {/* ── Desktop header (>= md) ── */}
+      <div className="hidden md:block w-full shadow-md border-b border-border/20 bg-white dark:border-transparent nav-desktop-bg">
       <div className="flex h-20 items-center justify-between px-6">
         {/* Logo Section */}
         <div className="flex items-center gap-8">
@@ -151,7 +148,7 @@ export function Header() {
               <img
                 src="/logo-icon.png"
                 alt="JobTradeSasa"
-                className="h-10 lg:h-12 w-auto max-w-[180px] lg:max-w-[220px] object-contain drop-shadow-lg"
+                className="h-14 lg:h-16 w-auto max-w-[200px] lg:max-w-[240px] object-contain drop-shadow-lg"
               />
             </div>
           </Link>
@@ -182,19 +179,19 @@ export function Header() {
               {user?.role === 'requester' && (
                 <>
                   <Link href="/jobs">
-                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                       <Briefcase className="h-4 w-4 mr-2" />
                       {t('My Jobs')}
                     </Button>
                   </Link>
                   <Link href="/suppliers">
-                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                       <ShoppingBag className="h-4 w-4 mr-2" />
                       {t('Suppliers')}
                     </Button>
                   </Link>
                   <Link href="/messages">
-                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                       <MessageSquare className="h-4 w-4 mr-2" /> 
                       {t('Messages')}
                     </Button>
@@ -204,31 +201,31 @@ export function Header() {
               {user?.role === 'provider' && (
                 <>
                   <Link href="/jobs">
-                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                       <Briefcase className="h-4 w-4 mr-2" />
                       {t('Browse Jobs')}
                     </Button>
                   </Link>
                   <Link href="/suppliers">
-                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                       <ShoppingBag className="h-4 w-4 mr-2" />
                       {t('Suppliers')}
                     </Button>
                   </Link>
                   <Link href="/dashboard">
-                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                       <LayoutDashboard className="h-4 w-4 mr-2" />
                       {t('Dashboard')}
                     </Button>
                   </Link>
                   <Link href="/provider/applications">
-                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                       <FileText className="h-4 w-4 mr-2" />
                       {t('Applications')}
                     </Button>
                   </Link>
                   <Link href="/messages">
-                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                       <MessageSquare className="h-4 w-4 mr-2" /> 
                       {t('Messages')}
                     </Button>
@@ -238,19 +235,19 @@ export function Header() {
               {user?.role === 'supplier' && (
                 <>
                   <Link href="/suppliers">
-                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                       <ShoppingBag className="h-4 w-4 mr-2" />
                       {t('Browse')}
                     </Button>
                   </Link>
                   <Link href="/supplier/dashboard">
-                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                       <LayoutDashboard className="h-4 w-4 mr-2" /> 
                       {t('Dashboard')}
                     </Button>
                   </Link>
                   <Link href="/messages">
-                    <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                    <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                       <MessageSquare className="h-4 w-4 mr-2" /> 
                       {t('Messages')}
                     </Button>
@@ -259,13 +256,13 @@ export function Header() {
               )}
               {user?.role === 'admin' && (
                 <Link href="/admin">
-                  <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                  <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                     <LayoutDashboard className="h-4 w-4 mr-2" /> {t('Dashboard')}
                   </Button>
                 </Link>
               )}
               <Link href="/promotions">
-                <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                   <Tag className="h-4 w-4 mr-2" />
                   {t('Promotions')}
                 </Button>
@@ -276,12 +273,12 @@ export function Header() {
         
         {/* Right Section */}
         <div className="flex items-center gap-3">
-          <ThemeToggle className="text-white hover:bg-white/10 transition-colors" />
+          <ThemeToggle className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors" />
 
           {isAuthenticated ? (
             <>
               {/* 🆕 Notification Panel */}
-              <NotificationPanel className="hover:bg-white/10 text-white" />
+              <NotificationPanel className="hover:bg-black/5 dark:hover:bg-white/10 text-foreground dark:text-white" />
 
               {user?.role === 'requester' && (
                 <Link href="/post-job">
@@ -294,7 +291,7 @@ export function Header() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/10 transition-all">
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-all">
                     <Avatar className="h-10 w-10 ring-2 ring-orange-400">
                       <AvatarImage src={user?.profilePhotoUrl} alt={user?.name} />
                       <AvatarFallback className="bg-orange-500 text-white font-bold">
@@ -326,7 +323,7 @@ export function Header() {
           ) : (
             <div className="flex items-center gap-2">
               <Link href="/login">
-                <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-orange-300 transition-colors">
+                <Button variant="ghost" className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-orange-300 transition-colors">
                   {t('Login')}
                 </Button>
               </Link>

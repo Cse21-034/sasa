@@ -122,7 +122,7 @@ export default function PublicSuppliers() {
               placeholder="Search by company name, industry or location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 h-10 rounded-lg border-2 border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 transition-colors"
+              className="w-full pl-9 pr-8 h-10 rounded-lg border-2 border-primary/60 bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -132,7 +132,7 @@ export default function PublicSuppliers() {
           </div>
           <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
             <SheetTrigger asChild>
-              <button className="md:hidden relative h-10 w-10 flex-shrink-0 rounded-lg border-2 border-border bg-background flex items-center justify-center hover:bg-muted transition-colors">
+              <button className="md:hidden relative h-10 w-10 flex-shrink-0 rounded-lg border-2 border-primary/60 bg-background flex items-center justify-center hover:bg-muted transition-colors">
                 <SlidersHorizontal className="h-4 w-4 text-foreground/70" />
                 {hasActiveFilters && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-foreground rounded-full" />}
               </button>
