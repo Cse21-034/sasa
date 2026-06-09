@@ -85,9 +85,8 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full">
       {/* ── Mobile header (< md) — clean, no background ── */}
       <div className="md:hidden flex h-14 items-center px-4 gap-3 bg-background border-b border-border/20">
-        <Link href="/" className="flex items-center gap-2 flex-1">
-          <img src="/logo-icon.png" alt="JobTradeSasa" className="h-8 w-auto object-contain flex-shrink-0" />
-          <span className="font-extrabold text-xl text-foreground leading-none">JobTradeSasa</span>
+        <Link href="/" className="flex items-center flex-1 min-w-0">
+          <img src="/logo-icon.png" alt="JobTradeSasa" className="h-8 w-auto max-w-[160px] object-contain flex-shrink-0" />
         </Link>
         <div className="flex items-center gap-0.5">
           <ThemeToggle />
@@ -152,7 +151,7 @@ export function Header() {
               <img
                 src="/logo-icon.png"
                 alt="JobTradeSasa"
-                className="h-12 lg:h-16 w-auto object-contain drop-shadow-lg"
+                className="h-10 lg:h-12 w-auto max-w-[180px] lg:max-w-[220px] object-contain drop-shadow-lg"
               />
             </div>
           </Link>
