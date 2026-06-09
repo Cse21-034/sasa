@@ -1,27 +1,16 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, MapPin, Phone, Star, Tag, ArrowRight, Building2 } from 'lucide-react';
+import { Search, MapPin, Phone, Mail, Star, ArrowRight, Building2, SlidersHorizontal, X, ExternalLink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Link, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 
-const INDUSTRY_GRADIENTS: Record<string, string> = {
-  'Building Materials': 'linear-gradient(135deg,#274345,#1a3a3a)',
-  'Tools & Equipment':  'linear-gradient(135deg,#d97706,#b45309)',
-  'Electrical':         'linear-gradient(135deg,#1d4ed8,#1e40af)',
-  'Plumbing':           'linear-gradient(135deg,#0369a1,#075985)',
-  'Furniture':          'linear-gradient(135deg,#92400e,#78350f)',
-  'Paint & Coatings':   'linear-gradient(135deg,#7c3aed,#6d28d9)',
-  'Hardware':           'linear-gradient(135deg,#065f46,#064e3b)',
-};
-const DEFAULT_GRADIENT = 'linear-gradient(135deg,#F8992D,#d97406)';
-const getBanner = (industry?: string) =>
-  industry ? (INDUSTRY_GRADIENTS[industry] ?? DEFAULT_GRADIENT) : DEFAULT_GRADIENT;
-
 export default function PublicSuppliers() {
-  const [searchQuery, setSearchQuery]           = useState('');
+  const [searchQuery, setSearchQuery]               = useState('');
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
-  const [featuredOnly, setFeaturedOnly]         = useState(false);
+  const [featuredOnly, setFeaturedOnly]             = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen]     = useState(false);
   const [, setLocation] = useLocation();
 
   const { data: suppliers, isLoading } = useQuery({
@@ -67,6 +56,53 @@ export default function PublicSuppliers() {
       prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name],
     );
 
+  const hasActiveFilters = selectedIndustries.length > 0 || featuredOnly || !!searchQuery;
+  const resetFilters = () => { setSelectedIndustries([]); setFeaturedOnly(false); setSearchQuery(''); };
+
+  const FilterPanel = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="font-bold text-base mb-2">Type</h3>
+        <label className="flex items-center gap-2 cursor-pointer py-0.5">
+          <input
+            type="checkbox"
+            checked={featuredOnly}
+            onChange={(e) => setFeaturedOnly(e.target.checked)}
+            className="w-4 h-4 rounded-none accent-black dark:accent-white cursor-pointer"
+          />
+          <span className="text-sm flex-1">Featured only</span>
+          <span className="text-xs text-muted-foreground">{featuredCount}</span>
+        </label>
+      </div>
+
+      {industries.length > 0 && (
+        <div>
+          <h3 className="font-bold text-base mb-2">Industry</h3>
+          <div className="space-y-1">
+            {industries.map(({ name, count }) => (
+              <label key={name} className="flex items-center gap-2 cursor-pointer py-0.5">
+                <input
+                  type="checkbox"
+                  checked={selectedIndustries.includes(name)}
+                  onChange={() => toggleIndustry(name)}
+                  className="w-4 h-4 rounded-none accent-black dark:accent-white cursor-pointer"
+                />
+                <span className="text-sm flex-1">{name}</span>
+                <span className="text-xs text-muted-foreground">{count}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {hasActiveFilters && (
+        <button onClick={resetFilters} className="text-xs text-muted-foreground hover:text-foreground underline">
+          Clear all filters
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
 
@@ -77,75 +113,53 @@ export default function PublicSuppliers() {
       </div>
 
       {/* Search bar */}
-      <div className="border-b border-border/40 bg-card px-6 py-3">
-        <div className="max-w-7xl mx-auto">
-          <div className="relative max-w-xl">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="border-b border-border/40 bg-card px-4 py-3 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto flex items-center gap-2">
+          <div className="relative flex-1 max-w-xl">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <input
               type="text"
               placeholder="Search by company name, industry or location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 h-10 rounded-lg border border-border/60 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full pl-9 pr-8 h-10 rounded-lg border-2 border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 transition-colors"
             />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
+          <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
+            <SheetTrigger asChild>
+              <button className="md:hidden relative h-10 w-10 flex-shrink-0 rounded-lg border-2 border-border bg-background flex items-center justify-center hover:bg-muted transition-colors">
+                <SlidersHorizontal className="h-4 w-4 text-foreground/70" />
+                {hasActiveFilters && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-foreground rounded-full" />}
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-72 flex flex-col">
+              <SheetHeader className="pb-4 border-b border-border/30">
+                <SheetTitle className="text-left text-xl font-bold">Filters</SheetTitle>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto py-4">
+                <FilterPanel />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8 flex gap-8 items-start">
+      {/* Body */}
+      <div className="max-w-7xl mx-auto px-4 py-8 pb-28 flex gap-10 items-start">
 
-        {/* ── Filter sidebar ── */}
+        {/* Sidebar */}
         <aside className="hidden md:block w-56 flex-shrink-0 sticky top-20">
-          <h2 className="text-xl font-bold mb-5">Filters</h2>
-
-          {/* Featured */}
-          <div className="mb-6">
-            <h3 className="font-bold text-base mb-2">Type</h3>
-            <label className="flex items-center gap-2 cursor-pointer py-0.5">
-              <input
-                type="checkbox"
-                checked={featuredOnly}
-                onChange={(e) => setFeaturedOnly(e.target.checked)}
-                className="accent-primary w-4 h-4"
-              />
-              <span className="text-sm">Featured only ({featuredCount})</span>
-            </label>
-          </div>
-
-          {/* Industry */}
-          {industries.length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-bold text-base mb-2">Industry</h3>
-              <div className="space-y-1">
-                {industries.map(({ name, count }) => (
-                  <label key={name} className="flex items-center gap-2 cursor-pointer py-0.5">
-                    <input
-                      type="checkbox"
-                      checked={selectedIndustries.includes(name)}
-                      onChange={() => toggleIndustry(name)}
-                      className="accent-primary w-4 h-4"
-                    />
-                    <span className="text-sm">{name} ({count})</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Reset */}
-          {(selectedIndustries.length > 0 || featuredOnly || searchQuery) && (
-            <button
-              onClick={() => { setSelectedIndustries([]); setFeaturedOnly(false); setSearchQuery(''); }}
-              className="text-xs text-primary hover:underline mt-1"
-            >
-              Clear all filters
-            </button>
-          )}
+          <h2 className="text-2xl font-bold mb-6">Filters</h2>
+          <FilterPanel />
         </aside>
 
-        {/* ── Main content ── */}
+        {/* Main */}
         <div className="flex-1 min-w-0">
-          {/* Result count */}
           {!isLoading && (
             <p className="text-sm text-muted-foreground mb-5">
               {filteredSuppliers.length} supplier{filteredSuppliers.length !== 1 ? 's' : ''} found
@@ -157,7 +171,7 @@ export default function PublicSuppliers() {
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
               {[1,2,3,4,5,6].map((i) => (
                 <div key={i} className="rounded-2xl border border-border/40 overflow-hidden">
-                  <Skeleton className="h-36 w-full" />
+                  <Skeleton className="h-28 w-full" />
                   <div className="p-4 space-y-2">
                     <Skeleton className="h-5 w-3/4" />
                     <Skeleton className="h-4 w-1/2" />
@@ -168,7 +182,7 @@ export default function PublicSuppliers() {
             </div>
           )}
 
-          {/* Supplier grid */}
+          {/* Grid */}
           {!isLoading && filteredSuppliers.length > 0 && (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
               {filteredSuppliers.map((supplier: any) => (
@@ -176,59 +190,49 @@ export default function PublicSuppliers() {
                   key={supplier.userId}
                   className="rounded-2xl border border-border/50 bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.18),0_8px_16px_rgba(0,0,0,0.10)] hover:scale-[1.03] hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col will-change-transform"
                 >
-                  {/* Banner image area */}
-                  <div
-                    className="h-36 flex items-center justify-center relative flex-shrink-0"
-                    style={{ background: getBanner(supplier.industryType) }}
-                  >
-                    {supplier.logo ? (
-                      <img
-                        src={supplier.logo}
-                        alt={supplier.companyName}
-                        className="h-20 w-auto object-contain drop-shadow-lg"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-white/90 font-extrabold text-2xl tracking-wide drop-shadow">
-                          {supplier.companyName?.substring(0, 2).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                    {supplier.featured && (
-                      <span className="absolute top-2 right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        Featured
-                      </span>
-                    )}
+                  {/* Logo area */}
+                  <div className="h-28 bg-muted/40 flex items-center justify-center flex-shrink-0 border-b border-border/30">
+                    <img
+                      src={supplier.logo || '/logo-icon.png'}
+                      alt={supplier.companyName}
+                      className="h-16 w-auto max-w-[80%] object-contain"
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo-icon.png'; }}
+                    />
                   </div>
 
-                  {/* Card body */}
-                  <div className="p-4 flex flex-col flex-1">
-                    {/* Title */}
-                    <button
-                      onClick={() => setLocation('/login')}
-                      className="text-primary font-semibold text-base text-left hover:underline leading-snug mb-1"
-                    >
+                  {/* Body */}
+                  <div className="p-4 flex flex-col flex-1 gap-2">
+                    {/* Name */}
+                    <h3 className="font-bold text-foreground text-sm leading-snug line-clamp-1">
                       {supplier.companyName}
-                    </button>
+                    </h3>
+
+                    {/* Industry */}
+                    {supplier.industryType && (
+                      <span className="self-start text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                        {supplier.industryType}
+                      </span>
+                    )}
 
                     {/* Rating */}
-                    <div className="flex items-center gap-1 mb-2">
-                      <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                    <div className="flex items-center gap-1">
+                      <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400 flex-shrink-0" />
                       <span className="text-sm font-semibold">{supplier.ratingAverage || '0.0'}</span>
                       <span className="text-xs text-muted-foreground">({supplier.reviewCount || 0} reviews)</span>
-                      {supplier.industryType && (
-                        <span className="ml-auto text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                          {supplier.industryType}
-                        </span>
-                      )}
                     </div>
 
-                    {/* Details */}
+                    {/* Contact details */}
                     <div className="space-y-1 text-xs text-muted-foreground flex-1">
                       {supplier.physicalAddress && (
                         <div className="flex items-start gap-1.5">
                           <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                          <span className="line-clamp-1">{supplier.physicalAddress}</span>
+                          <span className="line-clamp-2">{supplier.physicalAddress}</span>
+                        </div>
+                      )}
+                      {supplier.companyEmail && (
+                        <div className="flex items-center gap-1.5">
+                          <Mail className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{supplier.companyEmail}</span>
                         </div>
                       )}
                       {supplier.companyPhone && (
@@ -237,24 +241,14 @@ export default function PublicSuppliers() {
                           <span>{supplier.companyPhone}</span>
                         </div>
                       )}
-                      {supplier.contactPerson && (
-                        <p>Contact: <span className="text-foreground font-medium">{supplier.contactPerson}</span></p>
-                      )}
                     </div>
 
-                    {/* Special offer */}
-                    {supplier.specialOffer && (
-                      <div className="mt-3 flex items-start gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-2.5 py-2">
-                        <Tag className="h-3 w-3 text-emerald-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium line-clamp-2">{supplier.specialOffer}</p>
-                      </div>
-                    )}
-
-                    {/* CTA */}
+                    {/* Button */}
                     <button
                       onClick={() => setLocation('/login')}
-                      className="mt-4 w-full h-9 rounded-lg border border-primary text-primary text-sm font-semibold hover:bg-primary hover:text-white transition-colors"
+                      className="mt-2 w-full h-9 rounded-lg border border-primary text-primary text-sm font-semibold hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-1.5"
                     >
+                      <ExternalLink className="h-3.5 w-3.5" />
                       View Supplier
                     </button>
                   </div>

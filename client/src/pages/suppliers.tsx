@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, MapPin, Phone, Star, Tag, ExternalLink, Building2, SlidersHorizontal, X } from 'lucide-react';
+import { Search, MapPin, Phone, Mail, Star, ExternalLink, Building2, SlidersHorizontal, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Link } from 'wouter';
@@ -204,54 +204,49 @@ export default function Suppliers() {
                   key={supplier.userId}
                   className="rounded-2xl border border-border/50 bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.18),0_8px_16px_rgba(0,0,0,0.10)] hover:scale-[1.03] hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col will-change-transform"
                 >
-                  {/* Banner */}
-                  <div
-                    className="h-36 flex items-center justify-center relative flex-shrink-0"
-                    style={{ background: getBanner(supplier.industryType) }}
-                  >
-                    {supplier.logo ? (
-                      <img
-                        src={supplier.logo}
-                        alt={supplier.companyName}
-                        className="h-20 w-auto object-contain drop-shadow-lg"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                      />
-                    ) : (
-                      <span className="text-white/90 font-extrabold text-2xl tracking-wide drop-shadow">
-                        {supplier.companyName?.substring(0, 2).toUpperCase()}
-                      </span>
-                    )}
-                    {supplier.featured && (
-                      <span className="absolute top-2 right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        Featured
-                      </span>
-                    )}
+                  {/* Logo area */}
+                  <div className="h-28 bg-muted/40 flex items-center justify-center flex-shrink-0 border-b border-border/30">
+                    <img
+                      src={supplier.logo || '/logo-icon.png'}
+                      alt={supplier.companyName}
+                      className="h-16 w-auto max-w-[80%] object-contain"
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo-icon.png'; }}
+                    />
                   </div>
 
                   {/* Body */}
-                  <div className="p-4 flex flex-col flex-1">
-                    <Link href={`/suppliers/${supplier.userId}`}>
-                      <a className="text-primary font-semibold text-base leading-snug mb-1 hover:underline line-clamp-1 block">
-                        {supplier.companyName}
-                      </a>
-                    </Link>
+                  <div className="p-4 flex flex-col flex-1 gap-2">
+                    {/* Name */}
+                    <h3 className="font-bold text-foreground text-sm leading-snug line-clamp-1">
+                      {supplier.companyName}
+                    </h3>
 
-                    <div className="flex items-center gap-1 mb-2">
-                      <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                    {/* Industry */}
+                    {supplier.industryType && (
+                      <span className="self-start text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                        {supplier.industryType}
+                      </span>
+                    )}
+
+                    {/* Rating */}
+                    <div className="flex items-center gap-1">
+                      <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400 flex-shrink-0" />
                       <span className="text-sm font-semibold">{supplier.ratingAverage || '0.0'}</span>
-                      <span className="text-xs text-muted-foreground">({supplier.reviewCount || 0})</span>
-                      {supplier.industryType && (
-                        <span className="ml-auto text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full truncate">
-                          {supplier.industryType}
-                        </span>
-                      )}
+                      <span className="text-xs text-muted-foreground">({supplier.reviewCount || 0} reviews)</span>
                     </div>
 
+                    {/* Contact details */}
                     <div className="space-y-1 text-xs text-muted-foreground flex-1">
                       {supplier.physicalAddress && (
                         <div className="flex items-start gap-1.5">
                           <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                          <span className="line-clamp-1">{supplier.physicalAddress}</span>
+                          <span className="line-clamp-2">{supplier.physicalAddress}</span>
+                        </div>
+                      )}
+                      {supplier.companyEmail && (
+                        <div className="flex items-center gap-1.5">
+                          <Mail className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{supplier.companyEmail}</span>
                         </div>
                       )}
                       {supplier.companyPhone && (
@@ -262,15 +257,9 @@ export default function Suppliers() {
                       )}
                     </div>
 
-                    {supplier.specialOffer && (
-                      <div className="mt-3 flex items-start gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-2.5 py-2">
-                        <Tag className="h-3 w-3 text-emerald-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium line-clamp-2">{supplier.specialOffer}</p>
-                      </div>
-                    )}
-
+                    {/* Button */}
                     <Link href={`/suppliers/${supplier.userId}`}>
-                      <a className="mt-4 w-full h-9 rounded-lg border border-primary text-primary text-sm font-semibold hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-1.5">
+                      <a className="mt-2 w-full h-9 rounded-lg border border-primary text-primary text-sm font-semibold hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-1.5">
                         <ExternalLink className="h-3.5 w-3.5" />
                         View Details
                       </a>
