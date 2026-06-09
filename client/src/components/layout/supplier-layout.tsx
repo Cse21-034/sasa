@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 const navItems = [
   { label: 'Dashboard',  icon: LayoutDashboard, path: '/supplier/dashboard' },
   { label: 'Promotions', icon: Tag,             path: '/supplier/dashboard' },
-  { label: 'Messages',   icon: MessageSquare,   path: '/messages' },
+  { label: 'Messages',   icon: MessageSquare,   path: '/supplier/messages' },
   { label: 'Settings',   icon: Settings,        path: '/supplier/settings' },
 ];
 
@@ -47,7 +47,7 @@ function Sidebar({ open, onClose, location, companyName, logo }: {
               <a
                 onClick={onClose}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
-                  ${location === item.path
+                  ${(location === item.path || (item.path !== '/supplier/dashboard' && location.startsWith(item.path)))
                     ? 'bg-primary text-white shadow-md'
                     : 'text-white/70 hover:text-white hover:bg-white/10'}`}
               >

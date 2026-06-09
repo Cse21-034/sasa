@@ -260,6 +260,12 @@ function Router() {
           <Route path="/supplier/settings">
             {() => <SupplierRoute component={SupplierSettings} path="/supplier/settings" />}
           </Route>
+          <Route path="/supplier/messages">
+            {() => <SupplierRoute component={Messages} path="/supplier/messages" />}
+          </Route>
+          <Route path="/supplier/messages/:jobId">
+            {() => <SupplierRoute component={Chat} path="/supplier/messages/:jobId" />}
+          </Route>
           
           <Route component={NotFound} />
         </Switch>

@@ -21,7 +21,7 @@ const navItems = [
   { label: 'Jobs Analytics',        icon: TrendingUp,      path: '/admin/analytics',              section: 'management' },
   { label: 'Migration Requests',    icon: MapPin,          path: '/admin/migrations',             section: 'management' },
   { label: 'Category Verifications',icon: Wrench,          path: '/admin/category-verifications', section: 'management' },
-  { label: 'Messages',              icon: MessageSquare,   path: '/messages',                     section: 'management' },
+  { label: 'Messages',              icon: MessageSquare,   path: '/admin/messages',               section: 'management' },
 ];
 
 function Sidebar({ open, onClose, location, userName, userEmail }: {
