@@ -158,8 +158,8 @@ export function Header() {
             </div>
           </Link>
 
-          {/* Landing Page Desktop Navigation */}
-          {isLandingPage && !isAuthenticated && (
+          {/* Public Desktop Navigation (unauthenticated, all pages) */}
+          {!isAuthenticated && (
             <nav className="hidden lg:flex items-center gap-2 text-sm font-medium">
               <a href="/#popular-services" className="px-4 py-2 text-foreground dark:text-white/90 hover:text-primary dark:hover:text-orange-300 transition-colors rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
                 Services
@@ -171,7 +171,7 @@ export function Header() {
                 Suppliers
               </a>
               <Link href="/promotions">
-                <a className="px-4 py-2 text-foreground dark:text-white/90 hover:text-primary dark:hover:text-orange-300 transition-colors rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
+                <a className={`px-4 py-2 transition-colors rounded-lg ${location === '/promotions' ? 'bg-primary text-white' : 'text-foreground dark:text-white/90 hover:text-primary dark:hover:text-orange-300 hover:bg-black/5 dark:hover:bg-white/5'}`}>
                   Promotions
                 </a>
               </Link>
