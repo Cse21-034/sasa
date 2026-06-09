@@ -193,10 +193,10 @@ export default function PublicSuppliers() {
                   {/* Logo area */}
                   <div className="h-28 bg-muted/40 flex items-center justify-center flex-shrink-0 border-b border-border/30">
                     <img
-                      src={supplier.logo || '/logo-icon.png'}
+                      src={supplier.logo || '/supplier-logo-fallback.png'}
                       alt={supplier.companyName}
                       className="h-16 w-auto max-w-[80%] object-contain"
-                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo-icon.png'; }}
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/supplier-logo-fallback.png'; }}
                     />
                   </div>
 
