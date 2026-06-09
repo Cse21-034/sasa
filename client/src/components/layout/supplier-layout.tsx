@@ -104,18 +104,18 @@ export function SupplierLayout({ children }: { children: React.ReactNode }) {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar */}
-        <header className="h-16 flex-shrink-0 flex items-center gap-3 px-4 md:px-6 bg-card border-b border-border/40 shadow-sm">
+        <header className="h-16 flex-shrink-0 flex items-center gap-2 px-3 md:px-6 bg-card border-b border-border/40 shadow-sm">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+            className="lg:hidden flex-shrink-0 p-2 rounded-lg hover:bg-muted transition-colors"
           >
             <MenuIcon className="h-5 w-5" />
           </button>
 
-          <span className="text-lg font-bold text-foreground">{pageTitle}</span>
+          <span className="flex-1 min-w-0 truncate text-base sm:text-lg font-bold text-foreground">{pageTitle}</span>
 
           {/* Right controls */}
-          <div className="ml-auto flex items-center gap-1">
+          <div className="flex-shrink-0 flex items-center gap-1">
             <ThemeToggle />
             <NotificationPanel />
 

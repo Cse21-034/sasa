@@ -56,14 +56,14 @@ export default function AdminDashboardHub() {
     <>
       {/* Profile banner */}
       <div className="w-full" style={{ background: 'linear-gradient(135deg, #1a3a3a 0%, #274345 60%, #2a4d4f 100%)' }}>
-        <div className="px-4 md:px-6 py-6 md:py-8">
-          <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-2xl bg-orange-500 flex items-center justify-center flex-shrink-0 shadow-lg">
-              <ShieldCheck className="h-10 w-10 text-white" />
+        <div className="px-4 md:px-6 py-5 md:py-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-orange-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+              <ShieldCheck className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-extrabold text-white mb-0.5">{user?.name ?? 'Administrator'}</h2>
-              <p className="text-white/60 text-sm mb-2">{user?.email}</p>
+              <h2 className="text-lg sm:text-xl font-extrabold text-white mb-0.5 truncate">{user?.name ?? 'Administrator'}</h2>
+              <p className="text-white/60 text-sm mb-2 truncate">{user?.email}</p>
               <span className="text-[11px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded-full">Platform Admin</span>
             </div>
           </div>
@@ -76,15 +76,15 @@ export default function AdminDashboardHub() {
         ) : (
           <>
             {/* Stat cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               {statCards.map((s) => (
-                <div key={s.label} className="rounded-2xl border border-border/50 bg-card p-4 flex items-center justify-between shadow-sm">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
-                    <p className="text-2xl font-extrabold text-foreground">{s.value}</p>
+                <div key={s.label} className="rounded-2xl border border-border/50 bg-card p-3 sm:p-4 flex items-center justify-between shadow-sm">
+                  <div className="min-w-0 flex-1 pr-2">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mb-1 leading-tight">{s.label}</p>
+                    <p className="text-xl sm:text-2xl font-extrabold text-foreground">{s.value}</p>
                   </div>
-                  <div className={`w-12 h-12 rounded-full ${s.bg} flex items-center justify-center flex-shrink-0`}>
-                    <s.icon className={`h-6 w-6 ${s.color}`} />
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${s.bg} flex items-center justify-center flex-shrink-0`}>
+                    <s.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${s.color}`} />
                   </div>
                 </div>
               ))}
@@ -93,7 +93,7 @@ export default function AdminDashboardHub() {
             {/* Management tools */}
             <div>
               <h3 className="text-lg font-bold mb-4">Management Tools</h3>
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {menuItems.map((item) => (
                   <div
                     key={item.path}

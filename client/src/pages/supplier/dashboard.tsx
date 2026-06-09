@@ -145,15 +145,15 @@ export default function SupplierDashboard() {
           <div className="px-4 md:px-6 py-6 space-y-6">
 
             {/* Stat cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               {stats.map((s) => (
-                <div key={s.label} className="rounded-2xl border border-border/50 bg-card p-4 flex items-center justify-between shadow-sm">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
-                    <p className="text-2xl font-extrabold text-foreground">{s.value}</p>
+                <div key={s.label} className="rounded-2xl border border-border/50 bg-card p-3 sm:p-4 flex items-center justify-between shadow-sm">
+                  <div className="min-w-0 flex-1 pr-2">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mb-1 leading-tight">{s.label}</p>
+                    <p className="text-xl sm:text-2xl font-extrabold text-foreground">{s.value}</p>
                   </div>
-                  <div className={`w-12 h-12 rounded-full ${s.bg} flex items-center justify-center flex-shrink-0`}>
-                    <s.icon className={`h-6 w-6 ${s.color}`} />
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${s.bg} flex items-center justify-center flex-shrink-0`}>
+                    <s.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${s.color}`} />
                   </div>
                 </div>
               ))}
@@ -174,7 +174,7 @@ export default function SupplierDashboard() {
               {isLoading ? (
                 <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : promotions && promotions.length > 0 ? (
-                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {promotions.map((promo: any) => (
                     <div key={promo.id} className="rounded-2xl border border-border/50 bg-card overflow-hidden shadow-sm">
                       {promo.images?.[0] && <img src={promo.images[0]} alt={promo.title} className="w-full h-32 object-cover" />}
@@ -233,7 +233,7 @@ export default function SupplierDashboard() {
             <div><Label>Title *</Label><Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="e.g., Summer Sale – 20% Off" required /></div>
             <div><Label>Description *</Label><Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="min-h-24" required /></div>
             <div><Label>Discount % (optional)</Label><Input type="number" min="0" max="100" value={formData.discountPercentage} onChange={(e) => setFormData({ ...formData, discountPercentage: e.target.value })} placeholder="e.g., 20" /></div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label>Valid From *</Label><Input type="datetime-local" value={formData.validFrom} onChange={(e) => setFormData({ ...formData, validFrom: e.target.value })} required /></div>
               <div><Label>Valid Until *</Label><Input type="datetime-local" value={formData.validUntil} onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })} required /></div>
             </div>
