@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useRoute, Link } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import { 
   MapPin, Phone, Mail, Globe, ArrowLeft, Calendar, Tag, 
   Facebook, Instagram, Twitter, MessageCircle, ExternalLink 
@@ -13,8 +13,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { apiRequest } from '@/lib/queryClient';
 
 export default function SupplierDetail() {
-  const [, params] = useRoute('/suppliers/:id');
-  const supplierId = params?.id;
+  const [location] = useLocation();
+  // Works for /suppliers/:id, /admin/suppliers/:id, /supplier/browse/:id
+  const supplierId = location.split('/').pop();
+  const backPath = location.startsWith('/admin') ? '/admin/suppliers'
+                 : location.startsWith('/supplier') ? '/supplier/browse'
+                 : '/suppliers';
 
   const { data: supplier, isLoading } = useQuery({
     queryKey: ['supplierDetails', supplierId],
@@ -80,7 +84,7 @@ export default function SupplierDetail() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* Back Button */}
-      <Link href="/suppliers">
+      <Link href={backPath}>
         <Button variant="ghost" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Suppliers

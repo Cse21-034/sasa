@@ -37,10 +37,10 @@ export default function AdminDashboardHub() {
   const { data: stats, isLoading } = useAdminOverview();
 
   const statCards = [
-    { label: 'Total Users',           value: stats?.totalUsersCount ?? 0,          icon: Users,        bg: 'bg-blue-100 dark:bg-blue-900/30',    color: 'text-blue-500' },
-    { label: 'Total Jobs',            value: stats?.totalJobs ?? 0,                icon: Briefcase,    bg: 'bg-orange-100 dark:bg-orange-900/30', color: 'text-orange-500' },
-    { label: 'Jobs Completed',        value: stats?.completedJobs ?? 0,            icon: CheckCircle2, bg: 'bg-emerald-100 dark:bg-emerald-900/30',color: 'text-emerald-500' },
-    { label: 'Pending Verifications', value: stats?.pendingVerificationCount ?? 0, icon: AlertCircle,  bg: 'bg-red-100 dark:bg-red-900/30',       color: 'text-red-500' },
+    { label: 'Total Users',           value: stats?.totalUsersCount ?? 0,          icon: Users,        bg: 'bg-blue-100 dark:bg-blue-900/30',    color: 'text-blue-500',    accent: 'bg-gradient-to-r from-blue-500 to-blue-400' },
+    { label: 'Total Jobs',            value: stats?.totalJobs ?? 0,                icon: Briefcase,    bg: 'bg-orange-100 dark:bg-orange-900/30', color: 'text-orange-500',  accent: 'bg-gradient-to-r from-orange-500 to-orange-400' },
+    { label: 'Jobs Completed',        value: stats?.completedJobs ?? 0,            icon: CheckCircle2, bg: 'bg-emerald-100 dark:bg-emerald-900/30',color: 'text-emerald-500', accent: 'bg-gradient-to-r from-emerald-500 to-emerald-400' },
+    { label: 'Pending Verifications', value: stats?.pendingVerificationCount ?? 0, icon: AlertCircle,  bg: 'bg-red-100 dark:bg-red-900/30',       color: 'text-red-500',     accent: 'bg-gradient-to-r from-red-500 to-red-400' },
   ];
 
   const menuItems = [
@@ -78,13 +78,14 @@ export default function AdminDashboardHub() {
             {/* Stat cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               {statCards.map((s) => (
-                <div key={s.label} className="rounded-2xl border border-border/50 bg-card p-3 sm:p-4 flex items-center justify-between shadow-sm">
-                  <div className="min-w-0 flex-1 pr-2">
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mb-1 leading-tight">{s.label}</p>
-                    <p className="text-xl sm:text-2xl font-extrabold text-foreground">{s.value}</p>
-                  </div>
-                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${s.bg} flex items-center justify-center flex-shrink-0`}>
-                    <s.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${s.color}`} />
+                <div key={s.label} className="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
+                  <div className={`h-1 ${s.accent}`} />
+                  <div className="p-4">
+                    <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center mb-3`}>
+                      <s.icon className={`h-5 w-5 ${s.color}`} />
+                    </div>
+                    <p className="text-2xl sm:text-3xl font-black text-foreground leading-none">{s.value}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1.5 font-medium uppercase tracking-wide leading-tight">{s.label}</p>
                   </div>
                 </div>
               ))}

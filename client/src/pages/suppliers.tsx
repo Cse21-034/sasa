@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Search, MapPin, Phone, Mail, Star, ExternalLink, Building2, SlidersHorizontal, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 
 const INDUSTRY_GRADIENTS: Record<string, string> = {
@@ -20,6 +20,12 @@ const getBanner = (industry?: string) =>
   industry ? (INDUSTRY_GRADIENTS[industry] ?? DEFAULT_GRADIENT) : DEFAULT_GRADIENT;
 
 export default function Suppliers() {
+  const [location] = useLocation();
+  const isDashboard = location.startsWith('/admin') || location.startsWith('/supplier/');
+  const basePath = location.startsWith('/admin') ? '/admin/suppliers'
+                 : location.startsWith('/supplier') ? '/supplier/browse'
+                 : '/suppliers';
+
   const [searchQuery, setSearchQuery]               = useState('');
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   const [featuredOnly, setFeaturedOnly]             = useState(false);
@@ -127,7 +133,7 @@ export default function Suppliers() {
       </div>
 
       {/* Search bar */}
-      <div className="border-b border-border/40 bg-card px-4 py-3 sticky top-14 md:top-20 z-10">
+      <div className={`border-b border-border/40 bg-card px-4 py-3 sticky z-10 ${isDashboard ? 'top-0' : 'top-14 md:top-20'}`}>
         <div className="max-w-7xl mx-auto flex items-center gap-2">
           <div className="relative flex-1 max-w-xl">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -258,7 +264,7 @@ export default function Suppliers() {
                     </div>
 
                     {/* Button */}
-                    <Link href={`/suppliers/${supplier.userId}`}>
+                    <Link href={`${basePath}/${supplier.userId}`}>
                       <a className="mt-2 w-full h-9 rounded-lg border border-primary text-primary text-sm font-semibold hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-1.5">
                         <ExternalLink className="h-3.5 w-3.5" />
                         View Details

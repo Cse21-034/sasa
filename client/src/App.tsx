@@ -203,12 +203,19 @@ function Router() {
           <Route path="/admin/category-verifications">
             {() => <AdminRoute component={AdminCategoryVerifications} />}
           </Route>
-          {/* NEW ADMIN MESSAGING ROUTES - Leads to private chat with user */}
+          {/* Admin messaging routes */}
           <Route path="/admin/messages">
             {() => <AdminRoute component={AdminMessages} />}
           </Route>
           <Route path="/admin/messages/:userId">
             {() => <AdminRoute component={AdminChat} />}
+          </Route>
+          {/* Admin supplier browse routes */}
+          <Route path="/admin/suppliers">
+            {() => <AdminRoute component={Suppliers} />}
+          </Route>
+          <Route path="/admin/suppliers/:id">
+            {() => <AdminRoute component={SupplierDetail} />}
           </Route>
           
           {/* Protected Routes */}
@@ -268,6 +275,13 @@ function Router() {
           </Route>
           <Route path="/supplier/profile">
             {() => <SupplierRoute component={Profile} path="/supplier/profile" />}
+          </Route>
+          {/* Supplier browse routes */}
+          <Route path="/supplier/browse">
+            {() => <SupplierRoute component={Suppliers} path="/supplier/browse" />}
+          </Route>
+          <Route path="/supplier/browse/:id">
+            {() => <SupplierRoute component={SupplierDetail} path="/supplier/browse/:id" />}
           </Route>
           
           <Route component={NotFound} />

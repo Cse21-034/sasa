@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
   LayoutDashboard, UserCheck, Users, FileText, TrendingUp,
-  MapPin, Wrench, MessageSquare, Menu as MenuIcon, ChevronRight, ShieldCheck, LogOut, User,
+  MapPin, Wrench, MessageSquare, Store, Menu as MenuIcon, ChevronRight, ShieldCheck, LogOut, User,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { NotificationPanel } from '@/components/notifications-panel';
@@ -22,6 +22,7 @@ const navItems = [
   { label: 'Migration Requests',    icon: MapPin,          path: '/admin/migrations',             section: 'management' },
   { label: 'Category Verifications',icon: Wrench,          path: '/admin/category-verifications', section: 'management' },
   { label: 'Messages',              icon: MessageSquare,   path: '/admin/messages',               section: 'management' },
+  { label: 'Browse Suppliers',      icon: Store,           path: '/admin/suppliers',              section: 'management' },
 ];
 
 function Sidebar({ open, onClose, location, userName, userEmail }: {

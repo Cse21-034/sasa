@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
-  LayoutDashboard, Tag, MessageSquare, Settings, Menu as MenuIcon,
+  LayoutDashboard, Tag, MessageSquare, Settings, Store, Menu as MenuIcon,
   ChevronRight, Building2, LogOut, User,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -16,10 +16,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const navItems = [
-  { label: 'Dashboard',  icon: LayoutDashboard, path: '/supplier/dashboard' },
-  { label: 'Promotions', icon: Tag,             path: '/supplier/dashboard' },
-  { label: 'Messages',   icon: MessageSquare,   path: '/supplier/messages' },
-  { label: 'Settings',   icon: Settings,        path: '/supplier/settings' },
+  { label: 'Dashboard',        icon: LayoutDashboard, path: '/supplier/dashboard' },
+  { label: 'Promotions',       icon: Tag,             path: '/supplier/dashboard' },
+  { label: 'Browse Suppliers', icon: Store,           path: '/supplier/browse' },
+  { label: 'Messages',         icon: MessageSquare,   path: '/supplier/messages' },
+  { label: 'Settings',         icon: Settings,        path: '/supplier/settings' },
 ];
 
 function Sidebar({ open, onClose, location, companyName, logo }: {
@@ -90,7 +91,10 @@ export function SupplierLayout({ children }: { children: React.ReactNode }) {
     enabled: !!user,
   });
 
-  const pageTitle = location === '/supplier/settings' ? 'Business Settings' : 'Supplier Dashboard';
+  const pageTitle = location === '/supplier/settings'         ? 'Business Settings'
+                 : location.startsWith('/supplier/browse')  ? 'Browse Suppliers'
+                 : location.startsWith('/supplier/messages') ? 'Messages'
+                 : 'Supplier Dashboard';
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

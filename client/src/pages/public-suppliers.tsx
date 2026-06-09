@@ -245,7 +245,7 @@ export default function PublicSuppliers() {
 
                     {/* Button */}
                     <button
-                      onClick={() => setLocation('/login')}
+                      onClick={() => setLocation(`/suppliers/${supplier.userId}`)}
                       className="mt-2 w-full h-9 rounded-lg border border-primary text-primary text-sm font-semibold hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-1.5"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
