@@ -137,7 +137,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                   <p className="text-xs text-muted-foreground font-normal truncate">{user?.email}</p>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setLocation('/profile')} className="cursor-pointer">
+                <DropdownMenuItem onClick={() => setLocation('/admin/profile')} className="cursor-pointer">
                   <User className="mr-2 h-4 w-4" /> Profile
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

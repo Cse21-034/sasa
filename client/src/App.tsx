@@ -183,7 +183,10 @@ function Router() {
           
           {/* Admin Routes */}
           <Route path="/admin">
-            {() => <AdminRoute component={AdminDashboardHub} />} 
+            {() => <AdminRoute component={AdminDashboardHub} />}
+          </Route>
+          <Route path="/admin/profile">
+            {() => <AdminRoute component={Profile} />}
           </Route>
           <Route path="/admin/verification">
             {() => <AdminRoute component={AdminVerification} />}
@@ -265,6 +268,9 @@ function Router() {
           </Route>
           <Route path="/supplier/messages/:jobId">
             {() => <SupplierRoute component={Chat} path="/supplier/messages/:jobId" />}
+          </Route>
+          <Route path="/supplier/profile">
+            {() => <SupplierRoute component={Profile} path="/supplier/profile" />}
           </Route>
           
           <Route component={NotFound} />
