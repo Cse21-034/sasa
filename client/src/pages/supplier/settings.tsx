@@ -77,6 +77,8 @@ export default function SupplierSettings() {
         description: 'Your business profile has been updated successfully.',
       });
       queryClient.invalidateQueries({ queryKey: ['supplierProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['public-suppliers'] });
     },
     onError: (error: any) => {
       toast({
