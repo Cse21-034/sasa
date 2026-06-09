@@ -1,282 +1,295 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, MapPin, Phone, Mail, Building2, Star, TrendingUp, Tag, ExternalLink } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Search, MapPin, Phone, Star, Tag, ExternalLink, Building2, SlidersHorizontal, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { apiRequest } from '@/lib/queryClient';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Link } from 'wouter';
+import { apiRequest } from '@/lib/queryClient';
+
+const INDUSTRY_GRADIENTS: Record<string, string> = {
+  'Building Materials': 'linear-gradient(135deg,#274345,#1a3a3a)',
+  'Tools & Equipment':  'linear-gradient(135deg,#d97706,#b45309)',
+  'Electrical':         'linear-gradient(135deg,#1d4ed8,#1e40af)',
+  'Plumbing':           'linear-gradient(135deg,#0369a1,#075985)',
+  'Furniture':          'linear-gradient(135deg,#92400e,#78350f)',
+  'Paint & Coatings':   'linear-gradient(135deg,#7c3aed,#6d28d9)',
+  'Hardware':           'linear-gradient(135deg,#065f46,#064e3b)',
+};
+const DEFAULT_GRADIENT = 'linear-gradient(135deg,#F8992D,#d97406)';
+const getBanner = (industry?: string) =>
+  industry ? (INDUSTRY_GRADIENTS[industry] ?? DEFAULT_GRADIENT) : DEFAULT_GRADIENT;
 
 export default function Suppliers() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery]               = useState('');
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
+  const [featuredOnly, setFeaturedOnly]             = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen]     = useState(false);
 
   const { data: suppliers, isLoading } = useQuery({
     queryKey: ['suppliers'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/suppliers');
-      return response.json();
+      const res = await apiRequest('GET', '/api/suppliers');
+      return res.json();
     },
   });
 
-  const filteredSuppliers = suppliers?.filter((supplier: any) => {
-    const matchesSearch = supplier.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      supplier.industryType?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || supplier.industryType === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const industries: { name: string; count: number }[] = useMemo(() => {
+    if (!suppliers) return [];
+    const map: Record<string, number> = {};
+    suppliers.forEach((s: any) => {
+      if (s.industryType) map[s.industryType] = (map[s.industryType] || 0) + 1;
+    });
+    return Object.entries(map).map(([name, count]) => ({ name, count }));
+  }, [suppliers]);
 
-  const categories = suppliers ? Array.from(new Set(suppliers.map((s: any) => s.industryType))) : [];
+  const featuredCount = useMemo(
+    () => suppliers?.filter((s: any) => s.featured).length ?? 0,
+    [suppliers],
+  );
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="mb-8">
-          <Skeleton className="h-8 w-64 mb-2" />
-          <Skeleton className="h-4 w-96" />
-        </div>
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <Skeleton className="h-12 w-full" />
-          </CardContent>
-        </Card>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <Skeleton className="h-16 w-16 rounded-full mb-4" />
-                <Skeleton className="h-6 w-3/4 mb-2" />
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-2/3" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+  const filteredSuppliers = useMemo(() => {
+    if (!suppliers) return [];
+    return suppliers.filter((s: any) => {
+      const q = searchQuery.toLowerCase();
+      const matchSearch =
+        !q ||
+        s.companyName?.toLowerCase().includes(q) ||
+        s.industryType?.toLowerCase().includes(q) ||
+        s.physicalAddress?.toLowerCase().includes(q);
+      const matchIndustry =
+        selectedIndustries.length === 0 || selectedIndustries.includes(s.industryType);
+      const matchFeatured = !featuredOnly || s.featured;
+      return matchSearch && matchIndustry && matchFeatured;
+    });
+  }, [suppliers, searchQuery, selectedIndustries, featuredOnly]);
+
+  const toggleIndustry = (name: string) =>
+    setSelectedIndustries((prev) =>
+      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name],
     );
-  }
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Suppliers & Organizations</h1>
-        <p className="text-muted-foreground">
-          Discover trusted suppliers for all your material and equipment needs
-        </p>
+  const hasActiveFilters = selectedIndustries.length > 0 || featuredOnly || !!searchQuery;
+  const resetFilters = () => { setSelectedIndustries([]); setFeaturedOnly(false); setSearchQuery(''); };
+
+  const FilterPanel = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="font-bold text-base mb-2">Type</h3>
+        <label className="flex items-center gap-2 cursor-pointer py-0.5">
+          <input
+            type="checkbox"
+            checked={featuredOnly}
+            onChange={(e) => setFeaturedOnly(e.target.checked)}
+            className="w-4 h-4 rounded-none accent-black dark:accent-white cursor-pointer"
+          />
+          <span className="text-sm flex-1">Featured only</span>
+          <span className="text-xs text-muted-foreground">{featuredCount}</span>
+        </label>
       </div>
 
-      {/* Search and Filter */}
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Search suppliers by name or industry..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 text-base"
-              />
-            </div>
-
-            {/* Category Tabs */}
-            {categories.length > 0 && (
-              <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-                <TabsList className="w-full grid grid-cols-3 md:grid-cols-6 h-auto">
-                  <TabsTrigger value="all" className="text-xs md:text-sm">All</TabsTrigger>
-                  {categories.slice(0, 5).map((cat: any) => (
-                    <TabsTrigger key={cat} value={cat} className="text-xs md:text-sm">
-                      {cat.split(' ')[0]}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Featured Suppliers */}
-      {filteredSuppliers && filteredSuppliers.some((s: any) => s.featured) && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-primary" />
-            Featured Suppliers
-          </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSuppliers
-              .filter((s: any) => s.featured)
-              .map((supplier: any) => (
-                <Card 
-                  key={supplier.userId} 
-                  className="hover:shadow-lg hover:scale-105 transition-all duration-300 hover:border-primary/50 cursor-pointer border-2 border-primary/20"
-                >
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <Avatar className="h-16 w-16 border-2">
-                        <AvatarImage src={supplier.logo || supplier.user?.profilePhotoUrl} />
-                        <AvatarFallback className="text-lg bg-primary/10">
-                          {supplier.companyName.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <Badge variant="default" className="bg-primary">
-                        Featured
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-xl mt-3">{supplier.companyName}</CardTitle>
-                    <CardDescription className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-semibold">{supplier.ratingAverage || '0.0'}</span>
-                      <span className="text-muted-foreground">({supplier.reviewCount || 0} reviews)</span>
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Badge variant="outline" className="mb-2">
-                      {supplier.industryType}
-                    </Badge>
-                    
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-start gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <span className="text-muted-foreground">{supplier.physicalAddress}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-muted-foreground">{supplier.companyPhone}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-muted-foreground truncate">{supplier.companyEmail}</span>
-                      </div>
-                    </div>
-
-                    {supplier.specialOffer && (
-                      <div className="mt-4 p-3 bg-success/10 border border-success/20 rounded-lg">
-                        <div className="flex items-start gap-2">
-                          <Tag className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                          <p className="text-sm font-medium text-success">{supplier.specialOffer}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="mt-4 space-y-2">
-                      <p className="text-sm text-muted-foreground">
-                        <span className="font-medium">Contact:</span> {supplier.contactPerson}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        <span className="font-medium">Position:</span> {supplier.contactPosition}
-                      </p>
-                    </div>
-
-                    <Link href={`/suppliers/${supplier.userId}`}>
-                      <Button className="w-full mt-4" variant="default">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        View Details
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-              ))}
+      {industries.length > 0 && (
+        <div>
+          <h3 className="font-bold text-base mb-2">Industry</h3>
+          <div className="space-y-1">
+            {industries.map(({ name, count }) => (
+              <label key={name} className="flex items-center gap-2 cursor-pointer py-0.5">
+                <input
+                  type="checkbox"
+                  checked={selectedIndustries.includes(name)}
+                  onChange={() => toggleIndustry(name)}
+                  className="w-4 h-4 rounded-none accent-black dark:accent-white cursor-pointer"
+                />
+                <span className="text-sm flex-1">{name}</span>
+                <span className="text-xs text-muted-foreground">{count}</span>
+              </label>
+            ))}
           </div>
         </div>
       )}
 
-      {/* All Suppliers */}
-      <div>
-        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-          <Building2 className="h-6 w-6" />
-          All Suppliers
-        </h2>
-        {filteredSuppliers && filteredSuppliers.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSuppliers
-              .filter((s: any) => !s.featured)
-              .map((supplier: any) => (
-                <Card 
-                  key={supplier.userId} 
-                  className="hover:shadow-lg hover:scale-105 transition-all duration-300 hover:border-primary/50 cursor-pointer border-2"
+      {hasActiveFilters && (
+        <button onClick={resetFilters} className="text-xs text-muted-foreground hover:text-foreground underline">
+          Clear all filters
+        </button>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-background">
+
+      {/* Page title */}
+      <div className="max-w-7xl mx-auto px-4 pt-8 pb-4">
+        <h1 className="text-2xl font-bold text-foreground">Suppliers</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Discover trusted suppliers for materials, tools and equipment
+        </p>
+      </div>
+
+      {/* Search bar */}
+      <div className="border-b border-border/40 bg-card px-4 py-3 sticky top-14 md:top-20 z-10">
+        <div className="max-w-7xl mx-auto flex items-center gap-2">
+          <div className="relative flex-1 max-w-xl">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by company name, industry or location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-8 h-10 rounded-lg border-2 border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 transition-colors"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
+            <SheetTrigger asChild>
+              <button className="md:hidden relative h-10 w-10 flex-shrink-0 rounded-lg border-2 border-border bg-background flex items-center justify-center hover:bg-muted transition-colors">
+                <SlidersHorizontal className="h-4 w-4 text-foreground/70" />
+                {hasActiveFilters && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-foreground rounded-full" />}
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-72 flex flex-col">
+              <SheetHeader className="pb-4 border-b border-border/30">
+                <SheetTitle className="text-left text-xl font-bold">Filters</SheetTitle>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto py-4">
+                <FilterPanel />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="max-w-7xl mx-auto px-4 py-8 pb-28 flex gap-10 items-start">
+
+        {/* Sidebar */}
+        <aside className="hidden md:block w-56 flex-shrink-0 sticky top-36">
+          <h2 className="text-2xl font-bold mb-6">Filters</h2>
+          <FilterPanel />
+        </aside>
+
+        {/* Main */}
+        <div className="flex-1 min-w-0">
+          {!isLoading && (
+            <p className="text-sm text-muted-foreground mb-5">
+              {filteredSuppliers.length} supplier{filteredSuppliers.length !== 1 ? 's' : ''} found
+            </p>
+          )}
+
+          {/* Skeletons */}
+          {isLoading && (
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
+              {[1,2,3,4,5,6].map((i) => (
+                <div key={i} className="rounded-2xl border border-border/40 overflow-hidden">
+                  <Skeleton className="h-36 w-full" />
+                  <div className="p-4 space-y-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Grid */}
+          {!isLoading && filteredSuppliers.length > 0 && (
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
+              {filteredSuppliers.map((supplier: any) => (
+                <div
+                  key={supplier.userId}
+                  className="rounded-2xl border border-border/50 bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.18),0_8px_16px_rgba(0,0,0,0.10)] hover:scale-[1.03] hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col will-change-transform"
                 >
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <Avatar className="h-16 w-16 border-2">
-                        <AvatarImage src={supplier.logo || supplier.user?.profilePhotoUrl} />
-                        <AvatarFallback className="text-lg bg-muted">
-                          {supplier.companyName.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                  {/* Banner */}
+                  <div
+                    className="h-36 flex items-center justify-center relative flex-shrink-0"
+                    style={{ background: getBanner(supplier.industryType) }}
+                  >
+                    {supplier.logo ? (
+                      <img
+                        src={supplier.logo}
+                        alt={supplier.companyName}
+                        className="h-20 w-auto object-contain drop-shadow-lg"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    ) : (
+                      <span className="text-white/90 font-extrabold text-2xl tracking-wide drop-shadow">
+                        {supplier.companyName?.substring(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                    {supplier.featured && (
+                      <span className="absolute top-2 right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        Featured
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-4 flex flex-col flex-1">
+                    <Link href={`/suppliers/${supplier.userId}`}>
+                      <a className="text-primary font-semibold text-base leading-snug mb-1 hover:underline line-clamp-1 block">
+                        {supplier.companyName}
+                      </a>
+                    </Link>
+
+                    <div className="flex items-center gap-1 mb-2">
+                      <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm font-semibold">{supplier.ratingAverage || '0.0'}</span>
+                      <span className="text-xs text-muted-foreground">({supplier.reviewCount || 0})</span>
+                      {supplier.industryType && (
+                        <span className="ml-auto text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full truncate">
+                          {supplier.industryType}
+                        </span>
+                      )}
                     </div>
-                    <CardTitle className="text-xl mt-3">{supplier.companyName}</CardTitle>
-                    <CardDescription className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-semibold">{supplier.ratingAverage || '0.0'}</span>
-                      <span className="text-muted-foreground">({supplier.reviewCount || 0} reviews)</span>
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Badge variant="outline" className="mb-2">
-                      {supplier.industryType}
-                    </Badge>
-                    
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-start gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <span className="text-muted-foreground">{supplier.physicalAddress}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-muted-foreground">{supplier.companyPhone}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-muted-foreground truncate">{supplier.companyEmail}</span>
-                      </div>
+
+                    <div className="space-y-1 text-xs text-muted-foreground flex-1">
+                      {supplier.physicalAddress && (
+                        <div className="flex items-start gap-1.5">
+                          <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                          <span className="line-clamp-1">{supplier.physicalAddress}</span>
+                        </div>
+                      )}
+                      {supplier.companyPhone && (
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="h-3 w-3 flex-shrink-0" />
+                          <span>{supplier.companyPhone}</span>
+                        </div>
+                      )}
                     </div>
 
                     {supplier.specialOffer && (
-                      <div className="mt-4 p-3 bg-success/10 border border-success/20 rounded-lg">
-                        <div className="flex items-start gap-2">
-                          <Tag className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                          <p className="text-sm font-medium text-success">{supplier.specialOffer}</p>
-                        </div>
+                      <div className="mt-3 flex items-start gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-2.5 py-2">
+                        <Tag className="h-3 w-3 text-emerald-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium line-clamp-2">{supplier.specialOffer}</p>
                       </div>
                     )}
 
-                    <div className="mt-4 space-y-2">
-                      <p className="text-sm text-muted-foreground">
-                        <span className="font-medium">Contact:</span> {supplier.contactPerson}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        <span className="font-medium">Position:</span> {supplier.contactPosition}
-                      </p>
-                    </div>
-
                     <Link href={`/suppliers/${supplier.userId}`}>
-                      <Button className="w-full mt-4" variant="outline">
-                        <ExternalLink className="h-4 w-4 mr-2" />
+                      <a className="mt-4 w-full h-9 rounded-lg border border-primary text-primary text-sm font-semibold hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-1.5">
+                        <ExternalLink className="h-3.5 w-3.5" />
                         View Details
-                      </Button>
+                      </a>
                     </Link>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
-          </div>
-        ) : (
-          <Card className="border-2 border-dashed">
-            <CardContent className="p-12 text-center">
+            </div>
+          )}
+
+          {/* Empty */}
+          {!isLoading && filteredSuppliers.length === 0 && (
+            <div className="border-2 border-dashed border-border/40 rounded-xl p-14 text-center">
               <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No suppliers found</h3>
-              <p className="text-muted-foreground">
-                Try adjusting your search or filters
-              </p>
-            </CardContent>
-          </Card>
-        )}
+              <h3 className="text-lg font-semibold mb-1">No suppliers found</h3>
+              <p className="text-muted-foreground text-sm">Try adjusting your search or filters</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

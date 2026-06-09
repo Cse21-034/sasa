@@ -154,15 +154,14 @@ export default function PublicSuppliers() {
 
           {/* Skeletons */}
           {isLoading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
               {[1,2,3,4,5,6].map((i) => (
-                <div key={i} className="rounded-xl border border-border/40 overflow-hidden">
-                  <Skeleton className="h-40 w-full" />
+                <div key={i} className="rounded-2xl border border-border/40 overflow-hidden">
+                  <Skeleton className="h-36 w-full" />
                   <div className="p-4 space-y-2">
                     <Skeleton className="h-5 w-3/4" />
                     <Skeleton className="h-4 w-1/2" />
                     <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-2/3" />
                   </div>
                 </div>
               ))}
@@ -171,11 +170,11 @@ export default function PublicSuppliers() {
 
           {/* Supplier grid */}
           {!isLoading && filteredSuppliers.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
               {filteredSuppliers.map((supplier: any) => (
                 <div
                   key={supplier.userId}
-                  className="rounded-xl border border-border/40 bg-card shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col"
+                  className="rounded-2xl border border-border/50 bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.18),0_8px_16px_rgba(0,0,0,0.10)] hover:scale-[1.03] hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col will-change-transform"
                 >
                   {/* Banner image area */}
                   <div
