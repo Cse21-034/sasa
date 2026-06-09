@@ -17,7 +17,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const navItems = [
   { label: 'Dashboard',        icon: LayoutDashboard, path: '/supplier/dashboard' },
-  { label: 'Promotions',       icon: Tag,             path: '/supplier/dashboard' },
   { label: 'Browse Suppliers', icon: Store,           path: '/supplier/browse' },
   { label: 'Messages',         icon: MessageSquare,   path: '/supplier/messages' },
   { label: 'Settings',         icon: Settings,        path: '/supplier/settings' },

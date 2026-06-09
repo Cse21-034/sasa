@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
@@ -6,6 +6,10 @@ import {
   MapPin, Mail, Phone, Star, Percent, Building2,
   Package, BadgeCheck, TrendingUp, ArrowUpRight,
 } from 'lucide-react';
+import {
+  PieChart, Pie, Cell, Tooltip as ReTooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
+} from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +20,22 @@ import { useAuth } from '@/lib/auth-context';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
+
+// Custom tooltip for recharts
+const ChartTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-card border border-border/60 rounded-xl shadow-lg px-3 py-2 text-sm">
+      {label && <p className="text-muted-foreground text-xs mb-1">{label}</p>}
+      {payload.map((p: any, i: number) => (
+        <p key={i} className="font-bold" style={{ color: p.color || p.fill }}>
+          {p.name}: <span className="text-foreground">{p.value}</span>
+        </p>
+      ))}
+    </div>
+  );
+};
 
 
 export default function SupplierDashboard() {
@@ -98,31 +118,56 @@ export default function SupplierDashboard() {
   const rating = parseFloat(profile?.ratingAverage ?? '0');
   const activePromos = promotions?.filter((p: any) => p.isActive).length ?? 0;
   const totalPromos = promotions?.length ?? 0;
+  const inactivePromos = totalPromos - activePromos;
 
   const stats = [
-    { label: 'Total Promotions', value: totalPromos,               icon: Package,    bg: 'bg-orange-100 dark:bg-orange-900/30',   color: 'text-orange-500',  accent: 'bg-gradient-to-r from-orange-500 to-orange-400' },
-    { label: 'Active Promos',    value: activePromos,              icon: BadgeCheck, bg: 'bg-emerald-100 dark:bg-emerald-900/30', color: 'text-emerald-500', accent: 'bg-gradient-to-r from-emerald-500 to-emerald-400' },
-    { label: 'Rating',           value: rating.toFixed(1),         icon: Star,       bg: 'bg-yellow-100 dark:bg-yellow-900/30',   color: 'text-yellow-500',  accent: 'bg-gradient-to-r from-yellow-500 to-yellow-400' },
-    { label: 'Reviews',          value: profile?.reviewCount ?? 0, icon: TrendingUp, bg: 'bg-blue-100 dark:bg-blue-900/30',       color: 'text-blue-500',    accent: 'bg-gradient-to-r from-blue-500 to-blue-400' },
+    { label: 'Total Promotions', value: totalPromos,               icon: Package,    bg: 'bg-orange-100 dark:bg-orange-900/30',   color: 'text-orange-500' },
+    { label: 'Active Promos',    value: activePromos,              icon: BadgeCheck, bg: 'bg-emerald-100 dark:bg-emerald-900/30', color: 'text-emerald-500' },
+    { label: 'Rating',           value: rating.toFixed(1),         icon: Star,       bg: 'bg-yellow-100 dark:bg-yellow-900/30',   color: 'text-yellow-500' },
+    { label: 'Reviews',          value: profile?.reviewCount ?? 0, icon: TrendingUp, bg: 'bg-blue-100 dark:bg-blue-900/30',       color: 'text-blue-500' },
   ];
+
+  // Chart data
+  const promoStatusData = useMemo(() => {
+    if (totalPromos === 0) return [{ name: 'No promotions', value: 1 }];
+    return [
+      { name: 'Active', value: activePromos },
+      { name: 'Inactive', value: inactivePromos },
+    ].filter(d => d.value > 0);
+  }, [totalPromos, activePromos, inactivePromos]);
+
+  const discountRangeData = useMemo(() => {
+    const ranges: Record<string, number> = { 'No discount': 0, '1–20%': 0, '21–40%': 0, '41–60%': 0, '60%+': 0 };
+    (promotions ?? []).forEach((p: any) => {
+      const d = p.discountPercentage ?? 0;
+      if (d === 0)       ranges['No discount']++;
+      else if (d <= 20)  ranges['1–20%']++;
+      else if (d <= 40)  ranges['21–40%']++;
+      else if (d <= 60)  ranges['41–60%']++;
+      else               ranges['60%+']++;
+    });
+    return Object.entries(ranges).map(([name, count]) => ({ name, count }));
+  }, [promotions]);
+
+  const DONUT_COLORS = ['#10b981', '#e5e7eb'];
+  const EMPTY_COLOR  = '#e5e7eb';
 
   return (
     <>
-      {/* Profile banner */}
+      {/* ── Profile Banner ── */}
       <div className="w-full relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a3a3a 0%, #274345 55%, #2a4d4f 100%)' }}>
-        {/* Decorative blobs */}
-        <div className="absolute -right-12 -top-12 w-56 h-56 rounded-full bg-white/[0.04] pointer-events-none" />
-        <div className="absolute right-10 top-6 w-28 h-28 rounded-full bg-white/[0.03] pointer-events-none" />
-        <div className="absolute -left-6 bottom-0 w-32 h-32 rounded-full bg-primary/10 pointer-events-none" />
+        <div className="absolute -right-14 -top-14 w-64 h-64 rounded-full bg-white/[0.04] pointer-events-none" />
+        <div className="absolute right-8 top-8 w-24 h-24 rounded-full bg-primary/10 pointer-events-none" />
 
-        <div className="px-4 md:px-6 py-6 md:py-8 relative">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            {/* Logo area */}
+        <div className="px-4 md:px-8 py-7 md:py-10 relative">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+
+            {/* Circular logo — matches concept profile photo */}
             <div className="relative flex-shrink-0">
-              <div className="w-20 h-20 rounded-2xl bg-white/10 border-2 border-white/25 flex items-center justify-center overflow-hidden shadow-xl">
+              <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-white/10 border-[3px] border-white/25 flex items-center justify-center overflow-hidden shadow-2xl ring-4 ring-white/5">
                 {profile?.logo
-                  ? <img src={profile.logo} alt={profile.companyName} className="w-full h-full object-contain p-1.5" />
-                  : <Building2 className="h-10 w-10 text-white/50" />}
+                  ? <img src={profile.logo} alt={profile.companyName} className="w-full h-full object-contain p-2" />
+                  : <Building2 className="h-10 w-10 md:h-12 md:h-12 text-white/50" />}
               </div>
               {!profile?.logo && (
                 <Link href="/supplier/settings">
@@ -133,33 +178,58 @@ export default function SupplierDashboard() {
               )}
             </div>
 
-            {/* Info */}
+            {/* Company info */}
             <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h2 className="text-xl font-extrabold text-white leading-tight">{profile?.companyName ?? user?.name}</h2>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <h2 className="text-2xl md:text-3xl font-extrabold text-white leading-tight">{profile?.companyName ?? user?.name}</h2>
                 {profile?.featured && (
                   <span className="text-[10px] font-black bg-primary text-white px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1">
                     <Star className="h-2.5 w-2.5 fill-white" /> Featured
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1 mb-2.5">
+
+              {/* Star rating */}
+              <div className="flex items-center gap-1.5 mb-3">
                 {[1,2,3,4,5].map((s) => (
-                  <Star key={s} className={`h-3.5 w-3.5 ${s <= Math.round(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-white/20 fill-white/10'}`} />
+                  <Star key={s} className={`h-4 w-4 ${s <= Math.round(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-white/20 fill-white/10'}`} />
                 ))}
-                <span className="text-white/60 text-xs ml-1.5">{rating.toFixed(1)} · <span className="text-white/80 font-semibold">{profile?.reviewCount ?? 0}</span> reviews</span>
+                <span className="text-white font-bold text-sm ml-1">{rating.toFixed(1)}</span>
+                <span className="text-white/40 text-sm">·</span>
+                <span className="text-white/70 text-sm">{profile?.reviewCount ?? 0} reviews</span>
               </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-white/55 text-xs mb-2.5">
-                {profile?.physicalAddress && <span className="flex items-center gap-1.5"><MapPin className="h-3 w-3 text-white/40" />{profile.physicalAddress}</span>}
-                {profile?.companyEmail    && <span className="flex items-center gap-1.5"><Mail  className="h-3 w-3 text-white/40" />{profile.companyEmail}</span>}
-                {profile?.companyPhone    && <span className="flex items-center gap-1.5"><Phone className="h-3 w-3 text-white/40" />{profile.companyPhone}</span>}
+
+              {/* Contact row */}
+              <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-white/60 text-sm mb-3">
+                {profile?.physicalAddress && (
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                    {profile.physicalAddress}
+                  </span>
+                )}
+                {profile?.companyEmail && (
+                  <span className="flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                    {profile.companyEmail}
+                  </span>
+                )}
+                {profile?.companyPhone && (
+                  <span className="flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                    {profile.companyPhone}
+                  </span>
+                )}
               </div>
+
+              {/* Tags */}
               <div className="flex flex-wrap gap-2">
                 {profile?.industryType && (
-                  <span className="text-[11px] font-semibold bg-white/10 text-white/80 px-2.5 py-0.5 rounded-full border border-white/15">{profile.industryType}</span>
+                  <span className="text-xs font-semibold bg-white/10 text-white/80 px-3 py-1 rounded-full border border-white/15">
+                    {profile.industryType}
+                  </span>
                 )}
                 <Link href="/supplier/settings">
-                  <a className="text-[11px] font-semibold text-white/50 hover:text-white/80 flex items-center gap-1 transition-colors">
+                  <a className="text-xs text-white/50 hover:text-white/80 flex items-center gap-1 transition-colors py-1">
                     Edit profile <ArrowUpRight className="h-3 w-3" />
                   </a>
                 </Link>
@@ -169,25 +239,91 @@ export default function SupplierDashboard() {
         </div>
       </div>
 
+      {/* ── Main content ── */}
       <div className="px-4 md:px-6 py-6 space-y-6">
 
-        {/* Stat cards — stacked with colored top accent */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {/* Stat cards — concept style: label + big number + large icon circle right */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((s) => (
-            <div key={s.label} className="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
-              <div className={`h-1 ${s.accent}`} />
-              <div className="p-4">
-                <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center mb-3`}>
-                  <s.icon className={`h-5 w-5 ${s.color}`} />
-                </div>
-                <p className="text-2xl sm:text-3xl font-black text-foreground leading-none">{s.value}</p>
-                <p className="text-[11px] text-muted-foreground mt-1.5 font-medium uppercase tracking-wide leading-tight">{s.label}</p>
+            <div key={s.label} className="rounded-2xl border border-border/50 bg-card p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+              <div className="min-w-0 flex-1 pr-3">
+                <p className="text-sm text-muted-foreground font-medium mb-2 leading-tight">{s.label}</p>
+                <p className="text-3xl font-black text-foreground leading-none">{s.value}</p>
+              </div>
+              <div className={`w-14 h-14 rounded-full ${s.bg} flex items-center justify-center flex-shrink-0`}>
+                <s.icon className={`h-7 w-7 ${s.color}`} />
               </div>
             </div>
           ))}
         </div>
 
-        {/* Promotions */}
+        {/* Charts row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+          {/* Donut — Promotion status */}
+          <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm">
+            <h3 className="font-bold text-base mb-1">Promotion Status</h3>
+            <p className="text-xs text-muted-foreground mb-4">Active vs inactive breakdown</p>
+            {totalPromos === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                <Tag className="h-10 w-10 mb-2 opacity-30" />
+                <p className="text-sm">No promotions yet</p>
+              </div>
+            ) : (
+              <div className="relative">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={promoStatusData}
+                      cx="50%" cy="50%"
+                      innerRadius={65} outerRadius={90}
+                      paddingAngle={promoStatusData.length > 1 ? 4 : 0}
+                      dataKey="value"
+                      startAngle={90} endAngle={-270}
+                    >
+                      {promoStatusData.map((_, i) => (
+                        <Cell key={i} fill={totalPromos === 0 ? EMPTY_COLOR : DONUT_COLORS[i % DONUT_COLORS.length]} strokeWidth={0} />
+                      ))}
+                    </Pie>
+                    <ReTooltip content={<ChartTooltip />} />
+                    <Legend iconType="circle" iconSize={8} formatter={(v) => <span className="text-xs text-foreground/80">{v}</span>} />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center label */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ top: -20 }}>
+                  <div className="text-center">
+                    <p className="text-2xl font-black text-foreground">{activePromos}</p>
+                    <p className="text-[11px] text-muted-foreground font-medium">Active</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bar — Promotions by discount range */}
+          <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm">
+            <h3 className="font-bold text-base mb-1">Discount Distribution</h3>
+            <p className="text-xs text-muted-foreground mb-4">Promotions grouped by discount %</p>
+            {totalPromos === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                <Percent className="h-10 w-10 mb-2 opacity-30" />
+                <p className="text-sm">No promotions yet</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={discountRangeData} margin={{ top: 5, right: 5, left: -18, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'currentColor', opacity: 0.6 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: 'currentColor', opacity: 0.6 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <ReTooltip content={<ChartTooltip />} cursor={{ fill: 'currentColor', opacity: 0.04 }} />
+                  <Bar dataKey="count" name="Promotions" fill="#F8992D" radius={[6, 6, 0, 0]} maxBarSize={48} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Promotions section */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -210,7 +346,6 @@ export default function SupplierDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {promotions.map((promo: any) => (
                 <div key={promo.id} className="rounded-2xl border border-border/50 bg-card overflow-hidden shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
-                  {/* Card header: image or gradient placeholder */}
                   {promo.images?.[0] ? (
                     <div className="relative">
                       <img src={promo.images[0]} alt={promo.title} className="w-full h-36 object-cover" />
@@ -235,7 +370,6 @@ export default function SupplierDashboard() {
                       )}
                     </div>
                   )}
-
                   <div className="p-4">
                     <h4 className="font-bold text-sm leading-snug mb-1.5 line-clamp-1 group-hover:text-primary transition-colors">{promo.title}</h4>
                     <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{promo.description}</p>
@@ -263,8 +397,14 @@ export default function SupplierDashboard() {
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Delete Promotion?</AlertDialogTitle><AlertDialogDescription>This will permanently remove this promotion.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteMutation.mutate(promo.id)} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction></AlertDialogFooter>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Promotion?</AlertDialogTitle>
+                              <AlertDialogDescription>This will permanently remove this promotion.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteMutation.mutate(promo.id)} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
+                            </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
                       </div>
@@ -274,7 +414,6 @@ export default function SupplierDashboard() {
               ))}
             </div>
           ) : (
-            /* Enhanced empty state */
             <div className="relative rounded-2xl overflow-hidden border-2 border-dashed border-border/40 py-14 text-center"
                  style={{ background: 'linear-gradient(135deg, rgba(248,153,45,0.04) 0%, transparent 60%)' }}>
               <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-4 border border-primary/20">
@@ -297,7 +436,7 @@ export default function SupplierDashboard() {
         </div>
       </div>
 
-      {/* Promotion dialog */}
+      {/* ── Promotion dialog ── */}
       <Dialog open={showPromotionDialog} onOpenChange={(o) => !o && resetForm()}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editingPromotion ? 'Edit Promotion' : 'Create Promotion'}</DialogTitle></DialogHeader>
