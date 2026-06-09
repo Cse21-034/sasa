@@ -2,8 +2,18 @@ import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
   LayoutDashboard, Tag, MessageSquare, Settings, Menu as MenuIcon,
-  ChevronRight, Building2,
+  ChevronRight, Building2, LogOut, User,
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { NotificationPanel } from '@/components/notifications-panel';
+import { useAuth } from '@/lib/auth-context';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const navItems = [
   { label: 'Dashboard',  icon: LayoutDashboard, path: '/supplier/dashboard' },
@@ -12,7 +22,10 @@ const navItems = [
   { label: 'Settings',   icon: Settings,        path: '/supplier/settings' },
 ];
 
-function Sidebar({ open, onClose, location }: { open: boolean; onClose: () => void; location: string }) {
+function Sidebar({ open, onClose, location, companyName, logo }: {
+  open: boolean; onClose: () => void; location: string;
+  companyName?: string; logo?: string;
+}) {
   return (
     <>
       {open && <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={onClose} />}
@@ -46,14 +59,17 @@ function Sidebar({ open, onClose, location }: { open: boolean; onClose: () => vo
           ))}
         </nav>
 
-        {/* User chip */}
+        {/* Company chip */}
         <div className="px-4 py-4 border-t border-white/10 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white flex-shrink-0">
-              <Building2 className="h-4 w-4" />
+            <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white flex-shrink-0 overflow-hidden">
+              {logo
+                ? <img src={logo} alt={companyName} className="w-full h-full object-contain p-0.5"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                : <Building2 className="h-4 w-4" />}
             </div>
             <div className="min-w-0">
-              <p className="text-white text-xs font-semibold truncate">Supplier</p>
+              <p className="text-white text-xs font-semibold truncate">{companyName || 'Supplier'}</p>
               <p className="text-white/50 text-[10px] truncate">Dashboard</p>
             </div>
           </div>
@@ -64,14 +80,27 @@ function Sidebar({ open, onClose, location }: { open: boolean; onClose: () => vo
 }
 
 export function SupplierLayout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
+
+  const { data: supplierProfile } = useQuery({
+    queryKey: ['supplierProfile'],
+    queryFn: async () => (await apiRequest('GET', '/api/supplier/profile')).json(),
+    enabled: !!user,
+  });
 
   const pageTitle = location === '/supplier/settings' ? 'Business Settings' : 'Supplier Dashboard';
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} location={location} />
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        location={location}
+        companyName={supplierProfile?.companyName || user?.name}
+        logo={supplierProfile?.logo}
+      />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar */}
@@ -82,7 +111,47 @@ export function SupplierLayout({ children }: { children: React.ReactNode }) {
           >
             <MenuIcon className="h-5 w-5" />
           </button>
+
           <span className="text-lg font-bold text-foreground">{pageTitle}</span>
+
+          {/* Right controls */}
+          <div className="ml-auto flex items-center gap-1">
+            <ThemeToggle />
+            <NotificationPanel />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="ml-1 rounded-full ring-2 ring-primary/30 hover:ring-primary transition-all">
+                  <Avatar className="h-9 w-9">
+                    {supplierProfile?.logo && (
+                      <AvatarImage
+                        src={supplierProfile.logo}
+                        alt={supplierProfile.companyName}
+                        className="object-contain p-0.5"
+                      />
+                    )}
+                    <AvatarFallback className="bg-primary text-white font-bold text-sm">
+                      {(supplierProfile?.companyName || user?.name)?.charAt(0).toUpperCase() || 'S'}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <p className="font-semibold truncate">{supplierProfile?.companyName || user?.name}</p>
+                  <p className="text-xs text-muted-foreground font-normal truncate">{user?.email}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setLocation('/supplier/settings')} className="cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" /> Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" /> Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto">

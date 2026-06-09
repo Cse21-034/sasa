@@ -2,8 +2,16 @@ import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
   LayoutDashboard, UserCheck, Users, FileText, TrendingUp,
-  MapPin, Wrench, MessageSquare, Menu as MenuIcon, ChevronRight, ShieldCheck,
+  MapPin, Wrench, MessageSquare, Menu as MenuIcon, ChevronRight, ShieldCheck, LogOut, User,
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { NotificationPanel } from '@/components/notifications-panel';
+import { useAuth } from '@/lib/auth-context';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const navItems = [
   { label: 'Dashboard',             icon: LayoutDashboard, path: '/admin',                        section: 'menu' },
@@ -16,7 +24,10 @@ const navItems = [
   { label: 'Messages',              icon: MessageSquare,   path: '/messages',                     section: 'management' },
 ];
 
-function Sidebar({ open, onClose, location }: { open: boolean; onClose: () => void; location: string }) {
+function Sidebar({ open, onClose, location, userName, userEmail }: {
+  open: boolean; onClose: () => void; location: string;
+  userName?: string; userEmail?: string;
+}) {
   const menuItems  = navItems.filter((n) => n.section === 'menu');
   const mgmtItems  = navItems.filter((n) => n.section === 'management');
   const isActive   = (path: string) => location === path || (path !== '/admin' && location.startsWith(path));
@@ -68,8 +79,8 @@ function Sidebar({ open, onClose, location }: { open: boolean; onClose: () => vo
               <ShieldCheck className="h-4 w-4 text-white" />
             </div>
             <div className="min-w-0">
-              <p className="text-white text-xs font-semibold truncate">Admin Panel</p>
-              <p className="text-white/50 text-[10px]">jobtradesasa.com</p>
+              <p className="text-white text-xs font-semibold truncate">{userName || 'Administrator'}</p>
+              <p className="text-white/50 text-[10px] truncate">{userEmail || 'jobtradesasa.com'}</p>
             </div>
           </div>
         </div>
@@ -79,12 +90,19 @@ function Sidebar({ open, onClose, location }: { open: boolean; onClose: () => vo
 }
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} location={location} />
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        location={location}
+        userName={user?.name}
+        userEmail={user?.email}
+      />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar */}
@@ -95,7 +113,40 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           >
             <MenuIcon className="h-5 w-5" />
           </button>
+
           <span className="text-lg font-bold text-foreground">Admin Panel</span>
+
+          {/* Right controls */}
+          <div className="ml-auto flex items-center gap-1">
+            <ThemeToggle />
+            <NotificationPanel />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="ml-1 rounded-full ring-2 ring-primary/30 hover:ring-primary transition-all">
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="bg-primary text-white font-bold text-sm">
+                      {user?.name?.charAt(0).toUpperCase() || 'A'}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <p className="font-semibold truncate">{user?.name}</p>
+                  <p className="text-xs text-muted-foreground font-normal truncate">{user?.email}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setLocation('/profile')} className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" /> Profile
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" /> Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto">
