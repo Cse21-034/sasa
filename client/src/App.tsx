@@ -7,6 +7,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { Header } from "@/components/layout/header";
+import { AdminLayout } from "@/components/layout/admin-layout";
+import { SupplierLayout } from "@/components/layout/supplier-layout";
 import { PushNotificationContainer } from "@/components/push-notification";
 import { AppInstallPrompt } from "@/components/app-install-prompt";
 import "@/lib/i18n";
@@ -109,12 +111,19 @@ function ProtectedRoute({ component: Component, path, ...rest }: any) {
 }
 
 function AdminRoute({ component: Component, ...rest }: any) {
-    const { isAuthenticated, user } = useAuth();
-    if (!isAuthenticated || user?.role !== 'admin') {
-        // Redirect to 404 or login if not admin
-        return <Redirect to={isAuthenticated ? "/404" : "/login"} />;
-    }
-    return <Component {...rest} />;
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated || user?.role !== 'admin') {
+    return <Redirect to={isAuthenticated ? "/404" : "/login"} />;
+  }
+  return <AdminLayout><Component {...rest} /></AdminLayout>;
+}
+
+function SupplierRoute({ component: Component, path, ...rest }: any) {
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated) return <Redirect to="/login" />;
+  if (user && !user.isVerified) return <Redirect to="/verification" />;
+  if (user?.role !== 'supplier') return <Redirect to="/jobs" />;
+  return <SupplierLayout><Component {...rest} /></SupplierLayout>;
 }
 
 
@@ -143,13 +152,14 @@ function Router() {
   const { isAuthenticated, user } = useAuth();
   const [location] = useLocation();
 
-  const hideHeader = ['/login', '/signup', '/forgot-password'].includes(location);
+  const isDashboardRoute = location.startsWith('/admin') || location.startsWith('/supplier/');
+  const hideHeader = ['/login', '/signup', '/forgot-password'].includes(location) || isDashboardRoute;
 
   return (
     <div className="flex flex-col min-h-screen">
       {!hideHeader && <Header />}
       {!hideHeader && <AppInstallPrompt />}
-      <main className="flex-1 pb-16 md:pb-0">
+      <main className={isDashboardRoute ? 'flex-1' : 'flex-1 pb-16 md:pb-0'}>
         <Switch>
           {/* 🔥 FIXED: Use SmartRedirect for root route */}
           <Route path="/">
@@ -243,18 +253,18 @@ function Router() {
             <SupplierDetail />
           </Route>
           
-          {/* Supplier Dashboard - Protected */}
+          {/* Supplier Dashboard - Supplier only */}
           <Route path="/supplier/dashboard">
-            {() => <ProtectedRoute component={SupplierDashboard} path="/supplier/dashboard" />}
+            {() => <SupplierRoute component={SupplierDashboard} path="/supplier/dashboard" />}
           </Route>
           <Route path="/supplier/settings">
-            {() => <ProtectedRoute component={SupplierSettings} path="/supplier/settings" />}
+            {() => <SupplierRoute component={SupplierSettings} path="/supplier/settings" />}
           </Route>
           
           <Route component={NotFound} />
         </Switch>
       </main>
-      <MobileNav />
+      {!isDashboardRoute && <MobileNav />}
     </div>
   );
 }
