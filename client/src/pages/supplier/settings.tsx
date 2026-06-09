@@ -1,10 +1,9 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Building2, Loader2, Globe, Facebook, Instagram, Twitter, MessageCircle } from 'lucide-react';
+import { Building2, Loader2, Globe, Facebook, Instagram, Twitter, MessageCircle, Camera, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
@@ -13,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 const supplierProfileSchema = z.object({
   websiteUrl: z.string().url('Invalid URL').optional().or(z.literal('')),
@@ -26,12 +26,20 @@ const supplierProfileSchema = z.object({
 
 type SupplierProfileForm = z.infer<typeof supplierProfileSchema>;
 
+function invalidateCaches() {
+  queryClient.invalidateQueries({ queryKey: ['supplierProfile'] });
+  queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+  queryClient.invalidateQueries({ queryKey: ['public-suppliers'] });
+}
+
 export default function SupplierSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
 
   const { data: supplier, isLoading } = useQuery({
-    queryKey: ['supplierProfile', user?.id],
+    queryKey: ['supplierProfile'],
     queryFn: async () => {
       const response = await apiRequest('GET', `/api/supplier/profile`);
       return response.json();
@@ -51,7 +59,6 @@ export default function SupplierSettings() {
     },
   });
 
-  // Update form when supplier data loads
   React.useEffect(() => {
     if (supplier) {
       form.reset({
@@ -66,6 +73,38 @@ export default function SupplierSettings() {
     }
   }, [supplier, form]);
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Logo must be under 5MB', variant: 'destructive' });
+      return;
+    }
+
+    setLogoUploading(true);
+    try {
+      const result = await uploadToCloudinary(file, {
+        folder: `supplier-logos/${user?.id}`,
+        width: 400,
+        height: 400,
+        crop: 'pad',
+        background: 'white',
+        quality: 'auto',
+        format: 'png',
+      });
+
+      await apiRequest('PATCH', '/api/supplier/profile', { logo: result.url });
+      invalidateCaches();
+      toast({ title: 'Logo updated', description: 'Your business logo has been saved.' });
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setLogoUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const mutation = useMutation({
     mutationFn: async (data: SupplierProfileForm) => {
       const response = await apiRequest('PATCH', '/api/supplier/profile', data);
@@ -76,9 +115,7 @@ export default function SupplierSettings() {
         title: 'Profile updated',
         description: 'Your business profile has been updated successfully.',
       });
-      queryClient.invalidateQueries({ queryKey: ['supplierProfile'] });
-      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-      queryClient.invalidateQueries({ queryKey: ['public-suppliers'] });
+      invalidateCaches();
     },
     onError: (error: any) => {
       toast({
@@ -111,9 +148,71 @@ export default function SupplierSettings() {
         <p className="text-muted-foreground">Update your business information and social media links</p>
       </div>
 
+      {/* Logo Upload Card */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Business Logo</CardTitle>
+          <CardDescription>
+            Your logo appears on supplier cards, promotions, and the navigation bar
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-6">
+            {/* Preview */}
+            <div className="w-24 h-24 rounded-2xl border-2 border-border bg-muted/40 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {logoUploading ? (
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              ) : supplier?.logo ? (
+                <img
+                  src={supplier.logo}
+                  alt="Business logo"
+                  className="w-full h-full object-contain p-2"
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/supplier-logo-fallback.png'; }}
+                />
+              ) : (
+                <Building2 className="h-10 w-10 text-muted-foreground" />
+              )}
+            </div>
+
+            {/* Upload controls */}
+            <div className="flex-1 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {supplier?.logo
+                  ? 'Your logo is set. Upload a new one to replace it.'
+                  : 'No logo uploaded yet. Add your company logo to stand out.'}
+              </p>
+              <div className="flex gap-3 flex-wrap">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={logoUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="gap-2"
+                >
+                  {logoUploading ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</>
+                  ) : (
+                    <><Upload className="h-4 w-4" /> Upload Logo</>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">PNG, JPG or WebP · Max 5MB · Recommended: square format</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <Card className="">
+          <Card>
             <CardHeader>
               <CardTitle>About Your Business</CardTitle>
               <CardDescription>Help customers learn more about your company</CardDescription>
@@ -159,7 +258,7 @@ export default function SupplierSettings() {
             </CardContent>
           </Card>
 
-          <Card className="">
+          <Card>
             <CardHeader>
               <CardTitle>Contact & Social Media</CardTitle>
               <CardDescription>Make it easy for customers to reach you</CardDescription>
@@ -175,10 +274,7 @@ export default function SupplierSettings() {
                       Website URL
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="https://yourcompany.com"
-                        {...field}
-                      />
+                      <Input placeholder="https://yourcompany.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -195,14 +291,9 @@ export default function SupplierSettings() {
                       WhatsApp Number
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="+267 12345678"
-                        {...field}
-                      />
+                      <Input placeholder="+267 12345678" {...field} />
                     </FormControl>
-                    <FormDescription>
-                      Include country code (e.g., +267 for Botswana)
-                    </FormDescription>
+                    <FormDescription>Include country code (e.g., +267 for Botswana)</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -218,10 +309,7 @@ export default function SupplierSettings() {
                       Facebook Page
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="https://facebook.com/yourpage"
-                        {...field}
-                      />
+                      <Input placeholder="https://facebook.com/yourpage" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -238,10 +326,7 @@ export default function SupplierSettings() {
                       Instagram Profile
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="https://instagram.com/yourprofile"
-                        {...field}
-                      />
+                      <Input placeholder="https://instagram.com/yourprofile" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -258,10 +343,7 @@ export default function SupplierSettings() {
                       Twitter/X Profile
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="https://twitter.com/yourprofile"
-                        {...field}
-                      />
+                      <Input placeholder="https://twitter.com/yourprofile" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -285,10 +367,7 @@ export default function SupplierSettings() {
               disabled={mutation.isPending}
             >
               {mutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
               ) : (
                 'Save Changes'
               )}

@@ -35,6 +35,13 @@ export function Header() {
     refetchInterval: 30000,
   });
 
+  // Query for supplier profile (supplier logo in avatar)
+  const { data: supplierProfile } = useQuery({
+    queryKey: ['supplierProfile'],
+    queryFn: async () => (await apiRequest('GET', '/api/supplier/profile')).json(),
+    enabled: isAuthenticated && user?.role === 'supplier',
+  });
+
   // Query for pending verifications (admin only)
   const { data: pendingVerifications } = useQuery({
     queryKey: ['adminPendingVerification'],
@@ -101,7 +108,7 @@ export function Header() {
               <DropdownMenuTrigger asChild>
                 <button className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-orange-400 flex-shrink-0 ml-0.5">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.profilePhotoUrl ?? undefined} alt={user?.name ?? undefined} />
+                    <AvatarImage src={(user?.role === 'supplier' && supplierProfile?.logo) ? supplierProfile.logo : (user?.profilePhotoUrl ?? undefined)} alt={user?.name ?? undefined} />
                     <AvatarFallback className="bg-orange-500 text-white font-bold text-xs">
                       {user?.name?.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
@@ -298,7 +305,7 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full !text-foreground dark:!text-white hover:bg-black/5 dark:hover:bg-white/10 transition-all">
                     <Avatar className="h-10 w-10 ring-2 ring-orange-400">
-                      <AvatarImage src={user?.profilePhotoUrl} alt={user?.name} />
+                      <AvatarImage src={(user?.role === 'supplier' && supplierProfile?.logo) ? supplierProfile.logo : user?.profilePhotoUrl} alt={user?.name} />
                       <AvatarFallback className="bg-orange-500 text-white font-bold">
                         {user?.name?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>

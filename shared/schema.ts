@@ -798,6 +798,7 @@ export const insertSupplierPromotionSchema = z.object({
 });
 
 export const updateSupplierProfileSchema = z.object({
+  logo: z.string().url().optional().or(z.literal('')),
   websiteUrl: z.string().url().optional().or(z.literal('')),
   facebookUrl: z.string().url().optional().or(z.literal('')),
   instagramUrl: z.string().url().optional().or(z.literal('')),

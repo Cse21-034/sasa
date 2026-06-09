@@ -167,10 +167,11 @@ function FeaturedCarousel({ promos }: { promos: PromotionWithSupplier[] }) {
                     <div className="flex flex-wrap items-center justify-between gap-6 pt-6 border-t border-white/10">
                       <div className="flex items-center gap-4">
                         <div className="h-14 w-14 rounded-xl bg-white/10 backdrop-blur-md p-1 border border-white/20 flex items-center justify-center">
-                          <img 
-                            src={promo.supplier.logo || promo.supplier.user?.profilePhotoUrl || "/placeholder-supplier.png"} 
+                          <img
+                            src={promo.supplier.logo || '/supplier-logo-fallback.png'}
                             alt={promo.supplier.companyName}
                             className="w-full h-full object-contain rounded-lg"
+                            onError={(e) => { (e.target as HTMLImageElement).src = '/supplier-logo-fallback.png'; }}
                           />
                         </div>
                         <div>
@@ -249,10 +250,11 @@ function PromotionCard({ promo }: { promo: PromotionWithSupplier }) {
       <CardContent className="p-6 flex flex-col flex-1">
         <div className="flex items-center gap-2 mb-4">
           <div className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 p-1 flex items-center justify-center flex-shrink-0">
-            <img 
-              src={promo.supplier.logo || promo.supplier.user?.profilePhotoUrl || "/placeholder-supplier.png"} 
+            <img
+              src={promo.supplier.logo || '/supplier-logo-fallback.png'}
               alt={promo.supplier.companyName}
               className="w-full h-full object-contain"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/supplier-logo-fallback.png'; }}
             />
           </div>
           <p className="text-xs font-bold text-slate-500 uppercase tracking-widest truncate">
