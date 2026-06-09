@@ -61,36 +61,7 @@ function useCountdown(validUntil: string | Date) {
   return { ...state, color };
 }
 
-function useAnimatedCount(target: number, duration = 1400) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-  const started = useRef(false);
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !started.current) {
-          started.current = true;
-          const start = Date.now();
-          const tick = () => {
-            const p = Math.min((Date.now() - start) / duration, 1);
-            const eased = 1 - Math.pow(1 - p, 3);
-            setCount(Math.round(eased * target));
-            if (p < 1) requestAnimationFrame(tick);
-          };
-          requestAnimationFrame(tick);
-        }
-      },
-      { threshold: 0.5 },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [target, duration]);
-
-  return { count, ref };
-}
 
 function useInView() {
   const ref = useRef<HTMLDivElement>(null);
@@ -319,40 +290,12 @@ function HeroCarousel({
 // ── HeroSection ───────────────────────────────────────────────────────────────
 
 function HeroSection({
-  totalPromos, suppliers, promos, onQuickView,
+  promos, onQuickView,
 }: {
-  totalPromos: number;
-  suppliers: number;
   promos: PromotionWithSupplier[];
   onQuickView: (p: PromotionWithSupplier) => void;
 }) {
-  const dealsC = useAnimatedCount(totalPromos);
-  const suppC  = useAnimatedCount(suppliers);
-  const savC   = useAnimatedCount(75);
-
-  return (
-    <div>
-      {/* Full-bleed Amazon-style carousel */}
-      <HeroCarousel promos={promos} onQuickView={onQuickView} />
-
-      {/* Stat counters below */}
-      <div ref={dealsC.ref} className="container mx-auto px-4 py-5">
-        <div className="promo-hero-in-4 grid grid-cols-3 gap-3 max-w-sm mx-auto">
-          {[
-            { label: "Live Deals",  count: dealsC.count, icon: Tag,       color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-900/20",  border: "border-orange-200 dark:border-orange-800/40" },
-            { label: "Suppliers",   count: suppC.count,  icon: Building2, color: "text-teal-600",   bg: "bg-teal-50 dark:bg-teal-900/20",      border: "border-teal-200 dark:border-teal-800/40" },
-            { label: "Up to % off", count: savC.count,   icon: Percent,   color: "text-yellow-600", bg: "bg-yellow-50 dark:bg-yellow-900/20",  border: "border-yellow-200 dark:border-yellow-800/40" },
-          ].map(({ label, count, icon: Icon, color, bg, border }) => (
-            <div key={label} className={`${bg} border ${border} rounded-2xl px-3 py-4 text-center shadow-sm`}>
-              <Icon className={`h-5 w-5 ${color} mx-auto mb-1.5`} />
-              <p className={`text-2xl font-black ${color} leading-none`}>{count}</p>
-              <p className="text-[10px] text-muted-foreground font-semibold mt-1 uppercase tracking-wide leading-tight">{label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  return <HeroCarousel promos={promos} onQuickView={onQuickView} />;
 }
 
 // ── CountdownTimer ─────────────────────────────────────────────────────────────
@@ -875,7 +818,6 @@ export default function PromotionsPage() {
   const featuredPromos   = activePromotions.filter((p) => p.supplier.featured);
   const regularPromos    = activePromotions.filter((p) => !p.supplier.featured);
   const gridPromos       = regularPromos.length > 0 ? regularPromos : featuredPromos;
-  const uniqueSuppliers  = new Set(activePromotions.map((p) => p.supplierId)).size;
 
   return (
     <div className="min-h-screen bg-background">
@@ -883,12 +825,7 @@ export default function PromotionsPage() {
       {activePromotions.length > 0 && <DealTicker promos={activePromotions} />}
 
       {/* ② Hero section */}
-      <HeroSection
-        totalPromos={activePromotions.length}
-        suppliers={uniqueSuppliers}
-        promos={activePromotions}
-        onQuickView={setQuickViewPromo}
-      />
+      <HeroSection promos={activePromotions} onQuickView={setQuickViewPromo} />
 
       {/* Quick View modal */}
       <QuickViewModal
