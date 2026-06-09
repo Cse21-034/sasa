@@ -156,42 +156,104 @@ function HeroSection({ totalPromos, suppliers }: { totalPromos: number; supplier
   const savC   = useAnimatedCount(75);
 
   return (
-    <div className="relative bg-[#1a3a3a] py-16 md:py-20 overflow-hidden">
-      {/* Radial glow */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ background: "radial-gradient(ellipse 70% 60% at 50% -10%, rgba(248,153,45,0.18), transparent 65%)" }}
-      />
+    <div
+      className="relative overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #1a3a3a 0%, #274345 55%, #2a4d4f 100%)" }}
+    >
+      {/* Background blobs */}
+      <div className="absolute -top-20 -right-20 w-96 h-96 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(248,153,45,0.13), transparent 70%)" }} />
+      <div className="absolute bottom-0 left-1/4 w-72 h-72 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(248,153,45,0.06), transparent 70%)" }} />
 
-      {/* Floating decorations */}
-      <span className="absolute top-8  left-[7%]  text-orange-400/35 text-3xl pf1 select-none">✦</span>
-      <span className="absolute top-14 right-[11%] text-orange-300/25 text-4xl pf2 select-none">◆</span>
-      <span className="absolute bottom-10 left-[22%] text-yellow-400/20 text-2xl pf3 select-none">★</span>
-      <span className="absolute top-20 right-[27%]  text-orange-500/15 text-5xl pf4 select-none">●</span>
-      <span className="absolute bottom-8 right-[7%]  text-orange-400/25 text-xl pf5 select-none">✦</span>
+      <div className="container mx-auto px-4 py-10 md:py-14">
+        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
 
-      <div className="container mx-auto px-4 relative z-10 text-center">
-        <div className="promo-hero-in inline-flex items-center gap-2 bg-orange-500/15 border border-orange-500/30 text-orange-400 text-[11px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-5">
-          <Sparkles className="h-3 w-3" />
-          Exclusive Marketplace Deals
+          {/* ── LEFT: promotional text ── */}
+          <div className="flex-1 text-white promo-hero-in md:py-4">
+            {/* Orange pill label — like the reference "READ MORE" button style */}
+            <div className="inline-flex items-center gap-2 bg-orange-500 text-white text-[11px] font-black uppercase tracking-widest px-4 py-2 rounded-lg mb-5 shadow-lg shadow-orange-500/25">
+              <Zap className="h-3.5 w-3.5 fill-white" />
+              Exclusive Deals
+            </div>
+
+            <h1 className="promo-hero-in-2 font-black leading-[1.0] mb-4">
+              <span className="block text-5xl md:text-6xl lg:text-7xl text-white tracking-tight">SUPPLIER</span>
+              <span className="block text-5xl md:text-6xl lg:text-7xl text-orange-400 tracking-tight">PROMOTIONS</span>
+            </h1>
+
+            <p className="promo-hero-in-3 text-white/55 text-sm md:text-base max-w-sm mb-8 leading-relaxed">
+              Save big on materials and equipment from our verified network of industry-leading suppliers.
+            </p>
+
+            <button
+              className="promo-hero-in-3 inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-7 py-3 rounded-xl transition-colors shadow-xl shadow-orange-500/25"
+              onClick={() => document.getElementById("promo-grid")?.scrollIntoView({ behavior: "smooth" })}
+            >
+              Browse Deals <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* ── RIGHT: promotional illustration ── */}
+          <div className="flex-shrink-0 relative w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 promo-hero-in-2">
+            {/* Outer dashed orbit ring */}
+            <div className="absolute inset-0 rounded-full border-2 border-dashed border-white/8"
+              style={{ animation: "promo-orbit 28s linear infinite" }} />
+            <div className="absolute inset-5 rounded-full border border-orange-500/15"
+              style={{ animation: "promo-orbit 20s linear infinite reverse" }} />
+
+            {/* Central badge — big % circle */}
+            <div className="absolute inset-12 rounded-full flex flex-col items-center justify-center shadow-2xl"
+              style={{ background: "linear-gradient(135deg, #F8992D, #d97406)" }}>
+              <span className="text-white font-black text-4xl md:text-5xl leading-none">%</span>
+              <span className="text-white/80 text-[9px] font-black uppercase tracking-widest mt-0.5">OFF</span>
+            </div>
+
+            {/* Floating cards — like reference image icon bubbles */}
+            <div className="absolute top-0 left-8 pf1">
+              <div className="bg-white/12 backdrop-blur-sm border border-white/20 rounded-2xl px-3 py-2 shadow-xl text-center">
+                <Tag className="h-4 w-4 text-orange-400 mx-auto mb-0.5" />
+                <span className="text-white text-[10px] font-bold block">Hot Deal</span>
+              </div>
+            </div>
+
+            <div className="absolute top-2 right-0 pf2">
+              <div className="bg-orange-500/85 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-xl text-center">
+                <Star className="h-4 w-4 text-white mx-auto mb-0.5 fill-white" />
+                <span className="text-white text-[10px] font-bold block">Top Pick</span>
+              </div>
+            </div>
+
+            <div className="absolute bottom-8 left-0 pf3">
+              <div className="bg-white/12 backdrop-blur-sm border border-white/20 rounded-2xl px-3 py-2 shadow-xl">
+                <div className="text-orange-400 font-black text-sm leading-none">-50%</div>
+                <div className="text-white/65 text-[10px] font-medium">Materials</div>
+              </div>
+            </div>
+
+            <div className="absolute bottom-4 right-2 pf4">
+              <div className="bg-emerald-500/80 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-xl text-center">
+                <Sparkles className="h-4 w-4 text-white mx-auto mb-0.5" />
+                <span className="text-white text-[10px] font-bold block">New</span>
+              </div>
+            </div>
+
+            <div className="absolute top-1/2 -translate-y-1/2 -left-1 pf5">
+              <div className="bg-blue-500/70 backdrop-blur-sm rounded-full h-9 w-9 flex items-center justify-center shadow-xl">
+                <Building2 className="h-4 w-4 text-white" />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <h1 className="promo-hero-in-2 text-4xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-4 leading-tight">
-          Supplier&nbsp;<span className="text-orange-400">Promotions</span>
-        </h1>
-
-        <p className="promo-hero-in-3 text-white/60 max-w-xl mx-auto text-base md:text-lg mb-10">
-          Save big on materials and equipment from our verified network of industry-leading suppliers.
-        </p>
-
-        {/* Animated stat counters */}
-        <div ref={dealsC.ref} className="promo-hero-in-4 grid grid-cols-3 gap-3 max-w-xs mx-auto">
+        {/* ── Animated stat counters ── */}
+        <div ref={dealsC.ref} className="promo-hero-in-4 grid grid-cols-3 gap-3 max-w-xs mx-auto mt-10 md:mx-0">
           {[
-            { label: "Live Deals",   count: dealsC.count, icon: Tag,      color: "text-orange-400" },
-            { label: "Suppliers",    count: suppC.count,  icon: Building2, color: "text-teal-400" },
-            { label: "Up to % off",  count: savC.count,   icon: Percent,   color: "text-yellow-400" },
+            { label: "Live Deals",  count: dealsC.count, icon: Tag,       color: "text-orange-400" },
+            { label: "Suppliers",   count: suppC.count,  icon: Building2, color: "text-teal-400" },
+            { label: "Up to % off", count: savC.count,   icon: Percent,   color: "text-yellow-400" },
           ].map(({ label, count, icon: Icon, color }) => (
-            <div key={label} className="bg-white/5 border border-white/10 rounded-2xl px-3 py-4 backdrop-blur-sm">
+            <div key={label} className="bg-white/5 border border-white/10 rounded-2xl px-3 py-4 backdrop-blur-sm text-center">
               <Icon className={`h-5 w-5 ${color} mx-auto mb-1.5`} />
               <p className={`text-2xl font-black ${color} leading-none`}>{count}</p>
               <p className="text-[10px] text-white/45 font-semibold mt-1 uppercase tracking-wide leading-tight">{label}</p>
@@ -731,7 +793,7 @@ export default function PromotionsPage() {
 
           {/* ③ Featured carousel */}
           {featuredPromos.length > 0 && (
-            <section>
+            <section id="promo-grid">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2.5 bg-orange-500/10 rounded-xl">
                   <Sparkles className="h-5 w-5 text-orange-500" />
@@ -747,7 +809,7 @@ export default function PromotionsPage() {
 
           {/* ④⑤ Promotion cards grid */}
           {gridPromos.length > 0 && (
-            <section>
+            <section id={featuredPromos.length === 0 ? "promo-grid" : undefined}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2.5 bg-primary/10 rounded-xl">
                   <Percent className="h-5 w-5 text-primary" />
