@@ -148,63 +148,200 @@ function DealTicker({ promos }: { promos: PromotionWithSupplier[] }) {
   );
 }
 
+// ── HeroCarousel ─────────────────────────────────────────────────────────────
+
+const INDUSTRY_BG: Record<string, string> = {
+  "Building Materials": "linear-gradient(135deg,#274345,#1a3a3a)",
+  "Tools & Equipment":  "linear-gradient(135deg,#d97706,#b45309)",
+  "Electrical":         "linear-gradient(135deg,#1d4ed8,#1e40af)",
+  "Plumbing":           "linear-gradient(135deg,#0369a1,#075985)",
+  "Furniture":          "linear-gradient(135deg,#92400e,#78350f)",
+  "Paint & Coatings":   "linear-gradient(135deg,#7c3aed,#6d28d9)",
+  "Hardware":           "linear-gradient(135deg,#065f46,#064e3b)",
+};
+
+function HeroCarousel({
+  promos,
+  onQuickView,
+}: {
+  promos: PromotionWithSupplier[];
+  onQuickView: (p: PromotionWithSupplier) => void;
+}) {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, skipSnaps: false });
+  const [selected, setSelected] = useState(0);
+  const [paused, setPaused]     = useState(false);
+  const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pausedRef = useRef(false);
+  pausedRef.current = paused;
+
+  const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; } };
+
+  const startAuto = useCallback(() => {
+    clearTimer();
+    if (pausedRef.current || !emblaApi || promos.length <= 1) return;
+    timerRef.current = setTimeout(() => { if (!pausedRef.current) emblaApi.scrollNext(); }, 5000);
+  }, [emblaApi, promos.length]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.on("select", () => setSelected(emblaApi.selectedScrollSnap()));
+  }, [emblaApi]);
+
+  useEffect(() => { startAuto(); return clearTimer; }, [startAuto, selected, paused]);
+
+  if (!promos.length) {
+    return (
+      <div
+        className="relative h-[220px] sm:h-[300px] md:h-[380px] overflow-hidden flex items-center justify-center"
+        style={{ background: "linear-gradient(135deg,#1a3a3a 0%,#274345 50%,#2a4d4f 100%)" }}
+      >
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 220" fill="none" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <path d="M-80 180 C40 60 200 260 380 80"  stroke="white" strokeWidth="50" strokeLinecap="round" opacity="0.06"/>
+          <path d="M-40 280 C80 160 240 320 440 180" stroke="white" strokeWidth="35" strokeLinecap="round" opacity="0.06"/>
+          <path d="M120 -40 C180 80 60 200 260 300"  stroke="white" strokeWidth="40" strokeLinecap="round" opacity="0.06"/>
+        </svg>
+        <div className="relative z-10 text-center px-6">
+          <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">Supplier Promotions</p>
+          <h1 className="text-3xl md:text-5xl font-extrabold text-white">Great Deals Coming Soon</h1>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative group select-none"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div className="overflow-hidden" ref={emblaRef}>
+        <div className="flex">
+          {promos.map((promo) => {
+            const images  = (promo.images as string[]) || [];
+            const hasBg   = images.length > 0;
+            const fallBg  = INDUSTRY_BG[promo.supplier.industryType ?? ""] ?? "linear-gradient(135deg,#F8992D,#d97406)";
+
+            return (
+              <div
+                key={promo.id}
+                className="flex-[0_0_100%] relative h-[220px] sm:h-[300px] md:h-[400px] overflow-hidden cursor-pointer"
+                onClick={() => onQuickView(promo)}
+              >
+                {/* Background */}
+                {hasBg ? (
+                  <img src={images[0]} alt={promo.title} className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <div className="absolute inset-0" style={{ background: fallBg }} />
+                )}
+
+                {/* Gradient overlays — left text area + right fade */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-black/10" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+                {/* Text content — left aligned like Amazon */}
+                <div className="absolute inset-0 flex items-center">
+                  <div className="px-6 md:px-12 lg:px-16 max-w-lg">
+                    {/* Supplier label */}
+                    <p className="text-orange-400 text-[11px] font-bold uppercase tracking-widest mb-1.5">
+                      {promo.supplier.companyName}
+                    </p>
+
+                    {/* Big title */}
+                    <h2 className="text-white font-black text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-tight mb-3 line-clamp-3">
+                      {promo.title}
+                    </h2>
+
+                    {/* Discount + CTA row */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {promo.discountPercentage && (
+                        <span className="bg-orange-500 text-white text-sm font-black px-3 py-1.5 rounded-lg">
+                          Save {promo.discountPercentage}%
+                        </span>
+                      )}
+                      <button
+                        className="bg-white hover:bg-orange-50 text-black text-sm font-bold px-5 py-2 rounded-lg transition-colors flex items-center gap-1.5 shadow-lg"
+                        onClick={(e) => { e.stopPropagation(); onQuickView(promo); }}
+                      >
+                        Shop now <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Slide number */}
+                <div className="absolute bottom-4 right-4 bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
+                  {promos.indexOf(promo) + 1} / {promos.length}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Arrow buttons — Amazon style, outside image on desktop */}
+      {promos.length > 1 && (
+        <>
+          <button
+            onClick={() => emblaApi?.scrollPrev()}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-full px-3 flex items-center bg-gradient-to-r from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <div className="bg-white/90 hover:bg-white text-black rounded-full h-10 w-10 flex items-center justify-center shadow-xl transition-colors">
+              <ChevronLeft className="h-5 w-5" />
+            </div>
+          </button>
+          <button
+            onClick={() => emblaApi?.scrollNext()}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-full px-3 flex items-center bg-gradient-to-l from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <div className="bg-white/90 hover:bg-white text-black rounded-full h-10 w-10 flex items-center justify-center shadow-xl transition-colors">
+              <ChevronRight className="h-5 w-5" />
+            </div>
+          </button>
+        </>
+      )}
+
+      {/* Dot indicators */}
+      {promos.length > 1 && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+          {promos.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => emblaApi?.scrollTo(i)}
+              className={`rounded-full transition-all duration-300 ${i === selected ? "bg-white w-5 h-1.5" : "bg-white/40 w-1.5 h-1.5 hover:bg-white/70"}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── HeroSection ───────────────────────────────────────────────────────────────
 
-function HeroSection({ totalPromos, suppliers }: { totalPromos: number; suppliers: number }) {
+function HeroSection({
+  totalPromos, suppliers, promos, onQuickView,
+}: {
+  totalPromos: number;
+  suppliers: number;
+  promos: PromotionWithSupplier[];
+  onQuickView: (p: PromotionWithSupplier) => void;
+}) {
   const dealsC = useAnimatedCount(totalPromos);
   const suppC  = useAnimatedCount(suppliers);
   const savC   = useAnimatedCount(75);
 
   return (
-    <div className="relative">
-      {/* ── Teal gradient section (same as login/signup) ── */}
-      <div
-        className="relative px-6 pt-14 pb-24 flex-shrink-0 overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%)" }}
-      >
-        {/* Decorative abstract lines — identical to login page */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 220" fill="none" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-          <path d="M-80 180 C40 60 200 260 380 80"  stroke="white" strokeWidth="50" strokeLinecap="round" opacity="0.06"/>
-          <path d="M-40 280 C80 160 240 320 440 180" stroke="white" strokeWidth="35" strokeLinecap="round" opacity="0.06"/>
-          <path d="M120 -40 C180 80 60 200 260 300"  stroke="white" strokeWidth="40" strokeLinecap="round" opacity="0.06"/>
-          <path d="M300 -60 C360 60 200 180 400 260" stroke="white" strokeWidth="30" strokeLinecap="round" opacity="0.05"/>
-        </svg>
+    <div>
+      {/* Full-bleed Amazon-style carousel */}
+      <HeroCarousel promos={promos} onQuickView={onQuickView} />
 
-        {/* Promotional text content */}
-        <div className="relative z-10 text-center max-w-2xl mx-auto">
-          <h1 className="promo-hero-in text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-4 tracking-tight">
-            Discover the Best<br />
-            <span className="text-orange-400">Supplier Promotions</span>
-          </h1>
-
-          <p className="promo-hero-in-3 text-white/60 text-sm md:text-base max-w-lg mx-auto mb-8 leading-relaxed">
-            Save big on materials, tools and equipment from Botswana's verified network of
-            industry-leading suppliers — limited-time deals updated daily.
-          </p>
-
-          <button
-            className="promo-hero-in-4 inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-7 py-3 rounded-xl transition-colors shadow-lg shadow-orange-500/20"
-            onClick={() => document.getElementById("promo-grid")?.scrollIntoView({ behavior: "smooth" })}
-          >
-            Browse Deals <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Wave — identical to login page */}
-        <div className="absolute bottom-0 left-0 right-0 leading-none">
-          <svg viewBox="0 0 500 48" preserveAspectRatio="none" className="w-full h-12 block" style={{ fill: "hsl(var(--background))" }}>
-            <path d="M0,48 L0,28 Q125,0 250,24 Q375,48 500,20 L500,48 Z" />
-          </svg>
-        </div>
-      </div>
-
-      {/* ── Animated stat counters (sit below the wave on the page background) ── */}
-      <div ref={dealsC.ref} className="container mx-auto px-4 -mt-1 pb-6">
+      {/* Stat counters below */}
+      <div ref={dealsC.ref} className="container mx-auto px-4 py-5">
         <div className="promo-hero-in-4 grid grid-cols-3 gap-3 max-w-sm mx-auto">
           {[
-            { label: "Live Deals",  count: dealsC.count, icon: Tag,       color: "text-orange-500",  bg: "bg-orange-50 dark:bg-orange-900/20",  border: "border-orange-200 dark:border-orange-800/40" },
-            { label: "Suppliers",   count: suppC.count,  icon: Building2, color: "text-teal-600",    bg: "bg-teal-50 dark:bg-teal-900/20",      border: "border-teal-200 dark:border-teal-800/40" },
-            { label: "Up to % off", count: savC.count,   icon: Percent,   color: "text-yellow-600",  bg: "bg-yellow-50 dark:bg-yellow-900/20",  border: "border-yellow-200 dark:border-yellow-800/40" },
+            { label: "Live Deals",  count: dealsC.count, icon: Tag,       color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-900/20",  border: "border-orange-200 dark:border-orange-800/40" },
+            { label: "Suppliers",   count: suppC.count,  icon: Building2, color: "text-teal-600",   bg: "bg-teal-50 dark:bg-teal-900/20",      border: "border-teal-200 dark:border-teal-800/40" },
+            { label: "Up to % off", count: savC.count,   icon: Percent,   color: "text-yellow-600", bg: "bg-yellow-50 dark:bg-yellow-900/20",  border: "border-yellow-200 dark:border-yellow-800/40" },
           ].map(({ label, count, icon: Icon, color, bg, border }) => (
             <div key={label} className={`${bg} border ${border} rounded-2xl px-3 py-4 text-center shadow-sm`}>
               <Icon className={`h-5 w-5 ${color} mx-auto mb-1.5`} />
@@ -746,7 +883,12 @@ export default function PromotionsPage() {
       {activePromotions.length > 0 && <DealTicker promos={activePromotions} />}
 
       {/* ② Hero section */}
-      <HeroSection totalPromos={activePromotions.length} suppliers={uniqueSuppliers} />
+      <HeroSection
+        totalPromos={activePromotions.length}
+        suppliers={uniqueSuppliers}
+        promos={activePromotions}
+        onQuickView={setQuickViewPromo}
+      />
 
       {/* Quick View modal */}
       <QuickViewModal
