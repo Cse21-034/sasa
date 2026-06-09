@@ -156,107 +156,65 @@ function HeroSection({ totalPromos, suppliers }: { totalPromos: number; supplier
   const savC   = useAnimatedCount(75);
 
   return (
-    <div
-      className="relative overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #1a3a3a 0%, #274345 55%, #2a4d4f 100%)" }}
-    >
-      {/* Background blobs */}
-      <div className="absolute -top-20 -right-20 w-96 h-96 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(248,153,45,0.13), transparent 70%)" }} />
-      <div className="absolute bottom-0 left-1/4 w-72 h-72 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(248,153,45,0.06), transparent 70%)" }} />
+    <div className="relative">
+      {/* ── Teal gradient section (same as login/signup) ── */}
+      <div
+        className="relative px-6 pt-14 pb-24 flex-shrink-0 overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%)" }}
+      >
+        {/* Decorative abstract lines — identical to login page */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 220" fill="none" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <path d="M-80 180 C40 60 200 260 380 80"  stroke="white" strokeWidth="50" strokeLinecap="round" opacity="0.06"/>
+          <path d="M-40 280 C80 160 240 320 440 180" stroke="white" strokeWidth="35" strokeLinecap="round" opacity="0.06"/>
+          <path d="M120 -40 C180 80 60 200 260 300"  stroke="white" strokeWidth="40" strokeLinecap="round" opacity="0.06"/>
+          <path d="M300 -60 C360 60 200 180 400 260" stroke="white" strokeWidth="30" strokeLinecap="round" opacity="0.05"/>
+        </svg>
 
-      <div className="container mx-auto px-4 py-10 md:py-14">
-        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
-
-          {/* ── LEFT: promotional text ── */}
-          <div className="flex-1 text-white promo-hero-in md:py-4">
-            {/* Orange pill label — like the reference "READ MORE" button style */}
-            <div className="inline-flex items-center gap-2 bg-orange-500 text-white text-[11px] font-black uppercase tracking-widest px-4 py-2 rounded-lg mb-5 shadow-lg shadow-orange-500/25">
-              <Zap className="h-3.5 w-3.5 fill-white" />
-              Exclusive Deals
-            </div>
-
-            <h1 className="promo-hero-in-2 font-black leading-[1.0] mb-4">
-              <span className="block text-5xl md:text-6xl lg:text-7xl text-white tracking-tight">SUPPLIER</span>
-              <span className="block text-5xl md:text-6xl lg:text-7xl text-orange-400 tracking-tight">PROMOTIONS</span>
-            </h1>
-
-            <p className="promo-hero-in-3 text-white/55 text-sm md:text-base max-w-sm mb-8 leading-relaxed">
-              Save big on materials and equipment from our verified network of industry-leading suppliers.
-            </p>
-
-            <button
-              className="promo-hero-in-3 inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-7 py-3 rounded-xl transition-colors shadow-xl shadow-orange-500/25"
-              onClick={() => document.getElementById("promo-grid")?.scrollIntoView({ behavior: "smooth" })}
-            >
-              Browse Deals <ArrowRight className="h-4 w-4" />
-            </button>
+        {/* Promotional text content */}
+        <div className="relative z-10 text-center max-w-2xl mx-auto">
+          <div className="promo-hero-in inline-flex items-center gap-2 bg-orange-500/20 border border-orange-500/40 text-orange-300 text-[11px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-5">
+            <Sparkles className="h-3 w-3" />
+            Exclusive Marketplace Deals
           </div>
 
-          {/* ── RIGHT: promotional illustration ── */}
-          <div className="flex-shrink-0 relative w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 promo-hero-in-2">
-            {/* Outer dashed orbit ring */}
-            <div className="absolute inset-0 rounded-full border-2 border-dashed border-white/8"
-              style={{ animation: "promo-orbit 28s linear infinite" }} />
-            <div className="absolute inset-5 rounded-full border border-orange-500/15"
-              style={{ animation: "promo-orbit 20s linear infinite reverse" }} />
+          <h1 className="promo-hero-in-2 text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-4 tracking-tight">
+            Discover the Best<br />
+            <span className="text-orange-400">Supplier Promotions</span>
+          </h1>
 
-            {/* Central badge — big % circle */}
-            <div className="absolute inset-12 rounded-full flex flex-col items-center justify-center shadow-2xl"
-              style={{ background: "linear-gradient(135deg, #F8992D, #d97406)" }}>
-              <span className="text-white font-black text-4xl md:text-5xl leading-none">%</span>
-              <span className="text-white/80 text-[9px] font-black uppercase tracking-widest mt-0.5">OFF</span>
-            </div>
+          <p className="promo-hero-in-3 text-white/60 text-sm md:text-base max-w-lg mx-auto mb-8 leading-relaxed">
+            Save big on materials, tools and equipment from Botswana's verified network of
+            industry-leading suppliers — limited-time deals updated daily.
+          </p>
 
-            {/* Floating cards — like reference image icon bubbles */}
-            <div className="absolute top-0 left-8 pf1">
-              <div className="bg-white/12 backdrop-blur-sm border border-white/20 rounded-2xl px-3 py-2 shadow-xl text-center">
-                <Tag className="h-4 w-4 text-orange-400 mx-auto mb-0.5" />
-                <span className="text-white text-[10px] font-bold block">Hot Deal</span>
-              </div>
-            </div>
-
-            <div className="absolute top-2 right-0 pf2">
-              <div className="bg-orange-500/85 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-xl text-center">
-                <Star className="h-4 w-4 text-white mx-auto mb-0.5 fill-white" />
-                <span className="text-white text-[10px] font-bold block">Top Pick</span>
-              </div>
-            </div>
-
-            <div className="absolute bottom-8 left-0 pf3">
-              <div className="bg-white/12 backdrop-blur-sm border border-white/20 rounded-2xl px-3 py-2 shadow-xl">
-                <div className="text-orange-400 font-black text-sm leading-none">-50%</div>
-                <div className="text-white/65 text-[10px] font-medium">Materials</div>
-              </div>
-            </div>
-
-            <div className="absolute bottom-4 right-2 pf4">
-              <div className="bg-emerald-500/80 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-xl text-center">
-                <Sparkles className="h-4 w-4 text-white mx-auto mb-0.5" />
-                <span className="text-white text-[10px] font-bold block">New</span>
-              </div>
-            </div>
-
-            <div className="absolute top-1/2 -translate-y-1/2 -left-1 pf5">
-              <div className="bg-blue-500/70 backdrop-blur-sm rounded-full h-9 w-9 flex items-center justify-center shadow-xl">
-                <Building2 className="h-4 w-4 text-white" />
-              </div>
-            </div>
-          </div>
+          <button
+            className="promo-hero-in-4 inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-7 py-3 rounded-xl transition-colors shadow-lg shadow-orange-500/20"
+            onClick={() => document.getElementById("promo-grid")?.scrollIntoView({ behavior: "smooth" })}
+          >
+            Browse Deals <ArrowRight className="h-4 w-4" />
+          </button>
         </div>
 
-        {/* ── Animated stat counters ── */}
-        <div ref={dealsC.ref} className="promo-hero-in-4 grid grid-cols-3 gap-3 max-w-xs mx-auto mt-10 md:mx-0">
+        {/* Wave — identical to login page */}
+        <div className="absolute bottom-0 left-0 right-0 leading-none">
+          <svg viewBox="0 0 500 48" preserveAspectRatio="none" className="w-full h-12 block" style={{ fill: "hsl(var(--background))" }}>
+            <path d="M0,48 L0,28 Q125,0 250,24 Q375,48 500,20 L500,48 Z" />
+          </svg>
+        </div>
+      </div>
+
+      {/* ── Animated stat counters (sit below the wave on the page background) ── */}
+      <div ref={dealsC.ref} className="container mx-auto px-4 -mt-1 pb-6">
+        <div className="promo-hero-in-4 grid grid-cols-3 gap-3 max-w-sm mx-auto">
           {[
-            { label: "Live Deals",  count: dealsC.count, icon: Tag,       color: "text-orange-400" },
-            { label: "Suppliers",   count: suppC.count,  icon: Building2, color: "text-teal-400" },
-            { label: "Up to % off", count: savC.count,   icon: Percent,   color: "text-yellow-400" },
-          ].map(({ label, count, icon: Icon, color }) => (
-            <div key={label} className="bg-white/5 border border-white/10 rounded-2xl px-3 py-4 backdrop-blur-sm text-center">
+            { label: "Live Deals",  count: dealsC.count, icon: Tag,       color: "text-orange-500",  bg: "bg-orange-50 dark:bg-orange-900/20",  border: "border-orange-200 dark:border-orange-800/40" },
+            { label: "Suppliers",   count: suppC.count,  icon: Building2, color: "text-teal-600",    bg: "bg-teal-50 dark:bg-teal-900/20",      border: "border-teal-200 dark:border-teal-800/40" },
+            { label: "Up to % off", count: savC.count,   icon: Percent,   color: "text-yellow-600",  bg: "bg-yellow-50 dark:bg-yellow-900/20",  border: "border-yellow-200 dark:border-yellow-800/40" },
+          ].map(({ label, count, icon: Icon, color, bg, border }) => (
+            <div key={label} className={`${bg} border ${border} rounded-2xl px-3 py-4 text-center shadow-sm`}>
               <Icon className={`h-5 w-5 ${color} mx-auto mb-1.5`} />
               <p className={`text-2xl font-black ${color} leading-none`}>{count}</p>
-              <p className="text-[10px] text-white/45 font-semibold mt-1 uppercase tracking-wide leading-tight">{label}</p>
+              <p className="text-[10px] text-muted-foreground font-semibold mt-1 uppercase tracking-wide leading-tight">{label}</p>
             </div>
           ))}
         </div>
