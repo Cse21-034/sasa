@@ -104,12 +104,12 @@ export default function Landing() {
   ];
 
   const categories = [
-    { name: 'Plumbing', image: 'https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=400&auto=format&fit=crop&q=80' },
-    { name: 'Electrical', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80' },
-    { name: 'Carpentry', image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&auto=format&fit=crop&q=80' },
-    { name: 'Painting', image: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400&auto=format&fit=crop&q=80' },
-    { name: 'Cleaning', image: 'https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?w=400&auto=format&fit=crop&q=80' },
-    { name: 'Gardening', image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&auto=format&fit=crop&q=80' },
+    { name: 'Plumbing',   icon: Wrench },
+    { name: 'Electrical', icon: Zap },
+    { name: 'Carpentry',  icon: Hammer },
+    { name: 'Painting',   icon: Paintbrush },
+    { name: 'Cleaning',   icon: Sparkles },
+    { name: 'Gardening',  icon: Leaf },
   ];
 
   const stats = [
@@ -167,11 +167,14 @@ export default function Landing() {
          
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto px-4">
             {categories.slice(0, 4).map((category) => (
-              <div key={category.name} className="relative group overflow-hidden rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300">
-                <img src={category.image} alt={category.name} className="w-full h-40 object-cover" />
-                <div className="absolute inset-0 bg-black/50 flex items-end p-4 group-hover:bg-black/70 transition-colors">
-                  <p className="text-white font-bold text-sm">{category.name}</p>
+              <div
+                key={category.name}
+                className="group flex flex-col items-center gap-3 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm px-4 py-6 shadow-lg hover:bg-white/20 hover:border-white/40 hover:scale-105 transition-all duration-300 cursor-pointer"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center group-hover:bg-white/25 transition-colors">
+                  <category.icon className="h-7 w-7 text-white" strokeWidth={1.5} />
                 </div>
+                <p className="text-white font-bold text-sm text-center">{category.name}</p>
               </div>
             ))}
           </div>
@@ -277,28 +280,22 @@ export default function Landing() {
               Browse top categories and connect with verified specialists today.
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {categories.map((category) => (
-              <Card
+              <div
                 key={category.name}
-                className="group overflow-hidden rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:border-primary/50 cursor-pointer"
+                className="group flex flex-col items-center gap-3 rounded-2xl border border-border bg-card px-4 py-7 shadow-sm hover:shadow-md hover:border-primary/40 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
               >
-                <CardContent className="p-0">
-                  <div className="relative w-full h-32 overflow-hidden">
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-primary/20 group-hover:bg-primary/40 transition-colors"></div>
-                  </div>
-                  <div className="p-4 text-center">
-                    <p className="font-semibold text-base group-hover:text-primary transition-colors">
-                      {category.name}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+                <div className="w-14 h-14 rounded-2xl bg-foreground/5 dark:bg-foreground/10 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                  <category.icon
+                    className="h-7 w-7 text-foreground dark:text-white group-hover:text-primary transition-colors"
+                    strokeWidth={1.5}
+                  />
+                </div>
+                <p className="font-semibold text-sm text-foreground dark:text-white text-center group-hover:text-primary transition-colors">
+                  {category.name}
+                </p>
+              </div>
             ))}
           </div>
           <div className="text-center mt-12">
