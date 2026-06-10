@@ -22,4 +22,5 @@ export { registerPushNotificationRoutes } from "./push-notification.routes"
 export { registerInvoiceRoutes } from "./invoices.routes"
 export { registerPaymentRoutes } from "./payments.routes"
 export { registerCloudinaryRoutes } from "./cloudinary.routes"
+export { registerPayGateRoutes } from "./paygate.routes"
 

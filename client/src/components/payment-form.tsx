@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { formatPula } from '@/lib/utils';
-import { AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, Loader2, CheckCircle2, CreditCard } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
@@ -19,6 +19,45 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+
+// ── PayGate card payment orchestration ───────────────────────────────────────
+async function initiatePayGatePayment(invoiceId: string): Promise<void> {
+  // Step 1 — checkout: build signed params + create pending record
+  const checkoutRes = await apiRequest('POST', '/api/paygate/checkout', { invoiceId });
+  const checkout = await checkoutRes.json();
+  if (!checkout.success) throw new Error(checkout.message || 'Checkout failed');
+
+  const { params, reference } = checkout.checkout;
+
+  // Step 2 — initiate: server proxy calls PayGate initiate.trans
+  const initiateRes = await apiRequest('POST', '/api/paygate/initiate', { params, reference });
+  const initiate = await initiateRes.json();
+  if (!initiate.success || !initiate.payRequestId) {
+    throw new Error(initiate.message || 'Failed to initiate with PayGate');
+  }
+
+  // Step 3 — process: get signed params for process.trans redirect
+  const processRes = await apiRequest('POST', '/api/paygate/process', {
+    payRequestId: initiate.payRequestId,
+    reference,
+  });
+  const process = await processRes.json();
+  if (!process.success) throw new Error('Failed to build process params');
+
+  // Step 4 — submit hidden form to PayGate's hosted payment page
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = process.processUrl;
+  Object.entries(process.params as Record<string, string>).forEach(([k, v]) => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = k;
+    input.value = v;
+    form.appendChild(input);
+  });
+  document.body.appendChild(form);
+  setTimeout(() => form.submit(), 100);
+}
 
 interface PaymentFormProps {
   jobId: string;
@@ -53,6 +92,7 @@ export function PaymentForm({ jobId, onSuccess }: PaymentFormProps) {
   const [transactionId, setTransactionId] = useState('');
   const [notes, setNotes] = useState('');
   const [showCashDialog, setShowCashDialog] = useState(false);
+  const [payGateLoading, setPayGateLoading] = useState(false);
   const { toast } = useToast();
 
   const { data: invoice, isLoading: invoiceLoading } = useQuery({
@@ -279,29 +319,30 @@ export function PaymentForm({ jobId, onSuccess }: PaymentFormProps) {
               {invoice.paymentMethod === 'card' && (
                 <div className="space-y-3">
                   <Alert className="border-blue-200 bg-blue-50">
-                    <AlertCircle className="h-4 w-4 text-blue-600" />
+                    <CreditCard className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-blue-800">
-                      Enter the card transaction ID after completing payment.
+                      You will be redirected to PayGate's secure payment page to complete your card payment.
                     </AlertDescription>
                   </Alert>
-                  <div className="space-y-2">
-                    <Label htmlFor="cardTxId">Card Transaction ID *</Label>
-                    <Input
-                      id="cardTxId"
-                      placeholder="e.g., CHARGE_STRIPE_12345..."
-                      value={transactionId}
-                      onChange={(e) => setTransactionId(e.target.value)}
-                    />
-                  </div>
                   <Button
-                    onClick={handleCardPayment}
-                    disabled={processPaymentMutation.isPending || !transactionId}
+                    onClick={async () => {
+                      setPayGateLoading(true);
+                      try {
+                        await initiatePayGatePayment(invoice.id);
+                        // Browser is now redirecting to PayGate — no further action needed
+                      } catch (err: any) {
+                        toast({ title: 'Payment error', description: err.message, variant: 'destructive' });
+                        setPayGateLoading(false);
+                      }
+                    }}
+                    disabled={payGateLoading}
                     className="w-full bg-green-600 hover:bg-green-700"
                   >
-                    {processPaymentMutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {payGateLoading ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Redirecting to PayGate…</>
+                    ) : (
+                      <><CreditCard className="mr-2 h-4 w-4" /> Pay with Card (PayGate)</>
                     )}
-                    Process Card Payment
                   </Button>
                 </div>
               )}

@@ -55,7 +55,7 @@ import {
   type Payment,
 } from "@shared/schema";
 import { db } from "./db"; // 🚨 CRITICAL FIX: Added missing 'db' import
-import { eq, and, sql, desc, asc, inArray, or, ne } from "drizzle-orm"; // 🚨 FIX: Added 'or' operator and 'ne'
+import { eq, and, gte, sql, desc, asc, inArray, or, ne } from "drizzle-orm"; // 🚨 FIX: Added 'or' operator and 'ne'
 import { InferSelectModel } from 'drizzle-orm'; 
 
 type JobWithRelations = Job & {
@@ -2113,6 +2113,43 @@ export class DatabaseStorage implements IStorage {
   async getPaymentByInvoiceId(invoiceId: string): Promise<Payment | undefined> {
     const [payment] = await db.select().from(payments).where(eq(payments.invoiceId, invoiceId));
     return payment || undefined;
+  }
+
+  async getPaymentByPayRequestId(payRequestId: string): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.payRequestId, payRequestId));
+    return payment || undefined;
+  }
+
+  async getPaymentByReference(reference: string): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.transactionId, reference));
+    return payment || undefined;
+  }
+
+  async getMostRecentPendingPayment(): Promise<Payment | undefined> {
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const [payment] = await db.select().from(payments)
+      .where(and(eq(payments.paymentStatus, 'unpaid'), gte(payments.createdAt, tenMinutesAgo)))
+      .orderBy(desc(payments.createdAt))
+      .limit(1);
+    return payment || undefined;
+  }
+
+  async savePayRequestId(invoiceId: string, payRequestId: string): Promise<void> {
+    await db.update(payments)
+      .set({ payRequestId, updatedAt: new Date() })
+      .where(eq(payments.invoiceId, invoiceId));
+  }
+
+  async markPaymentReference(invoiceId: string, reference: string): Promise<void> {
+    await db.update(payments)
+      .set({ transactionId: reference, updatedAt: new Date() })
+      .where(eq(payments.invoiceId, invoiceId));
+  }
+
+  async markPaymentFailed(invoiceId: string, reason: string): Promise<void> {
+    await db.update(payments)
+      .set({ notes: `Failed: ${reason}`, updatedAt: new Date() })
+      .where(eq(payments.invoiceId, invoiceId));
   }
 
   async markPaymentAsPaid(invoiceId: string, transactionId?: string): Promise<Payment | undefined> {

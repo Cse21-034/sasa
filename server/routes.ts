@@ -20,6 +20,7 @@ import {
   registerInvoiceRoutes,
   registerPaymentRoutes,
   registerCloudinaryRoutes,
+  registerPayGateRoutes,
 } from "./routes/index"
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -200,6 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 💰 Invoice and Payment routes
   registerInvoiceRoutes(app)
   registerPaymentRoutes(app)
+  registerPayGateRoutes(app)
 
   // Messaging routes (needs both verifyAccess and clients for WebSocket)
   registerMessagingRoutes(app, verifyAccess, clients)

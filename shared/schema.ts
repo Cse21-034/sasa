@@ -436,6 +436,7 @@ export const payments = pgTable("payments", {
   paymentMethod: paymentMethodEnum("payment_method").notNull(),
   paymentStatus: paymentStatusEnum("payment_status").default("unpaid").notNull(),
   transactionId: text("transaction_id"),
+  payRequestId: text("pay_request_id"),
   paidAt: timestamp("paid_at"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
