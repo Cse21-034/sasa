@@ -127,10 +127,11 @@ export default function ForgotPassword() {
     <div className="min-h-screen flex flex-col md:items-center md:justify-center md:p-6 relative overflow-hidden">
       {/* Subtle hero-wave background */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%)', opacity: 0.45 }} />
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1440 900" fill="none" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <path d="M-200 700 C200 200 700 900 1440 300" stroke="#274345" strokeWidth="120" strokeLinecap="round" opacity="0.06"/>
-        <path d="M400 -100 C600 300 200 700 900 1000" stroke="#274345" strokeWidth="100" strokeLinecap="round" opacity="0.05"/>
-        <path d="M1100 -200 C1300 200 900 600 1440 900" stroke="#274345" strokeWidth="70" strokeLinecap="round" opacity="0.04"/>
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 220" fill="none" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <path d="M-80 180 C40 60 200 260 380 80" stroke="#1a3a3a" strokeWidth="50" strokeLinecap="round" opacity="0.18"/>
+        <path d="M-40 280 C80 160 240 320 440 180" stroke="#1a3a3a" strokeWidth="35" strokeLinecap="round" opacity="0.14"/>
+        <path d="M120 -40 C180 80 60 200 260 300" stroke="#1a3a3a" strokeWidth="40" strokeLinecap="round" opacity="0.14"/>
+        <path d="M300 -60 C360 60 200 180 400 260" stroke="#1a3a3a" strokeWidth="30" strokeLinecap="round" opacity="0.10"/>
       </svg>
       <div className="relative flex-1 flex flex-col w-full md:flex-none md:w-full md:max-w-md md:rounded-3xl md:shadow-2xl md:overflow-hidden">
 
