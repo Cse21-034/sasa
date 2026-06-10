@@ -67,7 +67,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col md:items-center md:justify-center md:p-6 relative overflow-hidden">
       {/* Subtle hero-wave background */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%)', opacity: 0.30 }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%)', opacity: 0.45 }} />
       <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1440 900" fill="none" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <path d="M-200 700 C200 200 700 900 1440 300" stroke="#274345" strokeWidth="120" strokeLinecap="round" opacity="0.06"/>
         <path d="M400 -100 C600 300 200 700 900 1000" stroke="#274345" strokeWidth="100" strokeLinecap="round" opacity="0.05"/>
