@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -7,7 +7,8 @@ import { useForm } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, UserCheck, XCircle, FileText, Upload, Camera, ArrowRight, X, Wrench } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Loader2, UserCheck, XCircle, FileText, Upload, Camera, ArrowRight, X, Wrench, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -15,6 +16,174 @@ import { Progress } from '@/components/ui/progress';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+
+// ── Camera Capture Dialog ──────────────────────────────────────────────────
+type CameraError = 'denied' | 'unavailable' | null;
+
+function CameraCaptureDialog({
+  open,
+  onClose,
+  onCapture,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCapture: (file: File) => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<CameraError>(null);
+  const [captured, setCaptured] = useState<string | null>(null);
+
+  const startCamera = useCallback(async () => {
+    setError(null);
+    setReady(false);
+    setCaptured(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => setReady(true);
+      }
+    } catch (err: any) {
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setError('denied');
+      } else {
+        setError('unavailable');
+      }
+    }
+  }, []);
+
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    setReady(false);
+  }, []);
+
+  useEffect(() => {
+    if (open) startCamera();
+    else stopCamera();
+    return () => stopCamera();
+  }, [open, startCamera, stopCamera]);
+
+  const handleCapture = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')!.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    setCaptured(dataUrl);
+    stopCamera();
+  };
+
+  const handleRetake = () => {
+    setCaptured(null);
+    startCamera();
+  };
+
+  const handleUse = () => {
+    if (!captured) return;
+    fetch(captured)
+      .then(r => r.blob())
+      .then(blob => {
+        const file = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
+        onCapture(file);
+        onClose();
+      });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Camera className="h-5 w-5" /> Take Selfie
+          </DialogTitle>
+        </DialogHeader>
+
+        {error === 'denied' && (
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <AlertTriangle className="h-12 w-12 text-destructive" />
+            <p className="font-semibold text-destructive">Camera access denied</p>
+            <p className="text-sm text-muted-foreground">
+              To take your selfie, you must allow camera access in your browser settings.
+              <br /><br />
+              <strong>How to fix:</strong> Click the camera icon in your browser's address bar and select <em>"Allow"</em>, then try again.
+            </p>
+            <Button variant="outline" onClick={startCamera}>Try Again</Button>
+          </div>
+        )}
+
+        {error === 'unavailable' && (
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <AlertTriangle className="h-12 w-12 text-amber-500" />
+            <p className="font-semibold">No camera found</p>
+            <p className="text-sm text-muted-foreground">
+              No camera was detected on this device. Please use a device with a camera to complete this step.
+            </p>
+            <Button variant="outline" onClick={onClose}>Close</Button>
+          </div>
+        )}
+
+        {!error && (
+          <>
+            <div className="relative rounded-xl overflow-hidden bg-black aspect-video">
+              {!ready && !captured && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-white/60" />
+                </div>
+              )}
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className={`w-full h-full object-cover ${captured ? 'hidden' : ''}`}
+              />
+              {captured && (
+                <img src={captured} alt="Captured selfie" className="w-full h-full object-cover" />
+              )}
+              {/* Face guide oval */}
+              {!captured && ready && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-40 h-52 rounded-full border-2 border-white/60 border-dashed" />
+                </div>
+              )}
+            </div>
+            <canvas ref={canvasRef} className="hidden" />
+
+            <p className="text-xs text-muted-foreground text-center">
+              {captured ? 'Looking good? Use this photo or retake.' : 'Position your face inside the oval and hold your ID next to your face.'}
+            </p>
+
+            <div className="flex gap-2 justify-center">
+              {!captured ? (
+                <Button onClick={handleCapture} disabled={!ready} className="gap-2">
+                  <Camera className="h-4 w-4" /> Capture
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={handleRetake}>Retake</Button>
+                  <Button onClick={handleUse} className="gap-2">
+                    <UserCheck className="h-4 w-4" /> Use This Photo
+                  </Button>
+                </>
+              )}
+              <Button variant="ghost" onClick={onClose}>Cancel</Button>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -127,6 +296,7 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
 
   const identityMutation = useVerificationSubmission('identity');
   const [photoPreviews, setPhotoPreviews] = useState({ id: '', selfie: '' });
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const isPending = statusData.identitySubmission?.status === 'pending';
   const isApproved = statusData.isIdentityVerified;
@@ -287,38 +457,43 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
                 )}
               />
 
-              {/* Selfie Upload */}
+              {/* Selfie — camera only, no file picker */}
               <FormField
                 control={form.control}
                 name="selfiePhoto"
-                render={({ field: { value, onChange, ...fieldProps } }) => (
+                render={({ field: { onChange } }) => (
                   <FormItem>
                     <FormLabel className="flex items-center">
                       Selfie Photo <span className="text-destructive ml-1">*</span>
                     </FormLabel>
                     <FormControl>
-                      <div className={`flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg cursor-pointer transition-all ${!isApproved && !isPending ? 'hover:border-primary/50' : ''}`}>
+                      <div className={`flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg transition-all ${!isApproved && !isPending ? 'hover:border-primary/50' : ''}`}>
                         {photoPreviews.selfie ? (
-                          <img src={photoPreviews.selfie} alt="Selfie Preview" className="w-full h-24 object-cover rounded" />
+                          <img src={photoPreviews.selfie} alt="Selfie Preview" className="w-full h-24 object-cover rounded mb-2" />
                         ) : (
                           <Camera className="h-10 w-10 text-muted-foreground mb-2" />
                         )}
-                         <p className="text-xs text-muted-foreground text-center">
-                            Hold your ID next to your face.
+                        <p className="text-xs text-muted-foreground text-center mb-2">
+                          Hold your ID next to your face and look into the camera.
                         </p>
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleFileChange(e.target.files?.[0], 'selfiePhoto')}
-                          {...fieldProps}
-                        />
-                        <Button type="button" variant="outline" size="sm" className="mt-2" 
-                            onClick={() => (document.querySelector(`input[name=\"selfiePhoto\"]`) as HTMLInputElement)?.click()}
-                            disabled={isApproved || isPending}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isApproved || isPending}
+                          onClick={() => setCameraOpen(true)}
                         >
-                             {photoPreviews.selfie ? 'Change File' : 'Take Selfie'}
-                         </Button>
+                          <Camera className="h-4 w-4 mr-1" />
+                          {photoPreviews.selfie ? 'Retake Selfie' : 'Take Selfie'}
+                        </Button>
+                        <CameraCaptureDialog
+                          open={cameraOpen}
+                          onClose={() => setCameraOpen(false)}
+                          onCapture={(file) => {
+                            onChange(file);
+                            handleFileChange(file, 'selfiePhoto');
+                          }}
+                        />
                       </div>
                     </FormControl>
                     <FormMessage />
