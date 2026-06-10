@@ -1,7 +1,7 @@
 ﻿import { Link } from 'wouter';
 import {
   Search, MapPin, MessageSquare, Star, Shield, Clock, ArrowRight,
-  Wrench, Zap, Hammer, Paintbrush, Sparkles, Leaf, TrendingUp,
+  Sparkles, TrendingUp,
   CheckCircle, Users, Award, Headphones, Tag, Gift, AlertCircle, Calendar,
   Building2 // Added for Suppliers section icon
 } from 'lucide-react';
@@ -103,13 +103,66 @@ export default function Landing() {
     },
   ];
 
+  const svgBase = { viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:1.4, strokeLinecap:"round" as const, strokeLinejoin:"round" as const, className:"w-10 h-10" };
+
   const categories = [
-    { name: 'Plumbing',   icon: Wrench },
-    { name: 'Electrical', icon: Zap },
-    { name: 'Carpentry',  icon: Hammer },
-    { name: 'Painting',   icon: Paintbrush },
-    { name: 'Cleaning',   icon: Sparkles },
-    { name: 'Gardening',  icon: Leaf },
+    {
+      name: 'Plumbing',
+      icon: (
+        <svg {...svgBase}>
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Electrical',
+      icon: (
+        <svg {...svgBase}>
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Carpentry',
+      icon: (
+        <svg {...svgBase}>
+          <path d="M15 12l-8.5 8.5a2.12 2.12 0 0 1-3-3l8.5-8.5" />
+          <path d="M17.64 15L22 10.64" />
+          <path d="M20.35 6.35L17.65 9.05a1 1 0 0 0-.15 1.15L19 12l3-3-1.5-1.5a1 1 0 0 0-1.15-.15z" />
+          <path d="M4 20L2 22" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Painting',
+      icon: (
+        <svg {...svgBase}>
+          <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3z" />
+          <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7" />
+          <path d="M14.5 17.5L4.5 15" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Cleaning',
+      icon: (
+        <svg {...svgBase}>
+          <path d="M6 8h12l-1.5 11a2 2 0 0 1-2 1.5H9.5a2 2 0 0 1-2-1.5z" />
+          <path d="M8 8V6a4 4 0 0 1 8 0v2" />
+          <circle cx="10" cy="14" r="1" />
+          <circle cx="14" cy="13" r="1" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Gardening',
+      icon: (
+        <svg {...svgBase}>
+          <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z" />
+          <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+        </svg>
+      ),
+    },
   ];
 
   const stats = [
@@ -171,8 +224,8 @@ export default function Landing() {
                 key={category.name}
                 className="group flex flex-col items-center gap-3 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm px-4 py-6 shadow-lg hover:bg-white/20 hover:border-white/40 hover:scale-105 transition-all duration-300 cursor-pointer"
               >
-                <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center group-hover:bg-white/25 transition-colors">
-                  <category.icon className="h-7 w-7 text-white" strokeWidth={1.5} />
+                <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center group-hover:bg-white/25 transition-colors text-white">
+                  {category.icon}
                 </div>
                 <p className="text-white font-bold text-sm text-center">{category.name}</p>
               </div>
@@ -286,11 +339,8 @@ export default function Landing() {
                 key={category.name}
                 className="group flex flex-col items-center gap-3 rounded-2xl border border-border bg-card px-4 py-7 shadow-sm hover:shadow-md hover:border-primary/40 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
               >
-                <div className="w-14 h-14 rounded-2xl bg-foreground/5 dark:bg-foreground/10 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                  <category.icon
-                    className="h-7 w-7 text-foreground dark:text-white group-hover:text-primary transition-colors"
-                    strokeWidth={1.5}
-                  />
+                <div className="w-14 h-14 rounded-2xl bg-foreground/5 dark:bg-foreground/10 flex items-center justify-center group-hover:bg-primary/10 transition-colors text-foreground dark:text-white group-hover:text-primary">
+                  {category.icon}
                 </div>
                 <p className="font-semibold text-sm text-foreground dark:text-white text-center group-hover:text-primary transition-colors">
                   {category.name}
