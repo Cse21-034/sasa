@@ -427,7 +427,7 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link href="/signup">
               <Button
-                size="xl"
+                size="lg"
                 className="w-full sm:w-auto text-lg sm:text-xl px-10 py-7 bg-secondary hover:bg-secondary/90 shadow-2xl hover:shadow-3xl transform hover:scale-[1.05] transition-all duration-300 font-bold"
               >
                 Create Your Account Now <ArrowRight className="ml-2 h-5 w-5" />
@@ -435,7 +435,7 @@ export default function Landing() {
             </Link>
             <Link href="/jobs">
               <Button
-                size="xl"
+                size="lg"
                 variant="outline"
                 className="w-full sm:w-auto text-lg sm:text-xl px-10 py-7 border-4 border-white text-white hover:bg-white/20 shadow-2xl hover:shadow-3xl transform hover:scale-[1.05] transition-all duration-300 font-bold"
               >
@@ -463,17 +463,6 @@ export default function Landing() {
         </div>
       </footer>
 
-      <style jsx>{`
-        @keyframes blob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        /* No longer using the grid background due to full image background */
-      `}</style>
     </div>
   );
 }

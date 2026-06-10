@@ -1,8 +1,6 @@
-// client/public/service-worker.js - FIXED VERSION
-const CACHE_NAME = 'jobtradesasa-v1';
+// client/public/service-worker.js
+const CACHE_NAME = 'jobtradesasa-v3';
 const urlsToCache = [
-  '/',
-  '/index.html',
   '/manifest.json',
 ];
 
@@ -132,38 +130,34 @@ self.addEventListener('notificationclose', (event) => {
   console.log('✕ Notification closed:', event.notification.tag);
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event
 self.addEventListener('fetch', (event) => {
-  // Skip cross-origin requests
-  if (!event.request.url.startsWith(self.location.origin)) {
+  if (!event.request.url.startsWith(self.location.origin)) return;
+  if (event.request.method !== 'GET') return;
+
+  // HTML navigation requests — always go to network so index.html is never stale
+  if (event.request.mode === 'navigate' ||
+      event.request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(fetch(event.request));
     return;
   }
 
-  // API requests - network first, cache fallback for GET requests
+  // API requests — network only
   if (event.request.url.includes('/api/')) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          // Only cache successful GET responses
-          if (event.request.method === 'GET' && response.ok) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          return caches.match(event.request);
-        })
-    );
+    event.respondWith(fetch(event.request));
     return;
   }
 
-  // Static assets - cache first, network fallback
+  // JS/CSS assets have content-hash in their filename; cache-first is safe here
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+    caches.match(event.request).then((cached) => {
+      return cached || fetch(event.request).then((response) => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      });
     })
   );
 });
