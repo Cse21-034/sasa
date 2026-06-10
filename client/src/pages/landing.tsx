@@ -173,19 +173,28 @@ export default function Landing() {
   ];
 
   return (
-    // Set the overall page background image
-    <div
-      className="flex flex-col overflow-hidden bg-cover bg-fixed bg-center"
-      // Updated background URL to higher quality for clarity
-      style={{ backgroundImage: `url('https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=100')` }}
-    >
+    <div className="flex flex-col overflow-hidden bg-background">
      
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-24 pb-16 sm:py-32">
-        {/* Semi-transparent overlay for readability against background image */}
-        {/* Reduced overlay opacity further for more clarity */}
-        <div className="absolute inset-0 bg-black/30"></div>
-       
+      <section
+        className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-24 pb-28 sm:py-32"
+        style={{ background: 'linear-gradient(135deg, #1a3a3a 0%, #274345 50%, #2a4d4f 100%)' }}
+      >
+        {/* Decorative abstract lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1440 800" fill="none" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M-200 700 C200 200 700 900 1440 300" stroke="white" strokeWidth="120" strokeLinecap="round" opacity="0.04"/>
+          <path d="M-100 900 C300 400 900 1000 1600 500" stroke="white" strokeWidth="80" strokeLinecap="round" opacity="0.04"/>
+          <path d="M400 -100 C600 300 200 700 900 1000" stroke="white" strokeWidth="100" strokeLinecap="round" opacity="0.04"/>
+          <path d="M1100 -200 C1300 200 900 600 1440 900" stroke="white" strokeWidth="70" strokeLinecap="round" opacity="0.03"/>
+        </svg>
+
+        {/* Wave at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 leading-none z-10">
+          <svg viewBox="0 0 1440 80" preserveAspectRatio="none" className="w-full h-16 sm:h-20 block" style={{ fill: 'hsl(var(--background))' }}>
+            <path d="M0,80 L0,50 Q360,0 720,40 Q1080,80 1440,30 L1440,80 Z" />
+          </svg>
+        </div>
+
         <div className="container mx-auto px-4 relative z-10 text-center text-white">
          
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold mb-6 tracking-tight text-white leading-tight">
@@ -235,7 +244,7 @@ export default function Landing() {
       </section>
 
       {/* Stats Section - New Dark, Translucent Background (Goal 5) */}
-      <section className="py-16 sm:py-24 relative overflow-hidden bg-neutral-900/80 backdrop-blur-sm text-white">
+      <section className="py-16 sm:py-24 relative overflow-hidden bg-neutral-900 text-white">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
             {stats.map((stat, index) => (
@@ -261,7 +270,7 @@ export default function Landing() {
       </section>
 
       {/* Adverts Section (Replaced Special Offers) (Goal 6) */}
-      <section className="py-16 sm:py-24 bg-background/90 backdrop-blur-sm">
+      <section className="py-16 sm:py-24 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
@@ -317,7 +326,7 @@ export default function Landing() {
       </section>
 
       {/* Categories Section - Now Popular Services (Goal 8) */}
-      <section id="popular-services" className="py-16 sm:py-20 bg-background/90 backdrop-blur-sm">
+      <section id="popular-services" className="py-16 sm:py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
             <Badge
@@ -359,7 +368,7 @@ export default function Landing() {
       </section>
 
       {/* Features Section (Why Choose Us) (Goal 8) */}
-      <section id="why-choose-us" className="py-16 sm:py-24 bg-background/90 backdrop-blur-sm">
+      <section id="why-choose-us" className="py-16 sm:py-24 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
             <Badge
@@ -415,7 +424,7 @@ export default function Landing() {
       </section>
 
       {/* Call to Action Section - New Dark, Blurred Background (Goal 7) */}
-      <section className="py-16 sm:py-24 bg-neutral-900/80 backdrop-blur-md text-white relative overflow-hidden">
+      <section className="py-16 sm:py-24 bg-neutral-900 text-white relative overflow-hidden">
         <div className="container mx-auto px-4 text-center relative z-10">
           <Sparkles className="h-12 w-12 text-secondary mx-auto mb-4 animate-pulse-slow" />
           <h2 className="text-4xl sm:text-5xl font-extrabold mb-4 tracking-tight">
