@@ -166,10 +166,10 @@ export default function Landing() {
   ];
 
   const stats = [
-    { number: '10,000+', label: 'Happy Customers', image: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=200&auto=format&fit=crop&q=80' },
-    { number: '500+', label: 'Verified Providers', image: 'https://images.unsplash.com/photo-1581578731144-8c66106e6041?w=200&auto=format&fit=crop&q=80' },
-    { number: '50,000+', label: 'Jobs Completed', image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=200&auto=format&fit=crop&q=80' },
-    { number: '4.9/5', label: 'Average Rating', image: 'https://images.unsplash.com/photo-1513128034602-7814ccaddd4e?w=200&auto=format&fit=crop&q=80' },
+    { number: '2,400+', label: 'Happy Customers' },
+    { number: '180+',   label: 'Verified Providers' },
+    { number: '8,500+', label: 'Jobs Completed' },
+    { number: '4.8/5',  label: 'Average Rating' },
   ];
 
   return (
@@ -243,27 +243,19 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Stats Section - New Dark, Translucent Background (Goal 5) */}
-      <section className="py-16 sm:py-24 relative overflow-hidden bg-neutral-900 text-white">
+      {/* Stats Section */}
+      <section className="py-12 sm:py-16 bg-background border-b border-border/40">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
-            {stats.map((stat, index) => (
-              <Card
-                key={stat.label}
-                className={`bg-primary-foreground/10 border-none shadow-xl backdrop-blur-sm group hover:scale-[1.03] transition-transform duration-300`}
-              >
-                <CardContent className="p-6 sm:p-8 flex flex-col items-center text-center">
-                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-secondary/10 flex items-center justify-center mb-3">
-                    <img src={stat.image} alt={stat.label} className="w-10 h-10 rounded-full object-cover opacity-80" />
-                  </div>
-                  <p className="text-5xl sm:text-6xl font-extrabold text-white mb-2">
-                    {stat.number}
-                  </p>
-                  <p className="text-sm font-semibold text-neutral-300 uppercase tracking-wider">
-                    {stat.label}
-                  </p>
-                </CardContent>
-              </Card>
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-border/40">
+            {stats.map((stat) => (
+              <div key={stat.label} className="flex flex-col items-center text-center py-6 sm:py-8 px-4">
+                <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-primary leading-none mb-2">
+                  {stat.number}
+                </p>
+                <p className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+                  {stat.label}
+                </p>
+              </div>
             ))}
           </div>
         </div>
