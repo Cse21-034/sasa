@@ -171,11 +171,11 @@ export function Header() {
           {/* Public Desktop Navigation (unauthenticated, all pages) */}
           {!isAuthenticated && (
             <nav className="hidden lg:flex items-center gap-2 text-sm font-medium">
-              <a href="/#popular-services" className="px-4 py-2 text-foreground dark:text-white/90 hover:text-primary dark:hover:text-orange-300 transition-colors rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
-                Services
-              </a>
               <a href="/#why-choose-us" className="px-4 py-2 text-foreground dark:text-white/90 hover:text-primary dark:hover:text-orange-300 transition-colors rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
                 About
+              </a>
+              <a href="/#popular-services" className="px-4 py-2 text-foreground dark:text-white/90 hover:text-primary dark:hover:text-orange-300 transition-colors rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
+                Services
               </a>
               <a href="/#suppliers-section" className="px-4 py-2 text-foreground dark:text-white/90 hover:text-primary dark:hover:text-orange-300 transition-colors rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
                 Suppliers

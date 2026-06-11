@@ -75,13 +75,13 @@ export default function Landing() {
       description: 'All providers are verified with certificates and ID documentation',
       // Using solid color for hover effect (Primary/Emerald Green)
       hoverBg: 'bg-primary/10 dark:bg-primary/20',
-      image: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=400&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=400&auto=format&fit=crop&q=80',
     },
     {
       title: 'Real-Time Chat',
       description: 'Communicate directly with providers through instant messaging',
       hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
-      image: 'https://images.unsplash.com/photo-1577563908411-5077b6dc7624?w=400&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1611746872915-64382b5c76da?w=400&auto=format&fit=crop&q=80',
     },
     {
       title: 'Ratings & Reviews',
