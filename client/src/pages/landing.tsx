@@ -66,40 +66,238 @@ export default function Landing() {
     {
       title: 'Location-Based Matching',
       description: 'Find service providers near you with real-time distance tracking',
-      // Using solid color for hover effect (Secondary/Emerald Green)
       hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
-      image: 'https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?w=400&auto=format&fit=crop&q=80',
+      illustration: (
+        <svg viewBox="0 0 400 192" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+          <defs>
+            <radialGradient id="loc-bg" cx="50%" cy="50%" r="60%">
+              <stop offset="0%" stopColor="#1e4d4d"/>
+              <stop offset="100%" stopColor="#0f2626"/>
+            </radialGradient>
+          </defs>
+          <rect width="400" height="192" fill="url(#loc-bg)"/>
+          {/* Grid lines */}
+          {[40,80,120,160,200,240,280,320,360].map(x => <line key={x} x1={x} y1="0" x2={x} y2="192" stroke="#ffffff" strokeOpacity="0.06" strokeWidth="1"/>)}
+          {[32,64,96,128,160].map(y => <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="#ffffff" strokeOpacity="0.06" strokeWidth="1"/>)}
+          {/* Ripple circles */}
+          <circle cx="200" cy="96" r="70" fill="none" stroke="#F8992D" strokeOpacity="0.15" strokeWidth="1.5"/>
+          <circle cx="200" cy="96" r="48" fill="none" stroke="#F8992D" strokeOpacity="0.25" strokeWidth="1.5"/>
+          <circle cx="200" cy="96" r="26" fill="none" stroke="#F8992D" strokeOpacity="0.4" strokeWidth="2"/>
+          {/* Nearby provider dots */}
+          <circle cx="148" cy="68" r="7" fill="#274345" stroke="#F8992D" strokeWidth="2"/>
+          <circle cx="148" cy="68" r="3" fill="#F8992D"/>
+          <circle cx="255" cy="75" r="7" fill="#274345" stroke="#F8992D" strokeWidth="2"/>
+          <circle cx="255" cy="75" r="3" fill="#F8992D"/>
+          <circle cx="162" cy="130" r="7" fill="#274345" stroke="#F8992D" strokeWidth="2"/>
+          <circle cx="162" cy="130" r="3" fill="#F8992D"/>
+          <circle cx="240" cy="128" r="7" fill="#274345" stroke="#F8992D" strokeWidth="2"/>
+          <circle cx="240" cy="128" r="3" fill="#F8992D"/>
+          {/* Centre map pin */}
+          <path d="M200 56 C187 56 177 66 177 79 C177 97 200 118 200 118 C200 118 223 97 223 79 C223 66 213 56 200 56Z" fill="#F8992D"/>
+          <circle cx="200" cy="80" r="8" fill="white"/>
+          {/* Distance labels */}
+          <rect x="98" y="58" width="36" height="14" rx="7" fill="#F8992D" fillOpacity="0.85"/>
+          <text x="116" y="69" textAnchor="middle" fill="white" fontSize="8" fontFamily="sans-serif" fontWeight="600">0.8km</text>
+          <rect x="262" y="65" width="36" height="14" rx="7" fill="#F8992D" fillOpacity="0.85"/>
+          <text x="280" y="76" textAnchor="middle" fill="white" fontSize="8" fontFamily="sans-serif" fontWeight="600">1.2km</text>
+        </svg>
+      ),
     },
     {
       title: 'Verified Providers',
       description: 'All providers are verified with certificates and ID documentation',
-      // Using solid color for hover effect (Primary/Emerald Green)
       hoverBg: 'bg-primary/10 dark:bg-primary/20',
-      image: 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=400&auto=format&fit=crop&q=80',
+      illustration: (
+        <svg viewBox="0 0 400 192" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+          <defs>
+            <linearGradient id="id-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#1a3a3a"/>
+              <stop offset="100%" stopColor="#274345"/>
+            </linearGradient>
+          </defs>
+          <rect width="400" height="192" fill="url(#id-bg)"/>
+          {/* Decorative dots */}
+          {[30,70,110,150,190,230,270,310,350].map(x => [20,50,80,110,140,170].map(y =>
+            <circle key={`${x}-${y}`} cx={x} cy={y} r="1.2" fill="white" fillOpacity="0.07"/>
+          ))}
+          {/* ID Card */}
+          <rect x="100" y="30" width="200" height="132" rx="12" fill="#0f2626" stroke="#F8992D" strokeWidth="1.5" strokeOpacity="0.6"/>
+          <rect x="100" y="30" width="200" height="40" rx="12" fill="#F8992D" fillOpacity="0.9"/>
+          <rect x="100" y="58" width="200" height="12" fill="#F8992D" fillOpacity="0.9"/>
+          <text x="200" y="52" textAnchor="middle" fill="white" fontSize="11" fontFamily="sans-serif" fontWeight="700">VERIFIED PROVIDER</text>
+          {/* Avatar circle */}
+          <circle cx="155" cy="108" r="28" fill="#1e4d4d" stroke="#F8992D" strokeWidth="1.5"/>
+          <circle cx="155" cy="100" r="11" fill="#F8992D" fillOpacity="0.7"/>
+          <ellipse cx="155" cy="126" rx="18" ry="10" fill="#F8992D" fillOpacity="0.7"/>
+          {/* Text lines */}
+          <rect x="196" y="88" width="80" height="8" rx="4" fill="white" fillOpacity="0.5"/>
+          <rect x="196" y="104" width="60" height="6" rx="3" fill="white" fillOpacity="0.3"/>
+          <rect x="196" y="118" width="70" height="6" rx="3" fill="white" fillOpacity="0.3"/>
+          {/* Badge */}
+          <circle cx="305" cy="155" r="22" fill="#0f2626" stroke="#F8992D" strokeWidth="2"/>
+          <circle cx="305" cy="155" r="17" fill="#F8992D"/>
+          <polyline points="296,155 302,161 315,148" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
     },
     {
       title: 'Real-Time Chat',
       description: 'Communicate directly with providers through instant messaging',
       hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
-      image: 'https://images.unsplash.com/photo-1611746872915-64382b5c76da?w=400&auto=format&fit=crop&q=80',
+      illustration: (
+        <svg viewBox="0 0 400 192" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+          <defs>
+            <linearGradient id="chat-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#162e2e"/>
+              <stop offset="100%" stopColor="#1e4040"/>
+            </linearGradient>
+          </defs>
+          <rect width="400" height="192" fill="url(#chat-bg)"/>
+          {/* Subtle wave lines */}
+          <path d="M0 140 Q100 120 200 140 Q300 160 400 140" stroke="white" strokeOpacity="0.05" strokeWidth="1" fill="none"/>
+          <path d="M0 160 Q100 140 200 160 Q300 180 400 160" stroke="white" strokeOpacity="0.04" strokeWidth="1" fill="none"/>
+          {/* Received bubble */}
+          <rect x="44" y="28" width="160" height="36" rx="18" fill="#274345" stroke="#ffffff" strokeOpacity="0.12" strokeWidth="1"/>
+          <circle cx="68" cy="46" r="12" fill="#F8992D" fillOpacity="0.85"/>
+          <text x="68" y="50" textAnchor="middle" fill="white" fontSize="10" fontFamily="sans-serif" fontWeight="700">P</text>
+          <rect x="92" y="38" width="90" height="7" rx="3.5" fill="white" fillOpacity="0.55"/>
+          <rect x="92" y="50" width="68" height="5" rx="2.5" fill="white" fillOpacity="0.3"/>
+          {/* Sent bubble */}
+          <rect x="196" y="82" width="160" height="36" rx="18" fill="#F8992D" fillOpacity="0.85"/>
+          <circle cx="332" cy="100" r="12" fill="#274345"/>
+          <text x="332" y="104" textAnchor="middle" fill="white" fontSize="10" fontFamily="sans-serif" fontWeight="700">U</text>
+          <rect x="212" y="92" width="90" height="7" rx="3.5" fill="white" fillOpacity="0.7"/>
+          <rect x="212" y="104" width="68" height="5" rx="2.5" fill="white" fillOpacity="0.5"/>
+          {/* Received bubble 2 */}
+          <rect x="44" y="136" width="140" height="34" rx="17" fill="#274345" stroke="#ffffff" strokeOpacity="0.12" strokeWidth="1"/>
+          <circle cx="65" cy="153" r="12" fill="#F8992D" fillOpacity="0.85"/>
+          <text x="65" y="157" textAnchor="middle" fill="white" fontSize="10" fontFamily="sans-serif" fontWeight="700">P</text>
+          {/* Typing dots */}
+          <circle cx="95" cy="153" r="4" fill="white" fillOpacity="0.7"/>
+          <circle cx="111" cy="153" r="4" fill="white" fillOpacity="0.5"/>
+          <circle cx="127" cy="153" r="4" fill="white" fillOpacity="0.3"/>
+          {/* Online indicator */}
+          <circle cx="357" cy="32" r="6" fill="#22c55e"/>
+          <text x="344" y="36" textAnchor="end" fill="white" fontSize="9" fontFamily="sans-serif" fillOpacity="0.6">Online</text>
+        </svg>
+      ),
     },
     {
       title: 'Ratings & Reviews',
       description: 'Make informed decisions based on community feedback',
       hoverBg: 'bg-primary/10 dark:bg-primary/20',
-      image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&auto=format&fit=crop&q=80',
+      illustration: (
+        <svg viewBox="0 0 400 192" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+          <defs>
+            <linearGradient id="rat-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#1a3a3a"/>
+              <stop offset="100%" stopColor="#0f2020"/>
+            </linearGradient>
+          </defs>
+          <rect width="400" height="192" fill="url(#rat-bg)"/>
+          {/* Stars row */}
+          {[80,120,160,200,240].map((x,i) => (
+            <path key={i} d={`M${x} 44 l5 15 h16 l-13 9 5 15 -13-9 -13 9 5-15 -13-9 h16z`} fill={i < 5 ? "#F8992D" : "#374151"} />
+          ))}
+          {/* Rating number */}
+          <text x="295" y="62" fill="#F8992D" fontSize="28" fontFamily="sans-serif" fontWeight="800">4.8</text>
+          <text x="295" y="76" fill="white" fontSize="9" fontFamily="sans-serif" fillOpacity="0.5">out of 5</text>
+          {/* Review cards */}
+          <rect x="40" y="90" width="148" height="82" rx="10" fill="#1e4040" stroke="#ffffff" strokeOpacity="0.1" strokeWidth="1"/>
+          <circle cx="62" cy="108" r="11" fill="#F8992D" fillOpacity="0.8"/>
+          <text x="62" y="112" textAnchor="middle" fill="white" fontSize="9" fontWeight="700">M</text>
+          <rect x="80" y="102" width="70" height="6" rx="3" fill="white" fillOpacity="0.5"/>
+          {[0,1,2].map(i => <path key={i} d={`M${80+i*16} 118 l3 9 h10 l-8 6 3 9 -8-6 -8 6 3-9 -8-6 h10z`} fill="#F8992D" transform="scale(0.55) translate(${70+i*30}, 100)"/>)}
+          {[105,116].map((y,i) => <rect key={i} x="80" y={y} width={i===0?90:70} height="5" rx="2.5" fill="white" fillOpacity="0.3"/>)}
+          <rect x="212" y="90" width="148" height="82" rx="10" fill="#1e4040" stroke="#ffffff" strokeOpacity="0.1" strokeWidth="1"/>
+          <circle cx="234" cy="108" r="11" fill="#274345" stroke="#F8992D" strokeWidth="1.5"/>
+          <text x="234" y="112" textAnchor="middle" fill="#F8992D" fontSize="9" fontWeight="700">K</text>
+          <rect x="252" y="102" width="70" height="6" rx="3" fill="white" fillOpacity="0.5"/>
+          {[105,116].map((y,i) => <rect key={i} x="252" y={y} width={i===0?90:70} height="5" rx="2.5" fill="white" fillOpacity="0.3"/>)}
+          {/* Stars on second card */}
+          {[252,264,276,288,300].map((x,i) => (
+            <path key={i} d={`M${x} 125 l2 5 h5 l-4 3 2 5 -4-3 -4 3 2-5 -4-3 h5z`} fill={i<4?"#F8992D":"#374151"}/>
+          ))}
+        </svg>
+      ),
     },
     {
       title: 'Fast Response',
       description: 'Get connected with available providers within minutes',
       hoverBg: 'bg-secondary/10 dark:bg-secondary/20',
-      image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&auto=format&fit=crop&q=80',
+      illustration: (
+        <svg viewBox="0 0 400 192" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+          <defs>
+            <radialGradient id="fast-bg" cx="50%" cy="50%" r="70%">
+              <stop offset="0%" stopColor="#1e3a3a"/>
+              <stop offset="100%" stopColor="#0a1a1a"/>
+            </radialGradient>
+          </defs>
+          <rect width="400" height="192" fill="url(#fast-bg)"/>
+          {/* Speed lines */}
+          {[30,55,80,105,130].map((y,i) => (
+            <line key={i} x1="20" y1={y} x2={60+i*10} y2={y} stroke="#F8992D" strokeOpacity={0.15+i*0.05} strokeWidth="2" strokeLinecap="round"/>
+          ))}
+          {[62,87,112,137,162].map((y,i) => (
+            <line key={i} x1="340" y1={y} x2={300-i*10} y2={y} stroke="#F8992D" strokeOpacity={0.15+i*0.05} strokeWidth="2" strokeLinecap="round"/>
+          ))}
+          {/* Clock face */}
+          <circle cx="200" cy="96" r="60" fill="#0f2020" stroke="#F8992D" strokeWidth="2" strokeOpacity="0.7"/>
+          <circle cx="200" cy="96" r="54" fill="none" stroke="#274345" strokeWidth="1"/>
+          {/* Clock ticks */}
+          {Array.from({length:12},(_,i)=>{
+            const a = (i*30-90)*Math.PI/180;
+            const r1=46, r2=52;
+            return <line key={i} x1={200+r1*Math.cos(a)} y1={96+r1*Math.sin(a)} x2={200+r2*Math.cos(a)} y2={96+r2*Math.sin(a)} stroke="white" strokeOpacity="0.3" strokeWidth={i%3===0?2:1}/>;
+          })}
+          {/* Hour hand */}
+          <line x1="200" y1="96" x2="200" y2="64" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+          {/* Minute hand — almost top of the hour */}
+          <line x1="200" y1="96" x2="228" y2="72" stroke="#F8992D" strokeWidth="2.5" strokeLinecap="round"/>
+          <circle cx="200" cy="96" r="4" fill="#F8992D"/>
+          {/* Lightning bolt */}
+          <path d="M218 30 L204 55 L215 55 L197 82 L211 82 L194 110 L228 68 L215 68 L230 44Z" fill="#F8992D" fillOpacity="0.9"/>
+          {/* Response time badge */}
+          <rect x="148" y="158" width="104" height="24" rx="12" fill="#F8992D"/>
+          <text x="200" y="174" textAnchor="middle" fill="white" fontSize="11" fontFamily="sans-serif" fontWeight="700">Avg. Response: 4min</text>
+        </svg>
+      ),
     },
     {
       title: 'Quality Assurance',
       description: 'Premium service standards guaranteed by our platform',
       hoverBg: 'bg-primary/10 dark:bg-primary/20',
-      image: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&auto=format&fit=crop&q=80',
+      illustration: (
+        <svg viewBox="0 0 400 192" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+          <defs>
+            <linearGradient id="qa-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#1a3a3a"/>
+              <stop offset="100%" stopColor="#162e2e"/>
+            </linearGradient>
+          </defs>
+          <rect width="400" height="192" fill="url(#qa-bg)"/>
+          {/* Sparkles */}
+          {[[60,30],[340,28],[48,148],[355,140],[88,96],[316,100]].map(([x,y],i)=>(
+            <g key={i} opacity="0.5">
+              <line x1={x-7} y1={y} x2={x+7} y2={y} stroke="#F8992D" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1={x} y1={y-7} x2={x} y2={y+7} stroke="#F8992D" strokeWidth="1.5" strokeLinecap="round"/>
+            </g>
+          ))}
+          {/* Shield */}
+          <path d="M200 18 L260 42 L260 96 C260 134 200 162 200 162 C200 162 140 134 140 96 L140 42 Z" fill="#0f2626" stroke="#F8992D" strokeWidth="2.5" strokeOpacity="0.8"/>
+          <path d="M200 30 L248 50 L248 96 C248 126 200 150 200 150 C200 150 152 126 152 96 L152 50 Z" fill="#1e4040"/>
+          {/* Checkmark */}
+          <polyline points="172,94 190,112 228,76" fill="none" stroke="#F8992D" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/>
+          {/* Certified banner */}
+          <rect x="130" y="162" width="140" height="22" rx="11" fill="#F8992D" fillOpacity="0.9"/>
+          <text x="200" y="177" textAnchor="middle" fill="white" fontSize="10" fontFamily="sans-serif" fontWeight="700" letterSpacing="1">CERTIFIED QUALITY</text>
+          {/* Corner seals */}
+          <circle cx="88" cy="96" r="16" fill="#0f2626" stroke="#F8992D" strokeWidth="1.5" strokeOpacity="0.5"/>
+          <text x="88" y="99" textAnchor="middle" fill="#F8992D" fontSize="9" fontFamily="sans-serif" fontWeight="700">ISO</text>
+          <circle cx="316" cy="100" r="16" fill="#0f2626" stroke="#F8992D" strokeWidth="1.5" strokeOpacity="0.5"/>
+          <text x="316" y="103" textAnchor="middle" fill="#F8992D" fontSize="9" fontFamily="sans-serif" fontWeight="700">PRO</text>
+        </svg>
+      ),
     },
   ];
 
@@ -382,9 +580,8 @@ export default function Landing() {
               >
                 <div className={`absolute inset-0 ${feature.hoverBg} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
                 <CardContent className="p-6 sm:p-8 relative z-10">
-                  <div className="relative w-full h-40 sm:h-48 rounded-xl overflow-hidden mb-4 sm:mb-6 shadow-lg">
-                    <img src={feature.image} alt={feature.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors"></div>
+                  <div className="relative w-full h-40 sm:h-48 rounded-xl overflow-hidden mb-4 sm:mb-6 shadow-lg transform group-hover:scale-[1.02] transition-transform duration-500">
+                    {feature.illustration}
                   </div>
                   <h3 className="text-xl sm:text-2xl font-bold mb-3 group-hover:text-secondary transition-colors">
                     {feature.title}
