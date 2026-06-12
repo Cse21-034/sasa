@@ -59,7 +59,7 @@ export function registerSupplierRoutes(app: Express, injectedVerifyAccess: any):
    * GET /api/suppliers/:id/details
    * Get a single supplier's profile with promotions
    */
-  app.get('/api/suppliers/:id/details', authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+  app.get('/api/suppliers/:id/details', async (req: AuthRequest, res) => {
     try {
       // 🔥 TIER 5: Cache individual supplier details
       let supplierData = await cacheService.getSupplierDetails(req.params.id);

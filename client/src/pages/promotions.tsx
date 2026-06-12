@@ -300,7 +300,7 @@ function HeroSection({
 
 // ── CountdownTimer ─────────────────────────────────────────────────────────────
 
-function CountdownTimer({ validUntil }: { validUntil: string | Date }) {
+function CountdownTimer({ validUntil, compact = false }: { validUntil: string | Date; compact?: boolean }) {
   const { days, hours, minutes, seconds, expired, totalSeconds } = useCountdown(validUntil);
 
   if (expired) {
@@ -331,13 +331,13 @@ function CountdownTimer({ validUntil }: { validUntil: string | Date }) {
       ];
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5 sm:gap-1">
       {units.map((u, i) => (
-        <div key={u.label} className="flex items-center gap-1">
-          {i > 0 && <span className="text-muted-foreground font-black text-xs mb-2 opacity-50">:</span>}
-          <div className={`${blockBg} rounded-lg px-1.5 pt-1.5 pb-1 text-center min-w-[30px] shadow-sm`}>
-            <div className="text-white font-black text-sm font-mono leading-none">{u.val}</div>
-            <div className="text-white/70 text-[8px] font-bold uppercase leading-none mt-0.5">{u.label}</div>
+        <div key={u.label} className="flex items-center gap-0.5 sm:gap-1">
+          {i > 0 && <span className="text-muted-foreground font-black text-[10px] sm:text-xs mb-1.5 sm:mb-2 opacity-50">:</span>}
+          <div className={`${blockBg} rounded-md sm:rounded-lg ${compact ? "px-1 pt-1 pb-0.5 min-w-[22px]" : "px-1.5 pt-1.5 pb-1 min-w-[30px]"} text-center shadow-sm`}>
+            <div className={`text-white font-black font-mono leading-none ${compact ? "text-[10px] sm:text-sm" : "text-sm"}`}>{u.val}</div>
+            <div className={`text-white/70 font-bold uppercase leading-none mt-0.5 ${compact ? "text-[7px]" : "text-[8px]"}`}>{u.label}</div>
           </div>
         </div>
       ))}
@@ -724,7 +724,7 @@ function PromotionCard({
       onClick={() => onQuickView(promo)}
     >
       {/* Image */}
-      <div className="relative aspect-[16/10] overflow-hidden bg-muted/30 flex-shrink-0">
+      <div className="relative aspect-square sm:aspect-[16/10] overflow-hidden bg-muted/30 flex-shrink-0">
         {mainImg ? (
           <img
             src={mainImg}
@@ -739,24 +739,25 @@ function PromotionCard({
 
         {/* Discount badge */}
         {promo.discountPercentage && (
-          <div className="absolute top-3 left-3 prom-badge bg-red-500 text-white text-[11px] font-black px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1">
-            <Percent className="h-3 w-3" />
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 prom-badge bg-red-500 text-white text-[9px] sm:text-[11px] font-black px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full shadow-lg flex items-center gap-0.5 sm:gap-1">
+            <Percent className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             {promo.discountPercentage}% OFF
           </div>
         )}
 
         {/* Viewers pill */}
-        <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-1 rounded-full flex items-center gap-1">
-          <Eye className="h-2.5 w-2.5" />
-          {viewers} viewing
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-black/50 backdrop-blur-sm text-white text-[9px] sm:text-[10px] font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full flex items-center gap-0.5 sm:gap-1">
+          <Eye className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+          <span className="hidden sm:inline">{viewers} viewing</span>
+          <span className="sm:hidden">{viewers}</span>
         </div>
       </div>
 
       {/* Body */}
-      <div className="p-4 flex flex-col flex-1 gap-3">
+      <div className="p-2.5 sm:p-4 flex flex-col flex-1 gap-2 sm:gap-3">
         {/* Supplier */}
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-muted/60 border border-border/40 flex items-center justify-center overflow-hidden flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-muted/60 border border-border/40 flex items-center justify-center overflow-hidden flex-shrink-0">
             <img
               src={promo.supplier.logo || "/supplier-logo-fallback.png"}
               alt={promo.supplier.companyName}
@@ -764,33 +765,33 @@ function PromotionCard({
               onError={(e) => { (e.target as HTMLImageElement).src = "/supplier-logo-fallback.png"; }}
             />
           </div>
-          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide truncate flex-1">
+          <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wide truncate flex-1">
             {promo.supplier.companyName}
           </p>
         </div>
 
-        <h3 className="font-bold text-foreground text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+        <h3 className="font-bold text-foreground text-xs sm:text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
           {promo.title}
         </h3>
 
-        <p className="text-muted-foreground text-xs line-clamp-2 flex-1 leading-relaxed">
+        <p className="text-muted-foreground text-xs line-clamp-2 flex-1 leading-relaxed hidden sm:block">
           {promo.description}
         </p>
 
         {/* Countdown */}
-        <div className="flex items-center justify-between gap-2 pt-1">
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-            <Clock className="h-3 w-3" /> Ends in
+        <div className="flex flex-col gap-1 pt-0.5 sm:pt-1">
+          <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-0.5">
+            <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Ends in
           </span>
-          <CountdownTimer validUntil={promo.validUntil as unknown as string} />
+          <CountdownTimer validUntil={promo.validUntil as unknown as string} compact />
         </div>
 
         {/* CTA */}
         <button
-          className="w-full h-9 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-bold transition-colors flex items-center justify-center gap-1.5 mt-auto"
+          className="w-full h-7 sm:h-9 rounded-lg sm:rounded-xl bg-primary hover:bg-primary/90 text-white text-[10px] sm:text-sm font-bold transition-colors flex items-center justify-center gap-1 sm:gap-1.5 mt-auto"
           onClick={(e) => { e.stopPropagation(); onQuickView(promo); }}
         >
-          Quick View <ArrowRight className="h-3.5 w-3.5" />
+          View <ArrowRight className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />
         </button>
       </div>
     </div>
@@ -878,7 +879,7 @@ export default function PromotionsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-5">
                 {gridPromos.map((promo, i) => (
                   <PromotionCard
                     key={promo.id}

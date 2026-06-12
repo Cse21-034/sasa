@@ -257,9 +257,8 @@ function Router() {
           </Route>
 
           {/* Supplier Routes */}
-          <Route path="/suppliers" component={Suppliers} /> 
           <Route path="/suppliers/:id">
-            <SupplierDetail />
+            {() => <SupplierDetail />}
           </Route>
           
           {/* Supplier Dashboard - Supplier only */}
