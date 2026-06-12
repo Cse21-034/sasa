@@ -880,6 +880,7 @@ export default function VerificationPage() {
   const { user, refreshAuth } = useAuth();
   const [, setLocation] = useLocation();
   const { data: statusData, isLoading: isStatusLoading } = useVerificationStatus();
+  const [navigating, setNavigating] = useState(false);
 
   const isProviderOrSupplier = user?.role === 'provider' || user?.role === 'supplier';
 
@@ -893,6 +894,15 @@ export default function VerificationPage() {
       (statusData.isIdentityVerified && !user.isIdentityVerified);
     if (needsRefresh) refreshAuth();
   }, [statusData, user, refreshAuth]);
+
+  // Navigate only AFTER React has committed the refreshAuth() state update.
+  // Doing setLocation inside the async onClick races against React batching —
+  // ProtectedRoute would still see the old user.isVerified:false and bounce back.
+  useEffect(() => {
+    if (navigating && user?.isVerified) {
+      setLocation('/jobs');
+    }
+  }, [navigating, user?.isVerified, setLocation]);
 
   if (isStatusLoading || !user) {
     return (
@@ -911,13 +921,23 @@ export default function VerificationPage() {
             <h1 className="text-2xl font-bold">Account Fully Verified!</h1>
             <p className="text-muted-foreground">You now have full access to all platform features.</p>
             <Button
-              onClick={async () => {
-                await refreshAuth(); // ensure JWT is fresh before entering protected routes
-                setLocation('/jobs');
+              disabled={navigating}
+              onClick={() => {
+                setNavigating(true);
+                refreshAuth(); // async — useEffect watches user.isVerified and navigates once committed
               }}
             >
-              Go to Dashboard
-              <ArrowRight className="h-4 w-4 ml-2" />
+              {navigating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Opening Dashboard…
+                </>
+              ) : (
+                <>
+                  Go to Dashboard
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </>
+              )}
             </Button>
           </CardContent>
         </Card>
