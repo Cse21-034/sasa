@@ -560,6 +560,7 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
 
 const DocumentVerification = ({ statusData }: { statusData: any }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const form = useForm<DocumentUploadForm>({
     resolver: zodResolver(documentUploadSchema),
   });
@@ -836,24 +837,10 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
 
 // 3. MAIN VERIFICATION PAGE
 export default function VerificationPage() {
-  const { user, refreshAuth } = useAuth();
+  const { user } = useAuth();
   const { data: statusData, isLoading: isStatusLoading } = useVerificationStatus();
-  const [navigating, setNavigating] = useState(false);
 
   const isProviderOrSupplier = user?.role === 'provider' || user?.role === 'supplier';
-
-  // When DB says verified but JWT is still stale, refresh immediately.
-  // This runs as soon as polling or WebSocket brings in updated statusData.
-  useEffect(() => {
-    if (!statusData || !user) return;
-    const needsRefresh =
-      (statusData.isVerified && !user.isVerified) ||
-      (statusData.isIdentityVerified && !user.isIdentityVerified);
-    if (needsRefresh) refreshAuth();
-  }, [statusData, user, refreshAuth]);
-
-  // No navigation effects needed — the button awaits refreshAuth() then does a
-  // hard navigation so the page re-initialises from the fresh localStorage token.
 
   if (isStatusLoading || !user) {
     return (
@@ -870,28 +857,20 @@ export default function VerificationPage() {
           <CardContent className="p-8 space-y-4">
             <UserCheck className="h-12 w-12 text-primary mx-auto" />
             <h1 className="text-2xl font-bold">Account Fully Verified!</h1>
-            <p className="text-muted-foreground">You now have full access to all platform features.</p>
+            <p className="text-muted-foreground">
+              Your account is verified. Log back in to activate full access.
+            </p>
             <Button
-              disabled={navigating}
-              onClick={async () => {
-                setNavigating(true);
-                // Await so the fresh token (isVerified:true) lands in localStorage
-                // before the hard navigation re-reads it.
-                await refreshAuth();
-                window.location.href = '/jobs';
+              onClick={() => {
+                // Clear session so the next login issues a fresh JWT with isVerified:true
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/login?verified=true';
               }}
+              className="gap-2"
             >
-              {navigating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Opening Dashboard…
-                </>
-              ) : (
-                <>
-                  Go to Dashboard
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </>
-              )}
+              <ArrowRight className="h-4 w-4" />
+              Log In to Dashboard
             </Button>
           </CardContent>
         </Card>

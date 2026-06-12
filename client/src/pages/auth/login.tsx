@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,7 @@ export default function Login() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const justVerified = new URLSearchParams(window.location.search).get('verified') === 'true';
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -104,6 +105,18 @@ export default function Login() {
 
         {/* ── Form section ── */}
         <div className="flex-1 bg-background px-8 pb-10 pt-4 overflow-y-auto">
+
+          {/* Verified banner */}
+          {justVerified && (
+            <div className="flex items-start gap-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-xl px-4 py-3 mb-5">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Verification Complete!</p>
+                <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">Your account has been verified. Log in below to access your dashboard.</p>
+              </div>
+            </div>
+          )}
+
           <h1 className="text-3xl font-bold text-foreground mb-1">Sign in</h1>
           <p className="text-muted-foreground text-base mb-7">Enter your credentials to access your account</p>
 
