@@ -788,11 +788,26 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
 
 // 3. MAIN VERIFICATION PAGE
 export default function VerificationPage() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const [, setLocation] = useLocation();
   const { data: statusData, isLoading: isStatusLoading } = useVerificationStatus();
 
   const isProviderOrSupplier = user?.role === 'provider' || user?.role === 'supplier';
+
+  // Sync auth context when DB confirms verification — prevents ProtectedRoute
+  // from redirecting back here when the user clicks "Go to Dashboard"
+  useEffect(() => {
+    if (!statusData || !user) return;
+    if (statusData.isVerified && !user.isVerified) {
+      const updated = { ...user, isVerified: true, isIdentityVerified: true };
+      localStorage.setItem('user', JSON.stringify(updated));
+      setUser(updated);
+    } else if (statusData.isIdentityVerified && !user.isIdentityVerified) {
+      const updated = { ...user, isIdentityVerified: true };
+      localStorage.setItem('user', JSON.stringify(updated));
+      setUser(updated);
+    }
+  }, [statusData, user, setUser]);
 
   if (isStatusLoading || !user) {
     return (
