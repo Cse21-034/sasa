@@ -202,7 +202,7 @@ type DocumentUploadForm = z.infer<typeof documentUploadSchema>;
 
 // --- API & HOOKS ---
 
-// Hook to get current verification status
+// Hook to get current verification status — polls every 10s while pending
 const useVerificationStatus = () => {
   const { user } = useAuth();
   return useQuery({
@@ -213,6 +213,16 @@ const useVerificationStatus = () => {
       return res.json();
     },
     enabled: !!user,
+    // Poll only while at least one submission is still pending
+    refetchInterval: (query) => {
+      const data = query.state.data as any;
+      if (!data) return 10_000;
+      const hasPending =
+        data.identitySubmission?.status === 'pending' ||
+        data.documentSubmission?.status === 'pending';
+      return hasPending ? 10_000 : false;
+    },
+    refetchIntervalInBackground: false,
   });
 };
 
