@@ -235,8 +235,8 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
         requesterId: req.user!.id,
       });
 
-      // 🔥 Invalidate jobs cache for this requester
-      await cacheService.invalidateByPattern(`jobs:${req.user!.id}:*`);
+      // Wipe all job caches so providers see the new listing on their next refetch
+      await cacheService.invalidateByPattern('jobs:*');
 
       // 🆕 Send notifications to relevant providers
       const notifiedCount = await notificationService.notifyProvidersOfNewJob({
