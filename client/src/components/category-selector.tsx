@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Loader2, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/queryClient';
 
 interface Category {
@@ -27,6 +29,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -47,84 +50,120 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
     fetchCategories();
   }, []);
 
-  const handleCategoryToggle = (categoryId: number) => {
-    if (selectedCategories.includes(categoryId)) {
-      onCategoriesChange(selectedCategories.filter(id => id !== categoryId));
+  const toggle = (id: number) => {
+    if (selectedCategories.includes(id)) {
+      onCategoriesChange(selectedCategories.filter(c => c !== id));
     } else {
-      onCategoriesChange([...selectedCategories, categoryId]);
+      onCategoriesChange([...selectedCategories, id]);
     }
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Service Categories</CardTitle>
-          <CardDescription>Select the categories you provide services for</CardDescription>
-        </CardHeader>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </CardContent>
-      </Card>
-    );
-  }
+  const remove = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onCategoriesChange(selectedCategories.filter(c => c !== id));
+  };
+
+  const selectedNames = categories.filter(c => selectedCategories.includes(c.id));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Service Categories</CardTitle>
-        <CardDescription>
-          Select the categories you provide services for{required && <span className="text-red-500"> *</span>}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium leading-none">
+          Service Categories
+          {required && <span className="text-destructive ml-1">*</span>}
+        </label>
+        {selectedCategories.length > 0 && (
+          <span className="text-xs text-muted-foreground">{selectedCategories.length} selected</span>
         )}
+      </div>
 
-        {selectedCategories.length > 0 && required && (
-          <Alert>
-            <AlertDescription>
-              You've selected {selectedCategories.length} categor{selectedCategories.length === 1 ? 'y' : 'ies'}
-            </AlertDescription>
-          </Alert>
-        )}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-        <div className="max-h-[500px] overflow-y-auto border rounded-lg p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {categories.map(category => (
-              <div key={category.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                <Checkbox
-                  id={`category-${category.id}`}
-                  checked={selectedCategories.includes(category.id)}
-                  onCheckedChange={() => handleCategoryToggle(category.id)}
-                />
-                <Label
-                  htmlFor={`category-${category.id}`}
-                  className="flex-1 cursor-pointer font-normal"
-                >
-                  <div className="font-medium text-sm md:text-base">{category.name}</div>
-                  {category.description && (
-                    <div className="text-xs md:text-sm text-muted-foreground">{category.description}</div>
-                  )}
-                </Label>
-              </div>
-            ))}
-          </div>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between font-normal h-11"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading categories…
+              </span>
+            ) : selectedCategories.length === 0 ? (
+              <span className="text-muted-foreground">Select categories…</span>
+            ) : (
+              <span className="text-foreground">
+                {selectedCategories.length === 1
+                  ? selectedNames[0]?.name
+                  : `${selectedCategories.length} categories selected`}
+              </span>
+            )}
+            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+          </Button>
+        </PopoverTrigger>
+
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search categories…" className="h-9" />
+            <CommandList>
+              <CommandEmpty>No categories found.</CommandEmpty>
+              <CommandGroup>
+                {categories.map(category => (
+                  <CommandItem
+                    key={category.id}
+                    value={category.name}
+                    onSelect={() => toggle(category.id)}
+                    className="cursor-pointer"
+                  >
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4 shrink-0',
+                        selectedCategories.includes(category.id) ? 'opacity-100 text-primary' : 'opacity-0'
+                      )}
+                    />
+                    <span className="text-sm">{category.name}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      {/* Selected chips */}
+      {selectedNames.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {selectedNames.map(cat => (
+            <Badge
+              key={cat.id}
+              variant="secondary"
+              className="gap-1 pr-1 pl-2 text-xs font-medium"
+            >
+              {cat.name}
+              <button
+                type="button"
+                onClick={(e) => remove(cat.id, e)}
+                className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5 transition-colors"
+                aria-label={`Remove ${cat.name}`}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
         </div>
+      )}
 
-        {categories.length === 0 && !error && (
-          <p className="text-sm text-muted-foreground">No categories available</p>
-        )}
-
-        {required && selectedCategories.length === 0 && (
-          <Alert variant="destructive">
-            <AlertDescription>Please select at least one category</AlertDescription>
-          </Alert>
-        )}
-      </CardContent>
-    </Card>
+      {required && selectedCategories.length === 0 && !isLoading && (
+        <p className="text-xs text-destructive">Please select at least one category</p>
+      )}
+    </div>
   );
 };
