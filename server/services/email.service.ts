@@ -16,38 +16,45 @@ interface IEmailService {
 
 class ResendEmailService implements IEmailService {
   private resend: Resend | null = null;
-  private fromEmail: string;
   private baseUrl: string;
+
+  // Different sender addresses for different email categories
+  private readonly addresses = {
+    registration: 'JobTradeSasa Registration <registration@jobtradesasa.com>',
+    support:      'JobTradeSasa Support <support@jobtradesasa.com>',
+    billing:      'JobTradeSasa Billing <billing@jobtradesasa.com>',
+    info:         'JobTradeSasa <info@jobtradesasa.com>',
+  };
 
   constructor() {
     const apiKey = process.env.RESEND_API_KEY;
 
     if (apiKey) {
       this.resend = new Resend(apiKey);
-      this.fromEmail = process.env.RESEND_SENDER_EMAIL || 'noreply@jobtradesasa.com';
       this.baseUrl = process.env.FRONTEND_URL || 'https://jobtradesasa.com';
 
       console.log('✅ [Email Service] Resend email service initialized');
-      console.log(`📧 [Email Service] From: ${this.fromEmail}`);
+      console.log(`📧 [Email Service] Senders: registration, support, billing, info @jobtradesasa.com`);
       console.log(`🌐 [Email Service] Base URL: ${this.baseUrl}`);
     } else {
-      this.fromEmail = 'noreply@jobtradesasa.com';
       this.baseUrl = 'https://jobtradesasa.com';
       console.warn('⚠️ [Email Service] RESEND_API_KEY not configured. Email functionality disabled.');
     }
   }
 
-  private async sendEmail(to: string, subject: string, html: string, text: string): Promise<boolean> {
+  private async sendEmail(to: string, subject: string, html: string, text: string, from?: string): Promise<boolean> {
     if (!this.resend) {
       console.warn(`⚠️ [Email Service] Email service not configured. Skipping email to: ${to}`);
       return false;
     }
 
+    const sender = from || this.addresses.info;
+
     try {
-      console.log(`[Email Service] Sending "${subject}" to: ${to}`);
+      console.log(`[Email Service] Sending "${subject}" to: ${to} from: ${sender}`);
 
       const { data, error } = await this.resend.emails.send({
-        from: this.fromEmail,
+        from: sender,
         to,
         subject,
         html,
@@ -110,7 +117,7 @@ class ResendEmailService implements IEmailService {
 
     const text = `Hello ${name},\n\nYour JobTradeSasa verification code is: ${code}\n\nThis code expires in 15 minutes.\n\nIf you didn't create an account, please ignore this email.\n\nFind. Connect. Hire. - JobTradeSasa`;
 
-    const sent = await this.sendEmail(to, subject, html, text);
+    const sent = await this.sendEmail(to, subject, html, text, this.addresses.registration);
     if (sent) console.log(`✅ [Email Service] Verification email sent to: ${to}`);
     else console.error(`❌ [Email Service] Failed to send verification email to: ${to}`);
     return sent;
@@ -154,7 +161,7 @@ class ResendEmailService implements IEmailService {
 
     const text = `Hello ${name},\n\nYour JobTradeSasa password reset code is: ${resetCode}\n\nThis code expires in 15 minutes.\n\nIf you didn't request a password reset, please ignore this email.\n\nFind. Connect. Hire. - JobTradeSasa`;
 
-    const sent = await this.sendEmail(to, subject, html, text);
+    const sent = await this.sendEmail(to, subject, html, text, this.addresses.support);
     if (sent) console.log(`✅ [Email Service] Password reset email sent to: ${to}`);
     else console.error(`❌ [Email Service] Failed to send password reset email to: ${to}`);
     return sent;
@@ -201,7 +208,7 @@ class ResendEmailService implements IEmailService {
 
     const text = `Welcome aboard, ${name}!\n\nYour email has been verified. To complete your account setup:\n\n1. Complete your profile information\n2. Upload your verification documents\n3. Wait for admin approval (usually within 24 hours)\n\nGet started at: ${this.baseUrl}/profile\n\nFind. Connect. Hire. - JobTradeSasa`;
 
-    const sent = await this.sendEmail(to, subject, html, text);
+    const sent = await this.sendEmail(to, subject, html, text, this.addresses.registration);
     if (sent) console.log(`✅ [Email Service] Welcome email sent to: ${to}`);
     else console.error(`❌ [Email Service] Failed to send welcome email to: ${to}`);
     return sent;
@@ -247,7 +254,7 @@ class ResendEmailService implements IEmailService {
 
     const text = `Congratulations, ${name}!\n\nYour documents have been reviewed and approved. You now have full access to all features on JobTradeSasa.\n\nStart browsing jobs at: ${this.baseUrl}/jobs\n\nFind. Connect. Hire. - JobTradeSasa`;
 
-    const sent = await this.sendEmail(to, subject, html, text);
+    const sent = await this.sendEmail(to, subject, html, text, this.addresses.support);
     if (sent) console.log(`✅ [Email Service] Document approved email sent to: ${to}`);
     else console.error(`❌ [Email Service] Failed to send document approved email to: ${to}`);
     return sent;
@@ -293,7 +300,7 @@ class ResendEmailService implements IEmailService {
 
     const text = `Hello ${name},\n\nWe've reviewed your submitted documents but were unable to approve them at this time.\n\nReason: ${reason || 'Please ensure your documents are clear, valid, and match your profile information.'}\n\nYou can resubmit at: ${this.baseUrl}/verification\n\nFind. Connect. Hire. - JobTradeSasa`;
 
-    const sent = await this.sendEmail(to, subject, html, text);
+    const sent = await this.sendEmail(to, subject, html, text, this.addresses.support);
     if (sent) console.log(`✅ [Email Service] Document rejected email sent to: ${to}`);
     else console.error(`❌ [Email Service] Failed to send document rejected email to: ${to}`);
     return sent;
@@ -336,7 +343,7 @@ class ResendEmailService implements IEmailService {
 
     const text = `Hello ${name},\n\nA new invoice has been sent for the job "${jobTitle}".\n\nAmount: BWP ${invoiceAmount}\n\nPlease log in to review and approve.\n\nFind. Connect. Hire. - JobTradeSasa`;
 
-    const sent = await this.sendEmail(to, subject, html, text);
+    const sent = await this.sendEmail(to, subject, html, text, this.addresses.billing);
     if (sent) console.log(`✅ [Email Service] Invoice sent email delivered to: ${to}`);
     else console.error(`❌ [Email Service] Failed to send invoice email to: ${to}`);
     return sent;
@@ -379,7 +386,7 @@ class ResendEmailService implements IEmailService {
 
     const text = `Hello ${name},\n\nYour invoice for "${jobTitle}" has been approved!\n\nAmount: BWP ${invoiceAmount}\n\nPlease proceed with the job.\n\nFind. Connect. Hire. - JobTradeSasa`;
 
-    const sent = await this.sendEmail(to, subject, html, text);
+    const sent = await this.sendEmail(to, subject, html, text, this.addresses.billing);
     if (sent) console.log(`✅ [Email Service] Invoice approved email sent to: ${to}`);
     else console.error(`❌ [Email Service] Failed to send invoice approved email to: ${to}`);
     return sent;
@@ -422,7 +429,7 @@ class ResendEmailService implements IEmailService {
 
     const text = `Hello ${name},\n\nChanges have been requested for your invoice for "${jobTitle}".\n\n${reason ? `Reason: ${reason}\n\n` : ''}Please review and resubmit your invoice.\n\nFind. Connect. Hire. - JobTradeSasa`;
 
-    const sent = await this.sendEmail(to, subject, html, text);
+    const sent = await this.sendEmail(to, subject, html, text, this.addresses.billing);
     if (sent) console.log(`✅ [Email Service] Invoice declined email sent to: ${to}`);
     else console.error(`❌ [Email Service] Failed to send invoice declined email to: ${to}`);
     return sent;
@@ -465,7 +472,7 @@ class ResendEmailService implements IEmailService {
 
     const text = `Hello ${name},\n\nPayment has been received for the job "${jobTitle}".\n\nAmount: BWP ${invoiceAmount}\n\nThank you for your work!\n\nFind. Connect. Hire. - JobTradeSasa`;
 
-    const sent = await this.sendEmail(to, subject, html, text);
+    const sent = await this.sendEmail(to, subject, html, text, this.addresses.billing);
     if (sent) console.log(`✅ [Email Service] Payment received email sent to: ${to}`);
     else console.error(`❌ [Email Service] Failed to send payment received email to: ${to}`);
     return sent;
@@ -508,7 +515,7 @@ class ResendEmailService implements IEmailService {
 
     const text = `Hello ${name},\n\nThis is a reminder that payment for the job "${jobTitle}" is pending.\n\nOutstanding Amount: BWP ${invoiceAmount}\n\nPlease process payment at your earliest convenience.\n\nFind. Connect. Hire. - JobTradeSasa`;
 
-    const sent = await this.sendEmail(to, subject, html, text);
+    const sent = await this.sendEmail(to, subject, html, text, this.addresses.billing);
     if (sent) console.log(`✅ [Email Service] Payment overdue email sent to: ${to}`);
     else console.error(`❌ [Email Service] Failed to send payment overdue email to: ${to}`);
     return sent;
