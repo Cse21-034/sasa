@@ -73,8 +73,10 @@ export function useNotifications() {
 
             // ── New job posted ────────────────────────────────────────────
             // Broadcast from server whenever any requester posts a job.
-            // All connected providers/suppliers see the new listing immediately.
+            // Both key formats used across the app are invalidated so every
+            // jobs query refetches regardless of which page the user is on.
             case 'job:created':
+              queryClient.invalidateQueries({ queryKey: ['jobs'] });
               queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
               break;
 
