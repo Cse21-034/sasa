@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, UserCheck, XCircle, FileText, Upload, Camera, ArrowRight, X, Wrench, AlertTriangle, Download } from 'lucide-react';
+import { Loader2, UserCheck, XCircle, FileText, Upload, Camera, ArrowRight, X, Wrench, AlertTriangle, Download, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -309,6 +309,13 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
   const [photoPreviews, setPhotoPreviews] = useState({ id: '', selfie: '' });
   const [cameraOpen, setCameraOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await queryClient.refetchQueries({ queryKey: ['verificationStatus', user?.id] });
+    setIsRefreshing(false);
+  };
 
   const isPending = statusData.identitySubmission?.status === 'pending';
   const isApproved = statusData.isIdentityVerified;
@@ -401,8 +408,23 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
           <Alert className="bg-warning/10 border-warning/20">
             <Loader2 className="h-4 w-4 text-warning animate-spin" />
             <AlertTitle className="text-warning">Identity Verification Pending</AlertTitle>
-            <AlertDescription>
-              Your submission is under review {user?.role === 'requester' ? '(auto-review in progress).' : 'by the admin.'} Please check back later.
+            <AlertDescription className="flex flex-col gap-3">
+              <span>Your submission is under review by the admin. Please check back later.</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-fit"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                {isRefreshing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                {isRefreshing ? 'Checking…' : 'Refresh Status'}
+              </Button>
             </AlertDescription>
           </Alert>
         )}
@@ -541,9 +563,16 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
   const form = useForm<DocumentUploadForm>({
     resolver: zodResolver(documentUploadSchema),
   });
-  
+
   const [fileList, setFileList] = useState<File[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const documentMutation = useVerificationSubmission('document');
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await queryClient.refetchQueries({ queryKey: ['verificationStatus', user?.id] });
+    setIsRefreshing(false);
+  };
 
   const isPending = statusData.documentSubmission?.status === 'pending';
   const isApproved = statusData.isVerified;
@@ -702,8 +731,23 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
           <Alert className="bg-warning/10 border-warning/20">
             <Loader2 className="h-4 w-4 text-warning animate-spin" />
             <AlertTitle className="text-warning">Document Verification Pending</AlertTitle>
-            <AlertDescription>
-              Your documents are under review by the admin. This may take 1-2 business days.
+            <AlertDescription className="flex flex-col gap-3">
+              <span>Your documents are under review by the admin. This may take 1-2 business days.</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-fit"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                {isRefreshing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                {isRefreshing ? 'Checking…' : 'Refresh Status'}
+              </Button>
             </AlertDescription>
           </Alert>
         );
