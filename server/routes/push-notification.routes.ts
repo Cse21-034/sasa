@@ -29,7 +29,7 @@ export function registerPushNotificationRoutes(
    * POST /api/push/subscribe
    * Save push subscription for authenticated user
    */
-  app.post("/api/push/subscribe", authMiddleware, verifyAccess, async (req: AuthRequest, res) => {
+  app.post("/api/push/subscribe", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const { subscription, enableNotifications } = req.body;
 

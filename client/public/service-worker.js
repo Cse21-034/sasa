@@ -43,8 +43,8 @@ self.addEventListener('push', (event) => {
   let notificationData = {
     title: 'New Notification',
     body: 'You have a new update',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/android-chrome-192x192.png',
+    badge: '/android-chrome-192x192.png',
     tag: 'notification',
     url: '/',
   };
@@ -54,12 +54,12 @@ self.addEventListener('push', (event) => {
       // Try to parse as JSON
       const data = event.data.json();
       console.log('📬 Push data:', data);
-      
+
       notificationData = {
         title: data.title || 'New Notification',
         body: data.body || data.message || '',
-        icon: data.icon || '/icon-192.png',
-        badge: data.badge || '/icon-192.png',
+        icon: data.icon || '/android-chrome-192x192.png',
+        badge: data.badge || '/android-chrome-192x192.png',
         tag: data.tag || 'notification',
         url: data.url || '/',
         data: data, // Store all data for click handling
@@ -73,8 +73,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: notificationData.body,
-    icon: notificationData.icon,
-    badge: notificationData.badge,
+    icon: notificationData.icon || '/android-chrome-192x192.png',
+    badge: notificationData.badge || '/android-chrome-192x192.png',
     tag: notificationData.tag,
     requireInteraction: true,
     vibrate: [200, 100, 200],

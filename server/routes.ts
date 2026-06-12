@@ -5,6 +5,7 @@ import { storage } from "./storage"
 import { authMiddleware, type AuthRequest } from "./middleware/auth"
 import type { NextFunction, Response } from "express"
 import { wsBus } from "./lib/ws-bus"
+import { pushNotificationService } from "./services/push-notification.service"
 import {
   registerAuthRoutes,
   registerJobRoutes,
@@ -109,6 +110,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 )
               }
             }
+            // Push notification for recipients not currently connected
+            const sender = await storage.getUser(userId!)
+            const preview = typeof msg.content === 'string'
+              ? msg.content.substring(0, 80)
+              : 'Sent you a message'
+            pushNotificationService.sendPushNotification(
+              receiverId,
+              `New message from ${sender?.name ?? 'Someone'}`,
+              { body: preview, tag: 'message', url: '/messages' }
+            )
           }
 
           ws.send(

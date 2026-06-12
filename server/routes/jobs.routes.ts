@@ -7,6 +7,7 @@ import { companyService } from '../services/company.service';
 import { notificationService } from '../services/notification.service';
 import { cacheService } from '../services/cache.service';
 import { wsBus } from '../lib/ws-bus';
+import { pushNotificationService } from '../services/push-notification.service';
 
 /**
  * SOLID Principle: Single Responsibility
@@ -251,8 +252,17 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
 
       console.log(`✅ Job posted successfully. Notifications sent to ${notifiedCount.length} providers in ${job.city}`);
 
-      // Push real-time signal to all connected providers so their job feed refreshes
+      // Push real-time WebSocket signal — connected providers see the job immediately
       wsBus.broadcast('job:created', { jobId: job.id, categoryId: job.categoryId, city: job.city });
+
+      // Push notifications — reaches providers even when their browser tab is closed
+      if (notifiedCount.length > 0) {
+        pushNotificationService.sendBulkPushNotifications(notifiedCount, `New job in ${job.city}`, {
+          body: job.title,
+          tag: 'job',
+          url: '/jobs',
+        });
+      }
 
       res.status(201).json(job);
     } catch (error: any) {

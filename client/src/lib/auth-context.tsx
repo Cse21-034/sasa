@@ -96,20 +96,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 4. Clear React Query cache completely
     queryClient.clear();
     
-    // 5. Clear browser HTTP cache via service worker (if exists)
-    if (navigator.serviceWorker) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        registrations.forEach(reg => reg.unregister());
-      });
-    }
-    
-    // 6. Redirect to landing
+    // 5. Redirect to landing with hard reload (bypasses all caches)
+    // Do NOT unregister the service worker — doing so deletes the push subscription
+    // and the user would stop receiving push notifications until the next page load.
     window.location.href = '/';
-    
-    // 7. Force hard reload (bypasses all caches)
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
   };
 
   return (

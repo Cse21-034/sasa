@@ -7,6 +7,7 @@ import { notificationService, verificationService } from "../services"
 import { WebSocket } from "ws"
 import { emailService } from "../services/email.service"
 import { wsBus } from "../lib/ws-bus"
+import { pushNotificationService } from "../services/push-notification.service"
 
 /**
  * SOLID Principle: Single Responsibility
@@ -207,11 +208,24 @@ export function registerAdminRoutes(app: Express, injectedClients: Map<string, W
         )
       }
 
-      // Push real-time update to the verified user so their UI refreshes instantly
+      // Push real-time WebSocket update so the user's UI refreshes instantly
       wsBus.sendToUser(updatedSubmission.userId, 'verification:updated', {
         status: validatedData.status,
         submissionType: updatedSubmission.type,
         rejectionReason: validatedData.rejectionReason ?? null,
+      })
+
+      // Push notification (works even when browser tab is closed)
+      const pushTitle = validatedData.status === 'approved'
+        ? '✅ Verification Approved!'
+        : '❌ Verification Update'
+      const pushBody = validatedData.status === 'approved'
+        ? `Your ${updatedSubmission.type} verification has been approved. You can now access full features.`
+        : `Your ${updatedSubmission.type} verification was not approved. Reason: ${validatedData.rejectionReason || 'Please resubmit.'}`
+      await pushNotificationService.sendPushNotification(updatedSubmission.userId, pushTitle, {
+        body: pushBody,
+        tag: 'verification',
+        url: '/verification',
       })
 
       res.json({
