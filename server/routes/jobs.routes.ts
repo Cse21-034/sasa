@@ -6,6 +6,7 @@ import { authMiddleware, type AuthRequest } from '../middleware/auth';
 import { companyService } from '../services/company.service';
 import { notificationService } from '../services/notification.service';
 import { cacheService } from '../services/cache.service';
+import { wsBus } from '../lib/ws-bus';
 
 /**
  * SOLID Principle: Single Responsibility
@@ -249,6 +250,9 @@ app.get('/api/jobs', authMiddleware, verifyAccess, async (req: AuthRequest, res)
       });
 
       console.log(`✅ Job posted successfully. Notifications sent to ${notifiedCount.length} providers in ${job.city}`);
+
+      // Push real-time signal to all connected providers so their job feed refreshes
+      wsBus.broadcast('job:created', { jobId: job.id, categoryId: job.categoryId, city: job.city });
 
       res.status(201).json(job);
     } catch (error: any) {

@@ -6,6 +6,7 @@ import { authMiddleware, generateToken, type AuthRequest } from "../middleware/a
 import { notificationService, verificationService } from "../services"
 import { WebSocket } from "ws"
 import { emailService } from "../services/email.service"
+import { wsBus } from "../lib/ws-bus"
 
 /**
  * SOLID Principle: Single Responsibility
@@ -200,11 +201,18 @@ export function registerAdminRoutes(app: Express, injectedClients: Map<string, W
         await emailService.sendDocumentApprovedEmail(finalUser!.email, finalUser!.name)
       } else if (validatedData.status === 'rejected') {
         await emailService.sendDocumentRejectedEmail(
-          finalUser!.email, 
-          finalUser!.name, 
+          finalUser!.email,
+          finalUser!.name,
           validatedData.rejectionReason || 'Please ensure your documents are clear and valid.'
         )
       }
+
+      // Push real-time update to the verified user so their UI refreshes instantly
+      wsBus.sendToUser(updatedSubmission.userId, 'verification:updated', {
+        status: validatedData.status,
+        submissionType: updatedSubmission.type,
+        rejectionReason: validatedData.rejectionReason ?? null,
+      })
 
       res.json({
         message: `Submission ${updatedSubmission.status}`,

@@ -843,9 +843,8 @@ export default function VerificationPage() {
 
   const isProviderOrSupplier = user?.role === 'provider' || user?.role === 'supplier';
 
-  // When DB status is ahead of the local JWT (e.g. admin just approved),
-  // call refreshAuth() to re-issue a fresh token from the server so the
-  // user can immediately access protected routes without logging out.
+  // When DB says verified but JWT is still stale, refresh immediately.
+  // This runs as soon as polling or WebSocket brings in updated statusData.
   useEffect(() => {
     if (!statusData || !user) return;
     const needsRefresh =
@@ -854,14 +853,22 @@ export default function VerificationPage() {
     if (needsRefresh) refreshAuth();
   }, [statusData, user, refreshAuth]);
 
-  // Navigate only AFTER React has committed the refreshAuth() state update.
-  // Doing setLocation inside the async onClick races against React batching —
-  // ProtectedRoute would still see the old user.isVerified:false and bounce back.
+  // Navigate only after React has committed the refreshAuth() state update.
   useEffect(() => {
     if (navigating && user?.isVerified) {
       setLocation('/jobs');
     }
   }, [navigating, user?.isVerified, setLocation]);
+
+  // Fallback: if JWT sync takes >3 s and DB confirms verified, navigate anyway.
+  useEffect(() => {
+    if (!navigating) return;
+    const timer = setTimeout(() => {
+      if (statusData?.isVerified) setLocation('/jobs');
+      else setNavigating(false); // reset — something unexpected went wrong
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [navigating, statusData?.isVerified, setLocation]);
 
   if (isStatusLoading || !user) {
     return (
@@ -882,8 +889,14 @@ export default function VerificationPage() {
             <Button
               disabled={navigating}
               onClick={() => {
+                if (user?.isVerified) {
+                  // WebSocket already synced the JWT — navigate straight away
+                  setLocation('/jobs');
+                  return;
+                }
+                // JWT still stale — refresh it; useEffect + fallback timer handle navigation
                 setNavigating(true);
-                refreshAuth(); // async — useEffect watches user.isVerified and navigates once committed
+                refreshAuth();
               }}
             >
               {navigating ? (

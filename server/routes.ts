@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws"
 import { storage } from "./storage"
 import { authMiddleware, type AuthRequest } from "./middleware/auth"
 import type { NextFunction, Response } from "express"
+import { wsBus } from "./lib/ws-bus"
 import {
   registerAuthRoutes,
   registerJobRoutes,
@@ -49,6 +50,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== WEBSOCKET SETUP ====================
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" })
   const clients = new Map<string, WebSocket>()
+  wsBus.setClients(clients)
 
   wss.on("connection", (ws: WebSocket, req) => {
     let userId: string | null = null
