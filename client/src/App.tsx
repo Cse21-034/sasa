@@ -282,7 +282,7 @@ function Router() {
             {() => <SupplierRoute component={Suppliers} path="/supplier/browse" />}
           </Route>
           <Route path="/supplier/browse/:id">
-            {() => <SupplierRoute component={SupplierDetail} path="/supplier/browse/:id" />}
+            {() => <SupplierDetail />}
           </Route>
           
           <Route component={NotFound} />
