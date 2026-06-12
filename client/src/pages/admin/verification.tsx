@@ -2,7 +2,6 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Loader2, UserCheck, XCircle, FileText, User, Wrench, Building2, AlertCircle, Trash2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, Suspense } from 'react';
 import { pdfjs, Document as PDFDocument, Page as PDFPage } from 'react-pdf';
-import * as pdfjsLib from 'pdfjs-dist';
 
 // Set up PDF.js worker using the bundled worker file
 if (typeof window !== 'undefined') {
@@ -245,24 +244,25 @@ const ReviewModal = ({ submission, onClose }: { submission: Submission | null, o
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-4 grid grid-cols-3 gap-3">
-              {submission.documents.map((doc, index) => (
-                <div 
-                  key={index} 
+              {submission.documents.map((doc, index) => {
+                const lowerName = doc.name.toLowerCase();
+                const isDocFile = lowerName.endsWith('.pdf') || lowerName.endsWith('.doc') || lowerName.endsWith('.docx');
+                return (
+                <div
+                  key={index}
                   className="group cursor-pointer border rounded-lg overflow-hidden relative shadow-sm"
                   onClick={() => setActiveDocument(doc)}
                 >
-                    {/* Check if it's a PDF. If so, display a placeholder */}
-                    {doc.name.toLowerCase().endsWith('.pdf') ? (
+                    {isDocFile ? (
                         <div className="w-full h-24 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 p-2">
-                            <FileText className="h-8 w-8 text-destructive" />
-                            <span className="text-xs text-muted-foreground truncate">{doc.name}</span>
+                            <FileText className={`h-8 w-8 ${lowerName.endsWith('.pdf') ? 'text-destructive' : 'text-blue-500'}`} />
+                            <span className="text-xs text-muted-foreground truncate max-w-full px-1">{doc.name}</span>
                             <span className="text-xs font-medium text-primary">Click to View</span>
                         </div>
                     ) : (
                         <img
-                            // ⚠️ FIX: The URL here is the Base64 string, so it should render directly
-                            src={doc.url} 
-                            alt={doc.name} 
+                            src={doc.url}
+                            alt={doc.name}
                             className="w-full h-24 object-cover transition-transform group-hover:scale-105"
                         />
                     )}
@@ -271,7 +271,8 @@ const ReviewModal = ({ submission, onClose }: { submission: Submission | null, o
                         <span className="text-white text-xs p-1 bg-black/70 rounded">{doc.name}</span>
                     </div>
                 </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
         </div>
@@ -332,11 +333,25 @@ const ReviewModal = ({ submission, onClose }: { submission: Submission | null, o
                 <div className="flex-1 flex items-center justify-center min-h-[400px]">
                     {activeDocument && activeDocument.name.toLowerCase().endsWith('.pdf') ? (
                         <PDFPreviewComponent fileUrl={activeDocument.url} />
+                    ) : activeDocument && (activeDocument.name.toLowerCase().endsWith('.doc') || activeDocument.name.toLowerCase().endsWith('.docx')) ? (
+                        <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+                            <FileText className="h-16 w-16 text-blue-500" />
+                            <p className="text-lg font-semibold">{activeDocument.name}</p>
+                            <p className="text-sm text-muted-foreground">Word documents cannot be previewed in the browser.</p>
+                            <a
+                                href={activeDocument.url}
+                                download={activeDocument.name}
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                            >
+                                <Download className="h-4 w-4" />
+                                Download to View
+                            </a>
+                        </div>
                     ) : activeDocument ? (
-                        <img 
-                            src={activeDocument.url} 
-                            alt="Document Preview" 
-                            className="w-full h-auto object-contain max-h-[70vh] rounded-lg" 
+                        <img
+                            src={activeDocument.url}
+                            alt="Document Preview"
+                            className="w-full h-auto object-contain max-h-[70vh] rounded-lg"
                         />
                     ) : null}
                 </div>
