@@ -859,6 +859,11 @@ export default function VerificationPage() {
   }
 
   if (statusData?.isVerified) {
+    // refreshAuth() fires in the useEffect above but is async.
+    // Wait for user.isVerified to reflect the fresh token before allowing navigation,
+    // otherwise ProtectedRoute will bounce the user back immediately.
+    const tokenSynced = !!user?.isVerified;
+
     return (
       <div className="container mx-auto px-4 py-16 max-w-2xl text-center">
         <Card className="border-2 border-primary/50">
@@ -866,9 +871,21 @@ export default function VerificationPage() {
             <UserCheck className="h-12 w-12 text-primary mx-auto" />
             <h1 className="text-2xl font-bold">Account Fully Verified!</h1>
             <p className="text-muted-foreground">You now have full access to all platform features.</p>
-            <Button onClick={() => setLocation('/jobs')}>
-              Go to Dashboard
-              <ArrowRight className="h-4 w-4 ml-2" />
+            <Button
+              onClick={() => setLocation('/jobs')}
+              disabled={!tokenSynced}
+            >
+              {!tokenSynced ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Preparing access…
+                </>
+              ) : (
+                <>
+                  Go to Dashboard
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </>
+              )}
             </Button>
           </CardContent>
         </Card>
