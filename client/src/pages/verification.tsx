@@ -505,9 +505,9 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
             <Button
               type="submit"
               className="w-full h-12"
-              disabled={isApproved || isPending || identityMutation.isPending || !form.getValues('idDocument') || !form.getValues('selfiePhoto')}
+              disabled={isApproved || isPending || identityMutation.isPending || form.formState.isSubmitting || !form.getValues('idDocument') || !form.getValues('selfiePhoto')}
             >
-              {identityMutation.isPending ? (
+              {(identityMutation.isPending || form.formState.isSubmitting) ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Submitting Identity...
@@ -768,9 +768,9 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
             <Button
               type="submit"
               className="w-full h-12"
-              disabled={!isIdentityApproved || isApproved || isPending || fileList.length === 0 || documentMutation.isPending}
+              disabled={!isIdentityApproved || isApproved || isPending || fileList.length === 0 || documentMutation.isPending || form.formState.isSubmitting}
             >
-              {documentMutation.isPending ? (
+              {(documentMutation.isPending || form.formState.isSubmitting) ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Submitting Documents...
