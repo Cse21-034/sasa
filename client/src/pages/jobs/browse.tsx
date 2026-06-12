@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, Clock, Search, SlidersHorizontal, X, Filter } from 'lucide-react';
+import { MapPin, Clock, Search, SlidersHorizontal, X, Filter, LayoutGrid, List, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Link } from 'wouter';
@@ -8,13 +8,25 @@ import { useAuth } from '@/lib/auth-context';
 import type { Job, Category } from '@shared/schema';
 import { apiRequest } from '@/lib/queryClient';
 
+type ViewMode = 'grid' | 'list';
+
+function getInitialView(): ViewMode {
+  try { return (localStorage.getItem('jobsViewMode') as ViewMode) || 'grid'; } catch { return 'grid'; }
+}
+
 export default function BrowseJobs() {
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery]         = useState('');
+  const [searchQuery, setSearchQuery]           = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [sortBy, setSortBy]                   = useState<string>('recent');
-  const [statusFilter, setStatusFilter]       = useState<string>('all');
+  const [sortBy, setSortBy]                     = useState<string>('recent');
+  const [statusFilter, setStatusFilter]         = useState<string>('all');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [viewMode, setViewMode]                 = useState<ViewMode>(getInitialView);
+
+  const changeView = (mode: ViewMode) => {
+    setViewMode(mode);
+    try { localStorage.setItem('jobsViewMode', mode); } catch {}
+  };
 
   const { data: jobs, isLoading: jobsLoading } = useQuery<(Job & { requester: any; category: Category })[]>({
     queryKey: ['jobs', { category: selectedCategory, sort: sortBy }],
@@ -29,7 +41,6 @@ export default function BrowseJobs() {
 
   const { data: categories } = useQuery<Category[]>({ queryKey: ['/api/categories'] });
 
-  // Provider: fetch only approved categories to show in filter
   const { data: approvedCategoryData } = useQuery<{ approvedCategories: number[] }>({
     queryKey: ['/api/provider/approved-categories'],
     enabled: user?.role === 'provider',
@@ -37,8 +48,6 @@ export default function BrowseJobs() {
   const approvedCategoryIds = approvedCategoryData?.approvedCategories ?? [];
 
   const allCategoryChips = [{ id: 'all', name: 'All' }, ...(categories ?? [])];
-
-  // For providers: only show categories they're approved for
   const visibleCategoryChips = user?.role === 'provider'
     ? allCategoryChips.filter(c => c.id === 'all' || approvedCategoryIds.includes(Number(c.id)))
     : allCategoryChips;
@@ -83,11 +92,29 @@ export default function BrowseJobs() {
     { value: 'distance', label: 'Nearest first' },
   ];
 
+  // ── Reusable status pill ─────────────────────────────────────────────────────
+  function StatusPill({ status, urgency }: { status: string; urgency: string }) {
+    return (
+      <div className="flex items-center gap-1 flex-wrap">
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+          status === 'open'      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' :
+          status === 'completed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' :
+                                   'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
+        }`}>
+          {status === 'open' ? '● Open' : status === 'completed' ? '✓ Done' : '↻ Active'}
+        </span>
+        {urgency === 'emergency' && (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400">
+            Urgent
+          </span>
+        )}
+      </div>
+    );
+  }
+
   // ── Shared filter panel ──────────────────────────────────────────────────────
   const FilterPanel = () => (
     <div className="space-y-6">
-
-      {/* Status */}
       <div>
         <h3 className="font-bold text-base mb-2">Status</h3>
         <div className="space-y-1">
@@ -106,7 +133,6 @@ export default function BrowseJobs() {
         </div>
       </div>
 
-      {/* Sort — provider only */}
       {user?.role === 'provider' && (
         <div>
           <h3 className="font-bold text-base mb-2">Sort By</h3>
@@ -126,7 +152,6 @@ export default function BrowseJobs() {
         </div>
       )}
 
-      {/* Category */}
       {visibleCategoryChips.length > 1 && (
         <div>
           <h3 className="font-bold text-base mb-2">Category</h3>
@@ -180,9 +205,10 @@ export default function BrowseJobs() {
         </div>
       </div>
 
-      {/* ── Search bar ── */}
+      {/* ── Search bar + view toggle ── */}
       <div className="border-b border-border/40 bg-card px-4 py-3 sticky top-14 md:top-20 z-10">
         <div className="max-w-7xl mx-auto flex items-center gap-2">
+          {/* Search input */}
           <div className="relative flex-1 max-w-xl">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <input
@@ -199,6 +225,33 @@ export default function BrowseJobs() {
               </button>
             )}
           </div>
+
+          {/* View toggle — grid / list */}
+          <div className="flex items-center rounded-lg border border-border/60 bg-background overflow-hidden flex-shrink-0 h-10">
+            <button
+              onClick={() => changeView('grid')}
+              title="Grid view"
+              className={`h-full w-10 flex items-center justify-center transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => changeView('list')}
+              title="List view"
+              className={`h-full w-10 flex items-center justify-center transition-colors border-l border-border/60 ${
+                viewMode === 'list'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+
           {/* Mobile filter trigger */}
           <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
             <SheetTrigger asChild>
@@ -220,9 +273,9 @@ export default function BrowseJobs() {
       </div>
 
       {/* ── Body ── */}
-      <div className="max-w-7xl mx-auto px-4 py-8 pb-28 flex gap-10 items-start">
+      <div className="max-w-7xl mx-auto px-4 py-6 pb-28 flex gap-10 items-start">
 
-        {/* Left sidebar */}
+        {/* Left sidebar — desktop only */}
         <aside className="hidden md:block w-56 flex-shrink-0 sticky top-36">
           <h2 className="text-2xl font-bold mb-6">Filters</h2>
           <FilterPanel />
@@ -231,13 +284,13 @@ export default function BrowseJobs() {
         {/* Main content */}
         <div className="flex-1 min-w-0">
           {!jobsLoading && (
-            <p className="text-sm text-muted-foreground mb-5">
+            <p className="text-xs text-muted-foreground mb-4">
               {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} found
             </p>
           )}
 
-          {/* Skeletons */}
-          {jobsLoading && (
+          {/* ── Loading skeletons ── */}
+          {jobsLoading && viewMode === 'grid' && (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
               {[1,2,3,4,5,6].map((i) => (
                 <div key={i} className="rounded-xl border border-border/40 p-4 space-y-2">
@@ -249,43 +302,39 @@ export default function BrowseJobs() {
               ))}
             </div>
           )}
+          {jobsLoading && viewMode === 'list' && (
+            <div className="border rounded-xl overflow-hidden divide-y divide-border/40">
+              {[1,2,3,4,5].map((i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+                  <Skeleton className="w-1 h-10 rounded-full flex-shrink-0" />
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-3/4 mb-2" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                  <Skeleton className="h-5 w-14 rounded-full flex-shrink-0" />
+                </div>
+              ))}
+            </div>
+          )}
 
-          {/* Job grid */}
-          {!jobsLoading && filteredJobs.length > 0 && (
+          {/* ── GRID VIEW ── */}
+          {!jobsLoading && filteredJobs.length > 0 && viewMode === 'grid' && (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
               {filteredJobs.map((job) => (
                 <Link key={job.id} href={`/jobs/${job.id}`}>
                   <a data-testid={`card-job-${job.id}`}>
                     <div className="rounded-2xl border border-border/50 bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.18),0_8px_16px_rgba(0,0,0,0.10)] hover:scale-[1.03] hover:-translate-y-1 transition-all duration-200 overflow-hidden will-change-transform">
                       <div className="p-4 space-y-2.5">
-                        {/* Status + urgency */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            job.status === 'open'      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' :
-                            job.status === 'completed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' :
-                                                         'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
-                          }`}>
-                            {job.status === 'open' ? '● Open' : job.status === 'completed' ? '✓ Done' : '↻ Active'}
-                          </span>
-                          {job.urgency === 'emergency' && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400">
-                              Urgent
-                            </span>
-                          )}
-                        </div>
-                        {/* Title */}
+                        <StatusPill status={job.status} urgency={job.urgency} />
                         <h3 className="font-semibold text-foreground text-sm leading-snug line-clamp-2">
                           {job.title}
                         </h3>
-                        {/* Category + date */}
                         <p className="text-xs text-muted-foreground">
                           {job.category?.name || 'General'} · {new Date(job.createdAt).toLocaleDateString()}
                         </p>
-                        {/* Description */}
                         <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                           {job.description}
                         </p>
-                        {/* Footer */}
                         <div className="border-t border-border/20 pt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1 min-w-0">
                             <MapPin className="h-3 w-3 flex-shrink-0" />
@@ -306,7 +355,59 @@ export default function BrowseJobs() {
             </div>
           )}
 
-          {/* Empty state */}
+          {/* ── LIST VIEW ── */}
+          {!jobsLoading && filteredJobs.length > 0 && viewMode === 'list' && (
+            <div className="border border-border/50 rounded-xl overflow-hidden bg-card divide-y divide-border/30">
+              {filteredJobs.map((job) => (
+                <Link key={job.id} href={`/jobs/${job.id}`}>
+                  <a
+                    data-testid={`card-job-${job.id}`}
+                    className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 active:bg-muted/50 transition-colors"
+                  >
+                    {/* Status accent bar */}
+                    <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
+                      job.status === 'open'      ? 'bg-emerald-500' :
+                      job.status === 'completed' ? 'bg-blue-500' :
+                                                   'bg-amber-400'
+                    }`} />
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className="font-semibold text-sm leading-tight truncate flex-1">{job.title}</p>
+                        <StatusPill status={job.status} urgency={job.urgency} />
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                        <span>{job.category?.name || 'General'}</span>
+                        <span>·</span>
+                        <span className="flex items-center gap-0.5">
+                          <MapPin className="h-3 w-3" />
+                          {job.address || job.city || 'Location TBD'}
+                        </span>
+                        <span>·</span>
+                        <span>{new Date(job.createdAt).toLocaleDateString([], { day: 'numeric', month: 'short' })}</span>
+                        {job.expiryDate && new Date(job.expiryDate).getTime() - Date.now() < 86400000 && (
+                          <>
+                            <span>·</span>
+                            <span className="text-red-500 font-medium flex items-center gap-0.5">
+                              <Clock className="h-3 w-3" /> Expires soon
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <p className="text-[12px] text-muted-foreground/70 mt-1 line-clamp-1 leading-snug">
+                        {job.description}
+                      </p>
+                    </div>
+
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/40 flex-shrink-0" />
+                  </a>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {/* ── Empty state ── */}
           {!jobsLoading && filteredJobs.length === 0 && (
             <div className="border-2 border-dashed border-border/40 rounded-xl p-14 text-center">
               <div className="w-14 h-14 rounded-xl bg-neutral-900 flex items-center justify-center mx-auto mb-4">
@@ -329,7 +430,6 @@ export default function BrowseJobs() {
               )}
             </div>
           )}
-
         </div>
       </div>
     </div>
