@@ -257,8 +257,8 @@ const useVerificationSubmission = (type: 'identity' | 'document') => {
         setUser(data.user);
       }
       
-      // Invalidate query to update UI status
-      queryClient.invalidateQueries({ queryKey: ['verificationStatus', user?.id] });
+      // Force immediate refetch so UI updates without manual refresh
+      queryClient.refetchQueries({ queryKey: ['verificationStatus', user?.id] });
     },
     onError: (error: any) => {
       const message = error.message.startsWith('400:') 
@@ -290,6 +290,7 @@ const fileToBase64 = (file: File): Promise<string> => {
 
 const IdentityVerification = ({ statusData }: { statusData: any }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const form = useForm<IdentityUploadForm>({
     resolver: zodResolver(identityUploadSchema),
   });
@@ -297,9 +298,14 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
   const identityMutation = useVerificationSubmission('identity');
   const [photoPreviews, setPhotoPreviews] = useState({ id: '', selfie: '' });
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const isPending = statusData.identitySubmission?.status === 'pending';
   const isApproved = statusData.isIdentityVerified;
+  const isRejected = statusData.identitySubmission?.status === 'rejected';
+
+  // True for the entire duration: Cloudinary upload + mutation request
+  const isSubmitting = isUploading || identityMutation.isPending || form.formState.isSubmitting;
 
   const handleFileChange = async (file: File | undefined, field: 'idDocument' | 'selfiePhoto') => {
     if (file) {
@@ -309,9 +315,7 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
       }
       form.clearErrors(field);
       form.setValue(field, file as any, { shouldValidate: true });
-      
       try {
-        // Upload to Cloudinary and get preview URL
         const result = await uploadToCloudinary(file, {
           folder: `identity-verification/${field}`,
           width: 600,
@@ -322,8 +326,6 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
         });
         setPhotoPreviews(prev => ({ ...prev, [field === 'idDocument' ? 'id' : 'selfie']: result.url }));
       } catch (error) {
-        console.error('Preview upload failed:', error);
-        // Fallback to base64 preview
         const base64 = await fileToBase64(file);
         setPhotoPreviews(prev => ({ ...prev, [field === 'idDocument' ? 'id' : 'selfie']: base64 }));
       }
@@ -331,8 +333,8 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
   };
 
   const onSubmit = async (data: IdentityUploadForm) => {
+    setIsUploading(true);
     try {
-      // Upload both files to Cloudinary in parallel
       const [idResult, selfieResult] = await Promise.all([
         uploadToCloudinary(data.idDocument, {
           folder: 'identity-verification/national_id',
@@ -345,66 +347,25 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
           format: 'auto',
         }),
       ]);
-
-      const documents = [
-        { name: 'national_id', url: idResult.url },
-        { name: 'selfie_photo', url: selfieResult.url },
-      ];
-      identityMutation.mutate({ documents });
-    } catch (error: any) {
-      toast({
-        title: 'Upload failed',
-        description: error.message,
-        variant: 'destructive',
+      identityMutation.mutate({
+        documents: [
+          { name: 'national_id', url: idResult.url },
+          { name: 'selfie_photo', url: selfieResult.url },
+        ],
       });
+    } catch (error: any) {
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsUploading(false);
     }
   };
-  
-  const StatusAlert = () => {
-      if (isApproved) {
-        return (
-          <Alert className="bg-success/10 border-success/20">
-            <UserCheck className="h-4 w-4 text-success" />
-            <AlertTitle className="text-success">Identity Approved</AlertTitle>
-            <AlertDescription>
-              {user?.role === 'requester' ? 'You are fully verified. Proceed to dashboard.' : 'Phase 1: Identity is verified.'}
-            </AlertDescription>
-          </Alert>
-        );
-      }
-      if (isPending) {
-        return (
-          <Alert className="bg-warning/10 border-warning/20">
-            <Loader2 className="h-4 w-4 text-warning animate-spin" />
-            <AlertTitle className="text-warning">Identity Verification Pending</AlertTitle>
-            <AlertDescription>
-              Your submission is under review {user?.role === 'requester' ? ' (auto-review in progress).' : 'by the admin.'} Please check back later.
-            </AlertDescription>
-          </Alert>
-        );
-      }
-      
-      const isRejected = statusData.identitySubmission?.status === 'rejected';
-      if (isRejected) {
-          return (
-            <Alert variant="destructive">
-                <XCircle className="h-4 w-4" />
-                <AlertTitle>Identity Verification Rejected</AlertTitle>
-                <AlertDescription>
-                    {statusData.identitySubmission?.rejectionReason || 'Your submission was rejected. Please resubmit clear photos.'}
-                </AlertDescription>
-            </Alert>
-          );
-      }
-      return null;
-  }
 
   return (
-    <Card className="">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-            {user?.role === 'requester' ? <UserCheck className="h-6 w-6" /> : <Wrench className="h-6 w-6" />}
-            {user?.role === 'requester' ? 'Full Verification' : 'Phase 1: Identity Check'}
+          {user?.role === 'requester' ? <UserCheck className="h-6 w-6" /> : <Wrench className="h-6 w-6" />}
+          {user?.role === 'requester' ? 'Full Verification' : 'Phase 1: Identity Check'}
         </CardTitle>
         <CardDescription>
           Upload your National ID and a selfie for identity verification.
@@ -412,112 +373,154 @@ const IdentityVerification = ({ statusData }: { statusData: any }) => {
           {user?.role !== 'requester' && ' This is the first step before document verification.'}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <StatusAlert />
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              {/* ID Upload */}
-              <FormField
-                control={form.control}
-                name="idDocument"
-                render={({ field: { value, onChange, ...fieldProps } }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center">
-                      Valid Government ID <span className="text-destructive ml-1">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <div className={`flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg cursor-pointer transition-all ${!isApproved && !isPending ? 'hover:border-primary/50' : ''}`}>
-                        {photoPreviews.id ? (
-                          <img src={photoPreviews.id} alt="ID Preview" className="w-full h-24 object-cover rounded" />
-                        ) : (
-                          <FileText className="h-10 w-10 text-muted-foreground mb-2" />
-                        )}
-                        <p className="text-xs text-muted-foreground text-center">
-                            Upload a clear photo of your ID.
-                        </p>
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleFileChange(e.target.files?.[0], 'idDocument')}
-                          {...fieldProps}
-                        />
-                         <Button type="button" variant="outline" size="sm" className="mt-2" 
-                            onClick={() => (document.querySelector(`input[name=\"idDocument\"]`) as HTMLInputElement)?.click()}
-                            disabled={isApproved || isPending}
-                        >
-                             {photoPreviews.id ? 'Change File' : 'Select File'}
-                         </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
-              {/* Selfie — camera only, no file picker */}
-              <FormField
-                control={form.control}
-                name="selfiePhoto"
-                render={({ field: { onChange } }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center">
-                      Selfie Photo <span className="text-destructive ml-1">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <div className={`flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg transition-all ${!isApproved && !isPending ? 'hover:border-primary/50' : ''}`}>
-                        {photoPreviews.selfie ? (
-                          <img src={photoPreviews.selfie} alt="Selfie Preview" className="w-full h-24 object-cover rounded mb-2" />
-                        ) : (
-                          <Camera className="h-10 w-10 text-muted-foreground mb-2" />
-                        )}
-                        <p className="text-xs text-muted-foreground text-center mb-2">
-                          Hold your ID next to your face and look into the camera.
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={isApproved || isPending}
-                          onClick={() => setCameraOpen(true)}
-                        >
-                          <Camera className="h-4 w-4 mr-1" />
-                          {photoPreviews.selfie ? 'Retake Selfie' : 'Take Selfie'}
-                        </Button>
-                        <CameraCaptureDialog
-                          open={cameraOpen}
-                          onClose={() => setCameraOpen(false)}
-                          onCapture={(file) => {
-                            onChange(file);
-                            handleFileChange(file, 'selfiePhoto');
-                          }}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <Button
-              type="submit"
-              className="w-full h-12"
-              disabled={isApproved || isPending || identityMutation.isPending || form.formState.isSubmitting || !form.getValues('idDocument') || !form.getValues('selfiePhoto')}
-            >
-              {(identityMutation.isPending || form.formState.isSubmitting) ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting Identity...
-                </>
-              ) : (
-                'Submit for Identity Verification'
-              )}
-            </Button>
-          </form>
-        </Form>
+      <CardContent className="space-y-4">
+
+        {/* ── Status alerts (always visible) ── */}
+        {isApproved && (
+          <Alert className="bg-success/10 border-success/20">
+            <UserCheck className="h-4 w-4 text-success" />
+            <AlertTitle className="text-success">Identity Approved</AlertTitle>
+            <AlertDescription>
+              {user?.role === 'requester' ? 'You are fully verified. Proceed to dashboard.' : 'Phase 1: Identity is verified. Proceed to Phase 2.'}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {isPending && !isApproved && (
+          <Alert className="bg-warning/10 border-warning/20">
+            <Loader2 className="h-4 w-4 text-warning animate-spin" />
+            <AlertTitle className="text-warning">Identity Verification Pending</AlertTitle>
+            <AlertDescription>
+              Your submission is under review {user?.role === 'requester' ? '(auto-review in progress).' : 'by the admin.'} Please check back later.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {isRejected && !isPending && !isApproved && (
+          <Alert variant="destructive">
+            <XCircle className="h-4 w-4" />
+            <AlertTitle>Identity Verification Rejected</AlertTitle>
+            <AlertDescription>
+              {statusData.identitySubmission?.rejectionReason || 'Your submission was rejected. Please resubmit clear photos.'}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* ── Uploading / submitting overlay — hides form completely ── */}
+        {isSubmitting && (
+          <div className="flex flex-col items-center justify-center py-10 gap-4 rounded-lg border-2 border-dashed border-primary/30 bg-muted/30">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="font-semibold text-lg">
+              {isUploading ? 'Uploading photos…' : 'Submitting for review…'}
+            </p>
+            <p className="text-sm text-muted-foreground text-center max-w-xs">
+              Please wait and do not close this page. This may take a few seconds.
+            </p>
+          </div>
+        )}
+
+        {/* ── Upload form — only shown when not submitting, pending, or approved ── */}
+        {!isSubmitting && !isPending && !isApproved && (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+
+                {/* ID Upload */}
+                <FormField
+                  control={form.control}
+                  name="idDocument"
+                  render={({ field: { value, onChange, ...fieldProps } }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center">
+                        Valid Government ID <span className="text-destructive ml-1">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg cursor-pointer transition-all hover:border-primary/50">
+                          {photoPreviews.id ? (
+                            <img src={photoPreviews.id} alt="ID Preview" className="w-full h-24 object-cover rounded" />
+                          ) : (
+                            <FileText className="h-10 w-10 text-muted-foreground mb-2" />
+                          )}
+                          <p className="text-xs text-muted-foreground text-center">Upload a clear photo of your ID.</p>
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleFileChange(e.target.files?.[0], 'idDocument')}
+                            {...fieldProps}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => (document.querySelector(`input[name="idDocument"]`) as HTMLInputElement)?.click()}
+                          >
+                            {photoPreviews.id ? 'Change File' : 'Select File'}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Selfie — camera only */}
+                <FormField
+                  control={form.control}
+                  name="selfiePhoto"
+                  render={({ field: { onChange } }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center">
+                        Selfie Photo <span className="text-destructive ml-1">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg transition-all hover:border-primary/50">
+                          {photoPreviews.selfie ? (
+                            <img src={photoPreviews.selfie} alt="Selfie Preview" className="w-full h-24 object-cover rounded mb-2" />
+                          ) : (
+                            <Camera className="h-10 w-10 text-muted-foreground mb-2" />
+                          )}
+                          <p className="text-xs text-muted-foreground text-center mb-2">
+                            Hold your ID next to your face and look into the camera.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCameraOpen(true)}
+                          >
+                            <Camera className="h-4 w-4 mr-1" />
+                            {photoPreviews.selfie ? 'Retake Selfie' : 'Take Selfie'}
+                          </Button>
+                          <CameraCaptureDialog
+                            open={cameraOpen}
+                            onClose={() => setCameraOpen(false)}
+                            onCapture={(file) => {
+                              onChange(file);
+                              handleFileChange(file, 'selfiePhoto');
+                            }}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-12"
+                disabled={!form.getValues('idDocument') || !form.getValues('selfiePhoto')}
+              >
+                Submit for Identity Verification
+              </Button>
+            </form>
+          </Form>
+        )}
+
       </CardContent>
     </Card>
   );
