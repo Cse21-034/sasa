@@ -837,7 +837,6 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
 // 3. MAIN VERIFICATION PAGE
 export default function VerificationPage() {
   const { user, refreshAuth } = useAuth();
-  const [, setLocation] = useLocation();
   const { data: statusData, isLoading: isStatusLoading } = useVerificationStatus();
   const [navigating, setNavigating] = useState(false);
 
@@ -853,22 +852,8 @@ export default function VerificationPage() {
     if (needsRefresh) refreshAuth();
   }, [statusData, user, refreshAuth]);
 
-  // Navigate only after React has committed the refreshAuth() state update.
-  useEffect(() => {
-    if (navigating && user?.isVerified) {
-      setLocation('/jobs');
-    }
-  }, [navigating, user?.isVerified, setLocation]);
-
-  // Fallback: if JWT sync takes >3 s and DB confirms verified, navigate anyway.
-  useEffect(() => {
-    if (!navigating) return;
-    const timer = setTimeout(() => {
-      if (statusData?.isVerified) setLocation('/jobs');
-      else setNavigating(false); // reset — something unexpected went wrong
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [navigating, statusData?.isVerified, setLocation]);
+  // No navigation effects needed — the button awaits refreshAuth() then does a
+  // hard navigation so the page re-initialises from the fresh localStorage token.
 
   if (isStatusLoading || !user) {
     return (
@@ -888,15 +873,12 @@ export default function VerificationPage() {
             <p className="text-muted-foreground">You now have full access to all platform features.</p>
             <Button
               disabled={navigating}
-              onClick={() => {
-                if (user?.isVerified) {
-                  // WebSocket already synced the JWT — navigate straight away
-                  setLocation('/jobs');
-                  return;
-                }
-                // JWT still stale — refresh it; useEffect + fallback timer handle navigation
+              onClick={async () => {
                 setNavigating(true);
-                refreshAuth();
+                // Await so the fresh token (isVerified:true) lands in localStorage
+                // before the hard navigation re-reads it.
+                await refreshAuth();
+                window.location.href = '/jobs';
               }}
             >
               {navigating ? (
