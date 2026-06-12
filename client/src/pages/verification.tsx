@@ -594,32 +594,64 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
     fields.map(f => `${f}:\n${'_'.repeat(40)}\n`).join('\n') +
     `\n${'='.repeat(50)}\nDeclaration: I confirm that the information provided above is true and accurate.\n\nSignature: ${'_'.repeat(30)}   Date: ${'_'.repeat(15)}\n\nSubmit this completed form as part of your JobTradeSasa verification.\n`;
 
-  const artisanDocuments: DocEntry[] = [
-    { name: 'Trade Certificate', template: buildTemplate('Trade Certificate', ['Full Name', 'Trade / Skill', 'Issuing Institution', 'Certificate Number', 'Date Issued', 'Expiry Date (if any)']) },
-    { name: 'Work Portfolio', template: buildTemplate('Work Portfolio', ['Full Name', 'Trade / Specialisation', 'Years of Experience', 'Project 1 – Description & Client', 'Project 2 – Description & Client', 'Project 3 – Description & Client', 'References Contact']) },
-    { name: 'Trade License', template: buildTemplate('Trade License', ['Full Name', 'License Number', 'Issuing Authority', 'License Type', 'Date Issued', 'Expiry Date']) },
-    { name: 'Insurance Certificate', template: buildTemplate('Insurance Certificate', ['Policy Holder Name', 'Insurance Provider', 'Policy Number', 'Type of Cover', 'Coverage Amount (BWP)', 'Effective Date', 'Expiry Date']) },
-    { name: 'References', template: buildTemplate('Professional References', ['Reference 1 – Full Name', 'Reference 1 – Company', 'Reference 1 – Phone', 'Reference 1 – Email', 'Reference 1 – Relationship', 'Reference 2 – Full Name', 'Reference 2 – Company', 'Reference 2 – Phone', 'Reference 2 – Email']) },
-    { name: 'Safety Certificate', optional: true, template: buildTemplate('Safety Certificate', ['Full Name', 'Certificate Type', 'Issuing Body', 'Certificate Number', 'Date Issued', 'Expiry Date']) },
-    { name: 'Equipment Certificate', optional: true, template: buildTemplate('Equipment Certificate', ['Full Name', 'Equipment Type / Name', 'Certification Body', 'Certificate Number', 'Date Issued', 'Expiry Date']) },
-    { name: 'Background Check (Self-declared)', template: buildTemplate('Background Check Declaration', ['Full Name', 'National ID Number', 'Date of Birth', 'Physical Address', 'Have you been convicted of a crime? (Yes/No)', 'If Yes, provide details', 'Previous Employer 1', 'Previous Employer 2']) },
-    { name: 'Bank Details (Proof)', template: buildTemplate('Bank Details', ['Account Holder Name', 'Bank Name', 'Branch', 'Account Number', 'Account Type (Savings / Current)', 'SWIFT/BIC Code (if applicable)']) },
+  const verificationDocuments: DocEntry[] = [
+    {
+      name: 'Omang ID Copy',
+      template: buildTemplate('Omang ID Copy', [
+        'Full Name',
+        'Omang (National ID) Number',
+        'Date of Birth',
+        'Gender',
+        'Place of Issue',
+        'Date of Issue',
+        'Expiry Date',
+      ]),
+    },
+    {
+      name: 'Proof of Residence & Police Affidavit',
+      template: buildTemplate('Proof of Residence & Police Affidavit', [
+        'Full Name',
+        'Omang Number',
+        'Residential Address',
+        'Village / Town',
+        'District',
+        'Length of Stay at Current Address',
+        'Landlord Name (if renting)',
+        'Landlord Contact Number',
+        'Police Station Name',
+        'Affidavit Number',
+        'Date Sworn Before Commissioner of Oaths',
+        'Commissioner of Oaths Name & Stamp',
+      ]),
+    },
+    {
+      name: 'Police Clearance',
+      template: buildTemplate('Police Clearance Certificate', [
+        'Full Name',
+        'Omang Number',
+        'Date of Birth',
+        'Police Station Issued By',
+        'Certificate Number',
+        'Date Issued',
+        'Valid Until',
+      ]),
+    },
+    {
+      name: 'Kgotla Clearance',
+      template: buildTemplate('Kgotla Clearance Letter', [
+        'Full Name',
+        'Omang Number',
+        'Village / Ward',
+        'Kgotla Name',
+        "Kgosi / Headman's Name",
+        'Date Issued',
+        'Purpose of Clearance',
+        "Kgosi / Headman's Signature & Stamp",
+      ]),
+    },
   ];
 
-  const supplierDocuments: DocEntry[] = [
-    { name: 'Business Registration', template: buildTemplate('Business Registration', ['Company / Business Name', 'Registration Number', 'Date of Registration', 'Registering Authority', 'Business Type (Pty Ltd / Sole Trader / etc.)', 'Registered Address']) },
-    { name: 'Tax Compliance Certificate', template: buildTemplate('Tax Compliance Certificate', ['Company Name', 'Tax Identification Number (TIN)', 'Issuing Authority (BURS)', 'Certificate Number', 'Date Issued', 'Valid Until']) },
-    { name: 'Trading Licence', template: buildTemplate('Trading Licence', ['Business Name', 'Licence Number', 'Issuing Authority', 'Type of Trade', 'Date Issued', 'Expiry Date', 'Physical Business Address']) },
-    { name: 'Product Catalog / Price List', template: buildTemplate('Product Catalog & Price List', ['Company Name', 'Product/Service 1 – Name & Price (BWP)', 'Product/Service 2 – Name & Price (BWP)', 'Product/Service 3 – Name & Price (BWP)', 'Product/Service 4 – Name & Price (BWP)', 'Minimum Order Quantity', 'Delivery Terms', 'Valid Until']) },
-    { name: 'Quality Certificate', optional: true, template: buildTemplate('Quality Certificate', ['Company Name', 'Standard / Certification (e.g. ISO 9001)', 'Certifying Body', 'Certificate Number', 'Scope of Certification', 'Date Issued', 'Expiry Date']) },
-    { name: 'Insurance', template: buildTemplate('Business Insurance', ['Company Name', 'Insurer', 'Policy Number', 'Type of Cover', 'Coverage Amount (BWP)', 'Effective Date', 'Expiry Date']) },
-    { name: 'Bank Reference', template: buildTemplate('Bank Reference Letter', ['Company Name', 'Bank Name', 'Branch', 'Account Number', 'Account Type', 'Relationship Since (Year)', 'Bank Contact Person', 'Bank Contact Phone']) },
-    { name: 'Financial Statement', template: buildTemplate('Financial Statement Summary', ['Company Name', 'Financial Year End', 'Total Revenue (BWP)', 'Total Expenses (BWP)', 'Net Profit / Loss (BWP)', 'Total Assets (BWP)', 'Total Liabilities (BWP)', 'Auditor / Accountant Name']) },
-    { name: 'Company Profile', template: buildTemplate('Company Profile', ['Company Name', 'Founded Year', 'Number of Employees', 'Physical Address', 'Website / Social Media', 'Core Products / Services', 'Key Clients / Projects', 'Mission Statement']) },
-    { name: 'References', template: buildTemplate('Business References', ['Reference 1 – Company Name', 'Reference 1 – Contact Person', 'Reference 1 – Phone', 'Reference 1 – Email', 'Reference 2 – Company Name', 'Reference 2 – Contact Person', 'Reference 2 – Phone', 'Reference 2 – Email']) },
-  ];
-
-  const documentList = user?.role === 'provider' ? artisanDocuments : supplierDocuments;
+  const documentList = verificationDocuments;
 
   const downloadTemplate = (doc: DocEntry) => {
     const blob = new Blob([doc.template], { type: 'text/plain' });
@@ -697,7 +729,7 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
         <StatusAlert />
 
         <div className="p-4 bg-muted/50 rounded-lg border space-y-2">
-          <p className="font-semibold mb-3">Required Documents ({user?.role === 'provider' ? 'Artisans' : 'Organizations'})</p>
+          <p className="font-semibold mb-3">Required Documents</p>
           <p className="text-xs text-muted-foreground mb-3">Download each blank form, fill it in, then upload the completed version below.</p>
           {documentList.map((doc, index) => (
             <div key={index} className="flex items-center justify-between bg-background rounded-lg px-3 py-2 border">
@@ -726,13 +758,13 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* File Dropzone */}
             <FormItem>
-              <FormLabel>Upload Documents (PDF, JPG, PNG - Max 5MB each)</FormLabel>
+              <FormLabel>Upload Documents (PDF, DOC, DOCX, JPG, PNG - Max 5MB each)</FormLabel>
               <FormControl>
                 <div className={`border-2 border-dashed rounded-lg p-6 hover:border-primary/50 transition-colors cursor-pointer ${!isIdentityApproved || isApproved || isPending ? 'opacity-50 cursor-not-allowed' : ''}`}>
                   <input
                     type="file"
                     multiple
-                    accept="image/*,application/pdf"
+                    accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.doc,.docx"
                     onChange={handleFileChange}
                     className="hidden"
                     id="document-upload"

@@ -51,7 +51,11 @@ if (!CLOUD_NAME || !UPLOAD_PRESET) {
  * Determine if a file is a document (not an image)
  */
 function isDocumentFile(file: File): boolean {
-  const documentTypes = ['application/pdf'];
+  const documentTypes = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ];
   return documentTypes.includes(file.type);
 }
 
@@ -218,12 +222,14 @@ export function validateImageFile(file: File): { valid: boolean; error?: string 
     'image/webp',
     'image/bmp',
     'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ];
 
   if (!allowedTypes.includes(file.type)) {
     return {
       valid: false,
-      error: `Invalid file type. Allowed: JPG, PNG, GIF, WebP, BMP, PDF. Got: ${file.type}`,
+      error: `Invalid file type. Allowed: JPG, PNG, GIF, WebP, BMP, PDF, DOC, DOCX. Got: ${file.type}`,
     };
   }
 
