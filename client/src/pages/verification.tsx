@@ -626,80 +626,37 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
     }
   };
 
-  type DocEntry = { name: string; optional?: boolean; template: string };
-
-  const buildTemplate = (title: string, fields: string[]) =>
-    `${title.toUpperCase()}\nJobTradeSasa Verification Form\n${'='.repeat(50)}\n\n` +
-    fields.map(f => `${f}:\n${'_'.repeat(40)}\n`).join('\n') +
-    `\n${'='.repeat(50)}\nDeclaration: I confirm that the information provided above is true and accurate.\n\nSignature: ${'_'.repeat(30)}   Date: ${'_'.repeat(15)}\n\nSubmit this completed form as part of your JobTradeSasa verification.\n`;
+  // pdfUrl → download the branded PDF from /public/forms/
+  // no pdfUrl and no template → no download button shown
+  type DocEntry = { name: string; optional?: boolean; pdfUrl?: string };
 
   const verificationDocuments: DocEntry[] = [
     {
       name: 'Omang ID Copy',
-      template: buildTemplate('Omang ID Copy', [
-        'Full Name',
-        'Omang (National ID) Number',
-        'Date of Birth',
-        'Gender',
-        'Place of Issue',
-        'Date of Issue',
-        'Expiry Date',
-      ]),
+      // Official ID — no blank form needed; user uploads a photo of their Omang
     },
     {
       name: 'Proof of Residence & Police Affidavit',
-      template: buildTemplate('Proof of Residence & Police Affidavit', [
-        'Full Name',
-        'Omang Number',
-        'Residential Address',
-        'Village / Town',
-        'District',
-        'Length of Stay at Current Address',
-        'Landlord Name (if renting)',
-        'Landlord Contact Number',
-        'Police Station Name',
-        'Affidavit Number',
-        'Date Sworn Before Commissioner of Oaths',
-        'Commissioner of Oaths Name & Stamp',
-      ]),
+      pdfUrl: '/forms/Jobtradesasa_Affidavit_Proof_of_Residence.pdf',
     },
     {
       name: 'Police Clearance',
-      template: buildTemplate('Police Clearance Certificate', [
-        'Full Name',
-        'Omang Number',
-        'Date of Birth',
-        'Police Station Issued By',
-        'Certificate Number',
-        'Date Issued',
-        'Valid Until',
-      ]),
+      // Issued by police; no blank form to download
     },
     {
       name: 'Kgotla Clearance',
-      template: buildTemplate('Kgotla Clearance Letter', [
-        'Full Name',
-        'Omang Number',
-        'Village / Ward',
-        'Kgotla Name',
-        "Kgosi / Headman's Name",
-        'Date Issued',
-        'Purpose of Clearance',
-        "Kgosi / Headman's Signature & Stamp",
-      ]),
+      pdfUrl: '/forms/Jobtradesasa_Kgotla_Clearance.pdf',
     },
   ];
 
   const documentList = verificationDocuments;
 
-  const downloadTemplate = (doc: DocEntry) => {
-    const blob = new Blob([doc.template], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
+  const downloadForm = (doc: DocEntry) => {
+    if (!doc.pdfUrl) return;
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `${doc.name.replace(/[^a-z0-9]/gi, '_')}_Template.txt`;
+    a.href = doc.pdfUrl;
+    a.download = doc.pdfUrl.split('/').pop() || 'form.pdf';
     a.click();
-    URL.revokeObjectURL(url);
   };
 
   const StatusAlert = () => {
@@ -794,16 +751,18 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
                   <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded flex-shrink-0">Optional</span>
                 )}
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="flex-shrink-0 ml-2 gap-1.5 text-xs h-7"
-                onClick={() => downloadTemplate(doc)}
-              >
-                <Download className="h-3 w-3" />
-                Download Form
-              </Button>
+              {doc.pdfUrl && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="flex-shrink-0 ml-2 gap-1.5 text-xs h-7"
+                  onClick={() => downloadForm(doc)}
+                >
+                  <Download className="h-3 w-3" />
+                  Download Form
+                </Button>
+              )}
             </div>
           ))}
         </div>
