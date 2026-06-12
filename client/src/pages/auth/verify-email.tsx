@@ -14,7 +14,7 @@ export default function VerifyEmail() {
   const searchParams = new URLSearchParams(searchString);
   const userId = searchParams.get('userId');
   
-  const { user, setUser } = useAuth();
+  const { user, setUser, refreshAuth } = useAuth();
   const { toast } = useToast();
   const [code, setCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
@@ -34,23 +34,30 @@ export default function VerifyEmail() {
 
     setIsVerifying(true);
     try {
-      await apiRequest('POST', '/api/auth/verify-email', {
+      const res = await apiRequest('POST', '/api/auth/verify-email', {
         userId: effectiveUserId,
         code,
       });
+      const data = await res.json();
+
+      // Save fresh token + user so JWT claims are up to date immediately
+      if (data.token && data.user) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setUser(data.user);
+      } else if (user) {
+        const updatedUser = { ...user, isEmailVerified: true };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        refreshAuth(); // pull a fresh token since the server didn't return one
+      }
 
       toast({
         title: 'Email verified!',
         description: 'Your email has been verified successfully.',
       });
 
-      if (user) {
-        const updatedUser = { ...user, isEmailVerified: true };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        setUser(updatedUser);
-      }
-
-      setLocation(user?.role === 'provider' ? '/dashboard' : '/jobs');
+      setLocation('/verification');
     } catch (error: any) {
       let message = error.message || 'Verification failed';
       if (message.includes(':')) {

@@ -66,7 +66,7 @@ const categoryVerificationRequestSchema = z.object({
 type CategoryVerificationRequestForm = z.infer<typeof categoryVerificationRequestSchema>;
 
 export default function Profile() {
-  const { user, setUser } = useAuth();
+  const { user, setUser, refreshAuth } = useAuth();
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { subscribeToPushNotifications, unsubscribeFromPushNotifications } = usePushNotification();
@@ -258,6 +258,7 @@ export default function Profile() {
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
       localStorage.setItem('i18nextLng', updatedUser.preferredLanguage);
+      refreshAuth(); // re-issue fresh JWT in case email or role-adjacent fields changed
       queryClient.invalidateQueries({ queryKey: ['/api/provider/profile'] });
       toast({
         title: t('Profile updated'),

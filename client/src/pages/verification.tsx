@@ -791,26 +791,22 @@ const DocumentVerification = ({ statusData }: { statusData: any }) => {
 
 // 3. MAIN VERIFICATION PAGE
 export default function VerificationPage() {
-  const { user, setUser } = useAuth();
+  const { user, refreshAuth } = useAuth();
   const [, setLocation] = useLocation();
   const { data: statusData, isLoading: isStatusLoading } = useVerificationStatus();
 
   const isProviderOrSupplier = user?.role === 'provider' || user?.role === 'supplier';
 
-  // Sync auth context when DB confirms verification — prevents ProtectedRoute
-  // from redirecting back here when the user clicks "Go to Dashboard"
+  // When DB status is ahead of the local JWT (e.g. admin just approved),
+  // call refreshAuth() to re-issue a fresh token from the server so the
+  // user can immediately access protected routes without logging out.
   useEffect(() => {
     if (!statusData || !user) return;
-    if (statusData.isVerified && !user.isVerified) {
-      const updated = { ...user, isVerified: true, isIdentityVerified: true };
-      localStorage.setItem('user', JSON.stringify(updated));
-      setUser(updated);
-    } else if (statusData.isIdentityVerified && !user.isIdentityVerified) {
-      const updated = { ...user, isIdentityVerified: true };
-      localStorage.setItem('user', JSON.stringify(updated));
-      setUser(updated);
-    }
-  }, [statusData, user, setUser]);
+    const needsRefresh =
+      (statusData.isVerified && !user.isVerified) ||
+      (statusData.isIdentityVerified && !user.isIdentityVerified);
+    if (needsRefresh) refreshAuth();
+  }, [statusData, user, refreshAuth]);
 
   if (isStatusLoading || !user) {
     return (

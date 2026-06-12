@@ -4,12 +4,26 @@ import { ZodError } from 'zod';
 import { createUserRequestSchema } from '@shared/schema';
 import { storage } from '../storage';
 import { companyService } from '../services/company.service';
-import { generateToken } from '../middleware/auth';
+import { generateToken, authMiddleware, type AuthRequest } from '../middleware/auth';
 import { emailService, generateVerificationCode } from '../services/email.service';
 import { cacheService } from '../services/cache.service';
 import { EmailQueueService } from '../services/email-queue.service';
 
 export function registerAuthRoutes(app: Express): void {
+
+  // Refresh token from current DB state — called whenever client detects stale auth
+  app.get('/api/auth/me', authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUser(req.user!.id);
+      if (!user) return res.status(404).json({ message: 'User not found' });
+      const { passwordHash: _, ...userWithoutPassword } = user;
+      const newToken = generateToken(userWithoutPassword);
+      return res.json({ user: userWithoutPassword, token: newToken });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || 'Failed to refresh token' });
+    }
+  });
+
   app.post('/api/auth/signup', async (req, res) => {
     try {
       const rawValidatedData = createUserRequestSchema.parse(req.body);
@@ -256,11 +270,16 @@ export function registerAuthRoutes(app: Express): void {
       
       const user = await storage.getUser(userId);
       if (user) {
-        // 🚀 Queue welcome email asynchronously
         EmailQueueService.queueWelcomeEmail(user.email, user.name)
           .catch(err => console.error('Failed to queue welcome email:', err));
+        const { passwordHash: _, ...userWithoutPassword } = user;
+        return res.json({
+          message: 'Email verified successfully',
+          user: userWithoutPassword,
+          token: generateToken(userWithoutPassword),
+        });
       }
-      
+
       res.json({ message: 'Email verified successfully' });
       
     } catch (error: any) {

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User } from '@shared/schema';
 import { queryClient } from './queryClient';
 
@@ -14,6 +14,7 @@ interface ExtendedUser extends User {
 interface AuthContextType {
   user: ExtendedUser | null;
   setUser: (user: ExtendedUser | null) => void;
+  refreshAuth: () => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -27,7 +28,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const storedToken = localStorage.getItem('token');
+
+    if (storedUser && storedToken) {
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser({
@@ -38,12 +41,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           preferredLanguage: parsedUser.preferredLanguage ?? 'en',
           lastLogin: parsedUser.lastLogin ?? null,
         });
+        // Silently refresh in the background so any DB changes
+        // (e.g. admin approved verification while user was offline)
+        // are reflected immediately without requiring a re-login.
+        fetch('/api/auth/me', { headers: { Authorization: `Bearer ${storedToken}` } })
+          .then(r => r.ok ? r.json() : null)
+          .then(data => {
+            if (data?.token && data?.user) {
+              localStorage.setItem('token', data.token);
+              localStorage.setItem('user', JSON.stringify(data.user));
+              setUser(data.user);
+            }
+          })
+          .catch(() => {});
       } catch (error) {
         localStorage.removeItem('user');
         localStorage.removeItem('token');
       }
     }
     setIsLoading(false);
+  }, []);
+
+  // Re-fetch user from DB and issue a fresh JWT — fixes stale token after any verification step
+  const refreshAuth = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+    } catch {
+      // silently ignore — stale token will be caught on next protected request
+    }
   }, []);
 
   // 🔥 TIER 6: IMPROVED LOGOUT - Complete cache wipeout
@@ -79,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, logout, isAuthenticated: !!user, isLoading }}>
+    <AuthContext.Provider value={{ user, setUser, refreshAuth, logout, isAuthenticated: !!user, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
