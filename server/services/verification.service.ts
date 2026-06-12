@@ -88,12 +88,20 @@ export class VerificationService {
 
     if (!submission) return undefined;
 
-    // Update user's verification status if this is an identity verification
-    if (status === 'approved' && submission.type === 'identity') {
-      await db
-        .update(users)
-        .set({ isVerified: true, updatedAt: new Date() })
-        .where(eq(users.id, submission.userId));
+    // Update user's verification flags when approved
+    if (status === 'approved') {
+      if (submission.type === 'identity') {
+        // Identity approval sets both flags so the fresh JWT has the correct claims
+        await db
+          .update(users)
+          .set({ isIdentityVerified: true, isVerified: true, updatedAt: new Date() })
+          .where(eq(users.id, submission.userId));
+      } else if (submission.type === 'document') {
+        await db
+          .update(users)
+          .set({ isVerified: true, updatedAt: new Date() })
+          .where(eq(users.id, submission.userId));
+      }
     }
 
     // Update submission status

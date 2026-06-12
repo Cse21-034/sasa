@@ -240,9 +240,9 @@ export interface IStorage {
   getVerificationSubmission(userId: string, type: 'identity' | 'document'): Promise<VerificationSubmission | undefined>;
   getPendingVerificationSubmissions(): Promise<SubmissionWithUser[]>; 
   updateVerificationSubmissionStatus(
-    id: string, 
-    status: 'approved' | 'rejected', 
-    reviewerId: string, 
+    id: string,
+    status: 'approved' | 'rejected',
+    reviewerId: string,
     rejectionReason?: string
   ): Promise<VerificationSubmission | undefined>;
 
