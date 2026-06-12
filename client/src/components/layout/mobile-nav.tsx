@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { Home, Briefcase, MessageSquare, User, LayoutDashboard, FileText, Building2, Tag, Users, TrendingUp, UserCheck, Plus } from 'lucide-react';
+import { Home, Briefcase, MessageSquare, User, LayoutDashboard, Building2, Tag, TrendingUp, UserCheck, Plus } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -21,12 +21,14 @@ export function MobileNav() {
   const adminItems = [
     { href: '/admin',               icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/admin/verification',  icon: UserCheck,       label: 'Verify' },
+    { href: '/admin/suppliers',     icon: Building2,       label: 'Suppliers' },
     { href: '/promotions',          icon: TrendingUp,      label: 'Promos' },
     { href: '/profile',             icon: User,            label: 'Profile' },
   ];
 
   const supplierItems = [
-    { href: '/suppliers',           icon: Building2,       label: 'Browse' },
+    { href: '/suppliers',           icon: Building2,       label: 'Suppliers' },
+    { href: '/promotions',          icon: TrendingUp,      label: 'Promos' },
     { href: '/messages',            icon: MessageSquare,   label: 'Messages' },
     { href: '/supplier/dashboard',  icon: Tag,             label: 'Dashboard' },
     { href: '/profile',             icon: User,            label: 'Profile' },
@@ -35,15 +37,15 @@ export function MobileNav() {
   const requesterItems = [
     { href: '/jobs',        icon: Briefcase,     label: 'My Jobs' },
     { href: '/messages',    icon: MessageSquare, label: 'Messages' },
-    { href: '/promotions',  icon: Tag,           label: 'Promos' },
+    { href: '/promotions',  icon: TrendingUp,    label: 'Promos' },
     { href: '/suppliers',   icon: Building2,     label: 'Suppliers' },
     { href: '/profile',     icon: User,          label: 'Profile' },
   ];
 
   const providerItems = [
     { href: '/jobs',                    icon: Home,          label: 'Browse' },
-    { href: '/messages',                icon: MessageSquare, label: 'Messages' },
     { href: '/promotions',              icon: TrendingUp,    label: 'Promos' },
+    { href: '/suppliers',               icon: Building2,     label: 'Suppliers' },
     { href: '/provider/applications',   icon: Briefcase,     label: 'My Jobs' },
     { href: '/profile',                 icon: User,          label: 'Profile' },
   ];

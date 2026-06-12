@@ -107,6 +107,18 @@ export function Header() {
           <ThemeToggle />
           {isAuthenticated && <NotificationPanel />}
           {isAuthenticated && (
+            <Link href="/messages">
+              <a className="relative inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                <MessageSquare className="h-5 w-5 text-foreground dark:text-white" strokeWidth={1.8} />
+                {unreadMessagesCount > 0 && (
+                  <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-orange-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                    {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                  </span>
+                )}
+              </a>
+            </Link>
+          )}
+          {isAuthenticated && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-orange-400 flex-shrink-0 ml-0.5">
@@ -294,6 +306,18 @@ export function Header() {
             <>
               {/* 🆕 Notification Panel */}
               <NotificationPanel className="hover:bg-black/5 dark:hover:bg-white/10 text-foreground dark:text-white" />
+
+              {/* Messages Icon */}
+              <Link href="/messages">
+                <a className="relative inline-flex items-center justify-center w-10 h-10 rounded-full !text-foreground dark:!text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                  <MessageSquare className="h-5 w-5" strokeWidth={1.8} />
+                  {unreadMessagesCount > 0 && (
+                    <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-orange-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                      {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                    </span>
+                  )}
+                </a>
+              </Link>
 
               {user?.role === 'requester' && (
                 <Link href="/post-job">
