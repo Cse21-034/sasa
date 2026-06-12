@@ -448,9 +448,9 @@ export default function JobDetail() {
             {/* Title */}
             <h1 className="text-2xl sm:text-3xl font-bold leading-tight mb-5">{job.title}</h1>
 
-            {/* Meta grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-              <div className="flex items-start gap-2.5 bg-muted/50 rounded-xl p-3">
+            {/* Meta grid — 2-col on mobile (location full-width, date+budget side-by-side) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-6">
+              <div className="col-span-2 sm:col-span-1 flex items-start gap-2.5 bg-muted/50 rounded-xl p-3">
                 <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-0.5">Location</p>
@@ -701,11 +701,86 @@ export default function JobDetail() {
           </div>
         )}
 
+        {/* ── PEOPLE — compact 2-col row on mobile (hidden when sidebar is visible) ── */}
+        <div className="grid grid-cols-2 gap-3 mb-4 md:hidden">
+          {/* Posted By */}
+          <Card className="rounded-xl border shadow-sm">
+            <CardContent className="p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Posted By</p>
+              <div className="flex items-center gap-2">
+                <Avatar className="h-9 w-9 shrink-0">
+                  <AvatarImage src={job.requester?.profilePhotoUrl} />
+                  <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">{job.requester?.name?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="font-semibold text-xs leading-tight truncate">{job.requester?.name}</p>
+                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">{job.requester?.phone || job.requester?.email}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Assigned Provider or placeholder */}
+          {job.provider ? (
+            <Card className="rounded-xl border border-primary/20 shadow-sm">
+              <CardContent className="p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Provider</p>
+                <div className="flex items-center gap-2">
+                  <div className="relative shrink-0">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={job.provider?.profilePhotoUrl} />
+                      <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">{job.provider?.name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    {job.provider?.isVerified && (
+                      <div className="absolute -bottom-0.5 -right-0.5 bg-primary rounded-full p-0.5">
+                        <CheckCircle2 className="h-2.5 w-2.5 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-xs leading-tight truncate">{job.provider?.name}</p>
+                    {job.provider.ratingAverage ? (
+                      <div className="flex items-center gap-0.5 mt-0.5">
+                        <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
+                        <span className="text-[10px] text-muted-foreground">{parseFloat(job.provider.ratingAverage).toFixed(1)}</span>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground">New provider</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="rounded-xl border border-dashed shadow-sm">
+              <CardContent className="p-3 flex flex-col items-center justify-center h-full min-h-[72px]">
+                <Users className="h-5 w-5 text-muted-foreground/40 mb-1" />
+                <p className="text-[10px] text-muted-foreground text-center leading-tight">No provider<br/>assigned yet</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* ── Application count banner (mobile only — sidebar handles desktop) ── */}
+        {isRequester && (job.status === 'open' || job.status === 'pending_selection') && (
+          <div className="flex items-center justify-between bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 mb-4 md:hidden">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-amber-600 shrink-0" />
+              <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                {pendingApplications.length === 0
+                  ? 'No applications yet — visible to providers'
+                  : `${pendingApplications.length} application${pendingApplications.length > 1 ? 's' : ''} received`}
+              </p>
+            </div>
+            <Badge variant="outline" className="text-xs border-amber-400 text-amber-700 shrink-0">{pendingApplications.length}/4</Badge>
+          </div>
+        )}
+
         {/* ── MAIN TWO-COLUMN LAYOUT ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           {/* ── LEFT MAIN CONTENT ── */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="md:col-span-2 space-y-4">
 
             {/* Description */}
             <Card className="rounded-2xl border shadow-sm">
@@ -789,12 +864,12 @@ export default function JobDetail() {
                     <CardDescription className="text-xs">Track invoice status and payment for this job</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <JobInvoicePaymentStatus jobId={jobId} />
+                    <JobInvoicePaymentStatus jobId={jobId!} />
                   </CardContent>
                 </Card>
-                {isAssignedProvider && <InvoiceForm jobId={jobId} providerId={job.provider.id} />}
-                {isRequester && <InvoiceApproval jobId={jobId} />}
-                {isRequester && <PaymentForm jobId={jobId} />}
+                {isAssignedProvider && <InvoiceForm jobId={jobId!} providerId={job.provider.id} />}
+                {isRequester && <InvoiceApproval jobId={jobId!} />}
+                {isRequester && <PaymentForm jobId={jobId!} />}
               </div>
             )}
 
@@ -884,8 +959,8 @@ export default function JobDetail() {
             </Card>
           </div>
 
-          {/* ── RIGHT SIDEBAR ── */}
-          <div className="space-y-4">
+          {/* ── RIGHT SIDEBAR — hidden on mobile (compact people row above handles it) ── */}
+          <div className="hidden md:block space-y-4">
 
             {/* Posted By */}
             <Card className="rounded-2xl border shadow-sm">

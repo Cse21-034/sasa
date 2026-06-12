@@ -295,9 +295,9 @@ export function InvoiceForm({ jobId, onSuccess, providerId }: InvoiceFormProps) 
           title: 'Success',
           description: 'Invoice downloaded successfully',
         });
-      } catch (pdferror) {
+      } catch (pdferror: any) {
         console.error('PDF generation error:', pdferror);
-        throw new Error(`PDF generation failed: ${pdferror.message}`);
+        throw new Error(`PDF generation failed: ${pdferror?.message}`);
       }
 
       if (document.body.contains(tempDiv)) {
@@ -437,52 +437,39 @@ Service Provider
     });
     return (
       <Card className="border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800">
-        <CardHeader>
+        <CardHeader className="pb-3 pt-4 px-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-red-900 dark:text-red-100">Invoice {statusLabel}</CardTitle>
-              <CardDescription className="text-red-700 dark:text-red-300">
-                {statusMessage}
-              </CardDescription>
+              <CardTitle className="text-sm font-semibold text-red-900 dark:text-red-100">Invoice {statusLabel}</CardTitle>
+              <CardDescription className="text-xs text-red-700 dark:text-red-300">{statusMessage}</CardDescription>
             </div>
-            <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">
-              {statusLabel}
-            </Badge>
+            <Badge className="text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">{statusLabel}</Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 px-4 pb-4">
           {existingInvoice.declineReason && (
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-red-200 dark:border-red-800">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Reason for Change:</p>
-              <p className="text-gray-700 dark:text-gray-200 italic">{existingInvoice.declineReason}</p>
+            <div className="bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border border-red-200 dark:border-red-800">
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Reason:</p>
+              <p className="text-xs text-gray-700 dark:text-gray-200 italic leading-snug">{existingInvoice.declineReason}</p>
             </div>
           )}
-
           {!existingInvoice.declineReason && (
-            <Alert className="border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950">
-              <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-              <AlertDescription className="text-orange-800 dark:text-orange-200">
-                No specific reason was provided. Please review the invoice and make necessary adjustments before resending.
+            <Alert className="py-2 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950">
+              <AlertCircle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
+              <AlertDescription className="text-xs text-orange-800 dark:text-orange-200">
+                No reason provided. Review and make necessary adjustments before resending.
               </AlertDescription>
             </Alert>
           )}
-
-          <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Options:</p>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => resetDeclinedInvoiceMutation.mutate()}
-                disabled={isLoading}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white font-semibold"
-              >
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Edit Invoice
-              </Button>
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-              Update the invoice details and send it again.
-            </p>
-          </div>
+          <Button
+            size="sm"
+            onClick={() => resetDeclinedInvoiceMutation.mutate()}
+            disabled={isLoading}
+            className="w-full gap-1.5 text-xs bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white"
+          >
+            {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            Edit &amp; Resend Invoice
+          </Button>
         </CardContent>
       </Card>
     );
@@ -492,80 +479,77 @@ Service Provider
   if (isSentOrAccepted) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3 pt-4 px-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Invoice</CardTitle>
-              <CardDescription>Awaiting requester response</CardDescription>
+              <CardTitle className="text-sm font-semibold">Invoice</CardTitle>
+              <CardDescription className="text-xs">Awaiting requester response</CardDescription>
             </div>
-            <Badge className={existingInvoice.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
+            <Badge className={`text-xs ${existingInvoice.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
               {existingInvoice.status.charAt(0).toUpperCase() + existingInvoice.status.slice(1)}
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm text-gray-600">Amount</p>
-                <p className="text-2xl font-bold">{formatPula(parseFloat(existingInvoice.amount))}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Payment Method</p>
-                <p className="font-semibold capitalize">{existingInvoice.paymentMethod.replace('_', ' ')}</p>
-              </div>
-            </div>
-            <Separator />
+        <CardContent className="space-y-3 px-4 pb-4">
+          <div className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2">
             <div>
-              <p className="text-sm font-semibold text-gray-700 mb-1">Description</p>
-              <p className="text-gray-700">{existingInvoice.description}</p>
+              <p className="text-xs text-muted-foreground">Amount</p>
+              <p className="text-lg font-bold">{formatPula(parseFloat(existingInvoice.amount))}</p>
             </div>
-            {existingInvoice.notes && (
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-1">Notes</p>
-                <p className="text-gray-700">{existingInvoice.notes}</p>
-              </div>
-            )}
-            <Separator />
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>Status:</span>
-              <span className="font-medium">{existingInvoice.status === 'approved' ? '✓ Approved' : 'Sent to Requester'}</span>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Payment</p>
+              <p className="text-sm font-semibold capitalize">{existingInvoice.paymentMethod.replace('_', ' ')}</p>
             </div>
           </div>
+          <div className="space-y-1.5 text-xs">
+            <p className="font-semibold text-foreground">Description</p>
+            <p className="text-muted-foreground leading-snug">{existingInvoice.description}</p>
+          </div>
+          {existingInvoice.notes && (
+            <div className="space-y-1 text-xs">
+              <p className="font-semibold text-foreground">Notes</p>
+              <p className="text-muted-foreground leading-snug">{existingInvoice.notes}</p>
+            </div>
+          )}
+          <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
+            <span>Status</span>
+            <span className="font-medium text-foreground">{existingInvoice.status === 'approved' ? '✓ Approved' : 'Sent to Requester'}</span>
+          </div>
 
-          <Separator />
-
-          <div className="space-y-2">
-            <p className="text-sm font-semibold text-gray-700">Download & Share Options</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-foreground">Download & Share</p>
+            <div className="flex gap-2">
               <Button
                 onClick={handleDownloadPDF}
                 disabled={isPdfGenerating}
                 variant="outline"
-                className="w-full"
+                size="sm"
+                className="flex-1 gap-1.5 text-xs"
               >
                 {isPdfGenerating ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
                 ) : (
-                  <Download className="mr-2 h-4 w-4" />
+                  <Download className="h-3.5 w-3.5 shrink-0" />
                 )}
-                Download PDF
+                PDF
               </Button>
               <Button
                 onClick={handleShareEmail}
                 variant="outline"
-                className="w-full"
+                size="sm"
+                className="flex-1 gap-1.5 text-xs"
               >
-                <Mail className="mr-2 h-4 w-4" />
-                Share via Email
+                <Mail className="h-3.5 w-3.5 shrink-0" />
+                Email
               </Button>
               <Button
                 onClick={handleShareWhatsApp}
                 variant="outline"
-                className="w-full bg-green-50 hover:bg-green-100"
+                size="sm"
+                className="flex-1 gap-1.5 text-xs bg-green-50 hover:bg-green-100"
               >
-                <MessageCircle className="mr-2 h-4 w-4" />
-                Share via WhatsApp
+                <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                WhatsApp
               </Button>
             </div>
           </div>
@@ -578,73 +562,71 @@ Service Provider
   if (isPaidStatus) {
     return (
       <Card className="border-green-200 dark:border-green-700">
-        <CardHeader>
+        <CardHeader className="pb-3 pt-4 px-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-green-900 dark:text-green-100">Invoice Paid</CardTitle>
-              <CardDescription className="text-green-700 dark:text-green-300">This invoice has been paid</CardDescription>
+              <CardTitle className="text-sm font-semibold text-green-900 dark:text-green-100">Invoice Paid</CardTitle>
+              <CardDescription className="text-xs text-green-700 dark:text-green-300">This invoice has been paid</CardDescription>
             </div>
-            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">✓ Paid</Badge>
+            <Badge className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">✓ Paid</Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Amount Paid</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatPula(parseFloat(existingInvoice.amount))}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Payment Method</p>
-                <p className="font-semibold capitalize">{existingInvoice.paymentMethod.replace('_', ' ')}</p>
-              </div>
-            </div>
-            <Separator />
+        <CardContent className="space-y-3 px-4 pb-4">
+          <div className="flex items-center justify-between bg-green-50/60 dark:bg-green-900/20 rounded-lg px-3 py-2">
             <div>
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Description</p>
-              <p className="text-gray-700 dark:text-gray-300">{existingInvoice.description}</p>
+              <p className="text-xs text-muted-foreground">Amount Paid</p>
+              <p className="text-lg font-bold text-green-600 dark:text-green-400">{formatPula(parseFloat(existingInvoice.amount))}</p>
             </div>
-            {existingInvoice.notes && (
-              <div>
-                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Notes</p>
-                <p className="text-gray-700 dark:text-gray-300">{existingInvoice.notes}</p>
-              </div>
-            )}
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Payment</p>
+              <p className="text-sm font-semibold capitalize">{existingInvoice.paymentMethod.replace('_', ' ')}</p>
+            </div>
           </div>
+          <div className="space-y-1 text-xs">
+            <p className="font-semibold text-foreground">Description</p>
+            <p className="text-muted-foreground leading-snug">{existingInvoice.description}</p>
+          </div>
+          {existingInvoice.notes && (
+            <div className="space-y-1 text-xs">
+              <p className="font-semibold text-foreground">Notes</p>
+              <p className="text-muted-foreground leading-snug">{existingInvoice.notes}</p>
+            </div>
+          )}
 
-          <Separator />
-
-          <div className="space-y-2">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Download & Share Options</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div className="pt-1 border-t space-y-1.5">
+            <p className="text-xs font-semibold text-foreground">Download & Share</p>
+            <div className="flex gap-2">
               <Button
                 onClick={handleDownloadPDF}
                 disabled={isPdfGenerating}
                 variant="outline"
-                className="w-full"
+                size="sm"
+                className="flex-1 gap-1.5 text-xs"
               >
                 {isPdfGenerating ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
                 ) : (
-                  <Download className="mr-2 h-4 w-4" />
+                  <Download className="h-3.5 w-3.5 shrink-0" />
                 )}
-                Download PDF
+                PDF
               </Button>
               <Button
                 onClick={handleShareEmail}
                 variant="outline"
-                className="w-full"
+                size="sm"
+                className="flex-1 gap-1.5 text-xs"
               >
-                <Mail className="mr-2 h-4 w-4" />
-                Share via Email
+                <Mail className="h-3.5 w-3.5 shrink-0" />
+                Email
               </Button>
               <Button
                 onClick={handleShareWhatsApp}
                 variant="outline"
-                className="w-full bg-green-50 hover:bg-green-100 dark:bg-green-900 dark:hover:bg-green-800"
+                size="sm"
+                className="flex-1 gap-1.5 text-xs bg-green-50 hover:bg-green-100 dark:bg-green-900 dark:hover:bg-green-800"
               >
-                <MessageCircle className="mr-2 h-4 w-4" />
-                Share via WhatsApp
+                <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                WhatsApp
               </Button>
             </div>
           </div>
@@ -657,59 +639,54 @@ Service Provider
   if (isDraftStatus && !isEditMode) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3 pt-4 px-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Invoice Preview</CardTitle>
-              <CardDescription>Review before sending to requester</CardDescription>
+              <CardTitle className="text-sm font-semibold">Invoice Preview</CardTitle>
+              <CardDescription className="text-xs">Review before sending to requester</CardDescription>
             </div>
-            <Badge className="bg-gray-100 text-gray-800">Draft</Badge>
+            <Badge className="text-xs bg-gray-100 text-gray-800">Draft</Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm text-gray-600">Amount</p>
-                <p className="text-2xl font-bold">{formatPula(parseFloat(existingInvoice.amount))}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Payment Method</p>
-                <p className="font-semibold capitalize">{existingInvoice.paymentMethod.replace('_', ' ')}</p>
-              </div>
-            </div>
-            <Separator />
+        <CardContent className="space-y-3 px-4 pb-4">
+          <div className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2">
             <div>
-              <p className="text-sm font-semibold text-gray-700 mb-1">Description</p>
-              <p className="text-gray-700">{existingInvoice.description}</p>
+              <p className="text-xs text-muted-foreground">Amount</p>
+              <p className="text-lg font-bold">{formatPula(parseFloat(existingInvoice.amount))}</p>
             </div>
-            {existingInvoice.notes && (
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-1">Notes</p>
-                <p className="text-gray-700">{existingInvoice.notes}</p>
-              </div>
-            )}
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Payment</p>
+              <p className="text-sm font-semibold capitalize">{existingInvoice.paymentMethod.replace('_', ' ')}</p>
+            </div>
           </div>
-
-          <Separator />
-
-          <div className="flex gap-2 pt-4">
+          <div className="space-y-1 text-xs">
+            <p className="font-semibold text-foreground">Description</p>
+            <p className="text-muted-foreground leading-snug">{existingInvoice.description}</p>
+          </div>
+          {existingInvoice.notes && (
+            <div className="space-y-1 text-xs">
+              <p className="font-semibold text-foreground">Notes</p>
+              <p className="text-muted-foreground leading-snug">{existingInvoice.notes}</p>
+            </div>
+          )}
+          <div className="flex gap-2 pt-1 border-t">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setIsEditMode(true)}
-              className="flex-1"
+              className="flex-1 gap-1.5 text-xs"
               disabled={isLoading}
             >
-              <Edit2 className="mr-2 h-4 w-4" />
+              <Edit2 className="h-3.5 w-3.5" />
               Edit
             </Button>
             <Button
+              size="sm"
               onClick={() => sendInvoiceMutation.mutate()}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              className="flex-1 gap-1.5 text-xs bg-blue-600 hover:bg-blue-700"
               disabled={isLoading}
             >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Send className="mr-2 h-4 w-4" />
+              {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
               Send to Requester
             </Button>
           </div>
@@ -722,61 +699,65 @@ Service Provider
   if (isDraftStatus && isEditMode) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Edit Invoice</CardTitle>
-          <CardDescription>Update your invoice details before sending</CardDescription>
+        <CardHeader className="pb-3 pt-4 px-4">
+          <CardTitle className="text-sm font-semibold">Edit Invoice</CardTitle>
+          <CardDescription className="text-xs">Update your invoice details before sending</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount (BWP) *</Label>
+        <CardContent className="px-4 pb-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="amount" className="text-xs">Amount (BWP) *</Label>
               <Input
                 id="amount"
                 type="number"
                 placeholder="500"
                 step="0.01"
                 min="0"
+                className="h-9 text-sm"
                 value={amount || existingInvoice.amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description of Work *</Label>
+            <div className="space-y-1">
+              <Label htmlFor="description" className="text-xs">Description of Work *</Label>
               <Textarea
                 id="description"
                 placeholder="E.g., Labour for house cleaning, materials included..."
                 value={description || existingInvoice.description}
                 onChange={(e) => setDescription(e.target.value)}
                 required
-                rows={3}
+                rows={2}
+                className="text-sm resize-none"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Additional Notes</Label>
+            <div className="space-y-1">
+              <Label htmlFor="notes" className="text-xs">Additional Notes</Label>
               <Textarea
                 id="notes"
                 placeholder="E.g., Half payment on start, half on completion..."
                 value={notes || existingInvoice.notes || ''}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
+                className="text-sm resize-none"
               />
             </div>
 
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-2 pt-1">
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={() => setIsEditMode(false)}
-                className="flex-1"
+                className="flex-1 text-xs"
                 disabled={isLoading}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading} className="flex-1">
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" size="sm" disabled={isLoading} className="flex-1 text-xs">
+                {isLoading && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                 Update Invoice
               </Button>
             </div>
@@ -790,65 +771,69 @@ Service Provider
   if (!existingInvoice) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Create Invoice</CardTitle>
-          <CardDescription>Send an invoice for your work</CardDescription>
+        <CardHeader className="pb-3 pt-4 px-4">
+          <CardTitle className="text-sm font-semibold">Create Invoice</CardTitle>
+          <CardDescription className="text-xs">Send an invoice for your work</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount (BWP) *</Label>
-              <Input
-                id="amount"
-                type="number"
-                placeholder="500"
-                step="0.01"
-                min="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-              />
+        <CardContent className="px-4 pb-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="amount" className="text-xs">Amount (BWP) *</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  placeholder="500"
+                  step="0.01"
+                  min="0"
+                  className="h-9 text-sm"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="paymentMethod" className="text-xs">Payment Method *</Label>
+                <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+                  <SelectTrigger id="paymentMethod" className="h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="card">Card Payment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="paymentMethod">Payment Method *</Label>
-              <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
-                <SelectTrigger id="paymentMethod">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Cash (Manual Confirmation)</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="card">Card Payment</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description of Work *</Label>
+            <div className="space-y-1">
+              <Label htmlFor="description" className="text-xs">Description of Work *</Label>
               <Textarea
                 id="description"
                 placeholder="E.g., Labour for house cleaning, materials included..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 required
-                rows={3}
+                rows={2}
+                className="text-sm resize-none"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Additional Notes</Label>
+            <div className="space-y-1">
+              <Label htmlFor="notes" className="text-xs">Additional Notes</Label>
               <Textarea
                 id="notes"
                 placeholder="E.g., Half payment on start, half on completion..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
+                className="text-sm resize-none"
               />
             </div>
 
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" size="sm" disabled={isLoading} className="w-full gap-1.5 text-xs">
+              {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Create Invoice
             </Button>
           </form>
@@ -857,58 +842,42 @@ Service Provider
     );
   }
 
-  // Show message when invoice is not in draft (shouldn't reach here)
-  // This is a fallback that should rarely be reached
   if (existingInvoice && existingInvoice.status === 'declined') {
-    // If we reach here, show the declined UI
     return (
       <Card className="border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800">
-        <CardHeader>
+        <CardHeader className="pb-3 pt-4 px-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-red-900 dark:text-red-100">Invoice Declined</CardTitle>
-              <CardDescription className="text-red-700 dark:text-red-300">
-                Your invoice has been declined by the requester
-              </CardDescription>
+              <CardTitle className="text-sm font-semibold text-red-900 dark:text-red-100">Invoice Declined</CardTitle>
+              <CardDescription className="text-xs text-red-700 dark:text-red-300">Declined by the requester</CardDescription>
             </div>
-            <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">
-              Declined
-            </Badge>
+            <Badge className="text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">Declined</Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 px-4 pb-4">
           {existingInvoice.declineReason && (
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-red-200 dark:border-red-800">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Reason for Decline:</p>
-              <p className="text-gray-700 dark:text-gray-200 italic">{existingInvoice.declineReason}</p>
+            <div className="bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border border-red-200 dark:border-red-800">
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Reason:</p>
+              <p className="text-xs text-gray-700 dark:text-gray-200 italic leading-snug">{existingInvoice.declineReason}</p>
             </div>
           )}
-
           {!existingInvoice.declineReason && (
-            <Alert className="border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950">
-              <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-              <AlertDescription className="text-orange-800 dark:text-orange-200">
-                No specific reason was provided for the decline. Please review the invoice and make necessary adjustments.
+            <Alert className="py-2 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950">
+              <AlertCircle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
+              <AlertDescription className="text-xs text-orange-800 dark:text-orange-200">
+                No reason provided. Review and make necessary adjustments.
               </AlertDescription>
             </Alert>
           )}
-
-          <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Options:</p>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => resetDeclinedInvoiceMutation.mutate()}
-                disabled={isLoading}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white font-semibold"
-              >
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Edit Invoice
-              </Button>
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-              Update the invoice details based on the feedback and send it again.
-            </p>
-          </div>
+          <Button
+            size="sm"
+            onClick={() => resetDeclinedInvoiceMutation.mutate()}
+            disabled={isLoading}
+            className="w-full gap-1.5 text-xs bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white"
+          >
+            {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            Edit &amp; Resend Invoice
+          </Button>
         </CardContent>
       </Card>
     );
@@ -916,14 +885,14 @@ Service Provider
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Invoice</CardTitle>
+      <CardHeader className="pb-3 pt-4 px-4">
+        <CardTitle className="text-sm font-semibold">Invoice</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Invoice with status "{existingInvoice?.status || 'unknown'}" cannot be edited.
+      <CardContent className="px-4 pb-4">
+        <Alert className="py-2">
+          <AlertCircle className="h-3.5 w-3.5" />
+          <AlertDescription className="text-xs">
+            Invoice status: "{existingInvoice?.status || 'unknown'}".
             {existingInvoice?.status === 'sent' && ' The requester is reviewing it.'}
             {existingInvoice?.status === 'approved' && ' The invoice has been approved.'}
             {existingInvoice?.status === 'paid' && ' Payment has been received.'}
