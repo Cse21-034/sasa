@@ -1,82 +1,112 @@
 import { Link, useLocation } from 'wouter';
 import { Home, Briefcase, MessageSquare, User, LayoutDashboard, FileText, Building2, Tag, Users, TrendingUp, UserCheck, Plus } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 
 export function MobileNav() {
   const [location] = useLocation();
   const { user, isAuthenticated } = useAuth();
 
+  const { data: conversations } = useQuery({
+    queryKey: ['/api/messages/conversations'],
+    enabled: isAuthenticated,
+    refetchInterval: 30000,
+    queryFn: async () => (await apiRequest('GET', '/api/messages/conversations')).json(),
+  });
+  const unreadMessages: number = conversations?.filter((c: any) => c.unreadCount > 0).length ?? 0;
+
   if (!isAuthenticated) return null;
 
-  // 🔥 ADDED: Admin navigation items
   const adminItems = [
-    { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', testId: 'nav-admin-dashboard' },
-    { href: '/admin/verification', icon: UserCheck, label: 'Verify', testId: 'nav-admin-verification' },
-    { href: '/promotions', icon: TrendingUp, label: 'Promos', testId: 'nav-promotions' },
-    { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
+    { href: '/admin',               icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/admin/verification',  icon: UserCheck,       label: 'Verify' },
+    { href: '/promotions',          icon: TrendingUp,      label: 'Promos' },
+    { href: '/profile',             icon: User,            label: 'Profile' },
   ];
 
-  // Supplier navigation items
   const supplierItems = [
-    { href: '/suppliers', icon: Building2, label: 'Browse', testId: 'nav-suppliers-browse' },
-    { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
-    { href: '/supplier/dashboard', icon: Tag, label: 'Dashboard', testId: 'nav-supplier-dashboard' },
-    { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
+    { href: '/suppliers',           icon: Building2,       label: 'Browse' },
+    { href: '/messages',            icon: MessageSquare,   label: 'Messages' },
+    { href: '/supplier/dashboard',  icon: Tag,             label: 'Dashboard' },
+    { href: '/profile',             icon: User,            label: 'Profile' },
   ];
 
   const requesterItems = [
-    { href: '/jobs', icon: Briefcase, label: 'My Jobs', testId: 'nav-jobs' },
-    { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
-    { href: '/promotions', icon: Tag, label: 'Promos', testId: 'nav-promotions' },
-    { href: '/suppliers', icon: Building2, label: 'Suppliers', testId: 'nav-suppliers' },
-    { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
+    { href: '/jobs',        icon: Briefcase,     label: 'My Jobs' },
+    { href: '/messages',    icon: MessageSquare, label: 'Messages' },
+    { href: '/promotions',  icon: Tag,           label: 'Promos' },
+    { href: '/suppliers',   icon: Building2,     label: 'Suppliers' },
+    { href: '/profile',     icon: User,          label: 'Profile' },
   ];
 
   const providerItems = [
-    { href: '/jobs', icon: Home, label: 'Browse', testId: 'nav-home' },
-    { href: '/messages', icon: MessageSquare, label: 'Messages', testId: 'nav-messages' },
-    { href: '/promotions', icon: TrendingUp, label: 'Promos', testId: 'nav-promos' },
-    { href: '/provider/applications', icon: Briefcase, label: 'Applications', testId: 'nav-applications' },
-    { href: '/profile', icon: User, label: 'Profile', testId: 'nav-profile' },
+    { href: '/jobs',                    icon: Home,          label: 'Browse' },
+    { href: '/messages',                icon: MessageSquare, label: 'Messages' },
+    { href: '/promotions',              icon: TrendingUp,    label: 'Promos' },
+    { href: '/provider/applications',   icon: Briefcase,     label: 'My Jobs' },
+    { href: '/profile',                 icon: User,          label: 'Profile' },
   ];
 
-  // 🔥 FIXED: Choose nav items based on role INCLUDING ADMIN
   let navItems = requesterItems;
-  if (user?.role === 'admin') {
-    navItems = adminItems;
-  } else if (user?.role === 'provider') {
-    navItems = providerItems;
-  } else if (user?.role === 'supplier') {
-    navItems = supplierItems;
-  }
+  if (user?.role === 'admin')    navItems = adminItems;
+  else if (user?.role === 'provider') navItems = providerItems;
+  else if (user?.role === 'supplier') navItems = supplierItems;
 
   return (
     <>
-      {/* FAB Button for Post Job (Requester only) */}
+      {/* FAB — Post Job (requester only) */}
       {user?.role === 'requester' && (
         <Link href="/post-job">
-          <a className="md:hidden fixed bottom-24 right-4 z-50 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center">
+          <a
+            className="md:hidden fixed right-4 z-50 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-4 shadow-xl flex items-center justify-center active:scale-95 transition-transform"
+            style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))' }}
+          >
             <Plus className="h-6 w-6" />
           </a>
         </Link>
       )}
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 rounded-t-3xl">
-        <div className="flex items-center justify-around h-20 px-2">
+      {/* Bottom nav */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-950 border-t border-gray-200/70 dark:border-gray-800"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
+        <div className="flex items-center justify-around h-[60px] px-1">
           {navItems.map((item) => {
-            const isActive = location === item.href;
+            const isActive = location === item.href || location.startsWith(item.href + '/');
+            const showBadge = item.href === '/messages' && unreadMessages > 0;
+
             return (
               <Link key={item.href} href={item.href}>
-                <a
-                  className={`flex flex-col items-center justify-center flex-1 h-full gap-1 rounded-2xl transition-all duration-200 py-2 ${
-                    isActive
-                      ? 'text-orange-500 bg-orange-50 dark:bg-orange-950/40'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
-                  }`}
-                  data-testid={item.testId}
-                >
-                  <item.icon className="h-6 w-6" />
-                  <span className="text-[10px] font-medium">{item.label}</span>
+                <a className="flex flex-col items-center justify-center flex-1 h-full gap-0.5 py-2 relative transition-colors">
+                  {/* active pill behind icon */}
+                  {isActive && (
+                    <span className="absolute top-1.5 w-10 h-7 rounded-full bg-orange-100 dark:bg-orange-950/50" />
+                  )}
+
+                  {/* icon + optional badge */}
+                  <span className="relative z-10">
+                    <item.icon
+                      className={`h-[22px] w-[22px] transition-colors ${
+                        isActive ? 'text-orange-500' : 'text-gray-400 dark:text-gray-500'
+                      }`}
+                      strokeWidth={isActive ? 2.2 : 1.8}
+                    />
+                    {showBadge && (
+                      <span className="absolute -top-1 -right-1.5 h-4 w-4 rounded-full bg-orange-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                        {unreadMessages > 9 ? '9+' : unreadMessages}
+                      </span>
+                    )}
+                  </span>
+
+                  <span
+                    className={`text-[10px] font-medium z-10 transition-colors ${
+                      isActive ? 'text-orange-500' : 'text-gray-400 dark:text-gray-500'
+                    }`}
+                  >
+                    {item.label}
+                  </span>
                 </a>
               </Link>
             );

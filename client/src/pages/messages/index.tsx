@@ -1,15 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, MessageSquare, Shield } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Search, MessageSquare, Shield, CheckCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'wouter';
 import { useAuth } from '@/lib/auth-context';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+
+function timeAgo(date: string | Date): string {
+  const now = new Date();
+  const d = new Date(date);
+  const diff = Math.floor((now.getTime() - d.getTime()) / 1000);
+  if (diff < 60) return 'now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  if (diff < 604800) {
+    const days = Math.floor(diff / 86400);
+    return days === 1 ? 'Yesterday' : `${days}d`;
+  }
+  return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+}
 
 export default function Messages() {
   const { user } = useAuth();
@@ -18,7 +30,7 @@ export default function Messages() {
 
   const { data: conversations, isLoading } = useQuery({
     queryKey: ['/api/messages/conversations'],
-    refetchInterval: 10000, // Refresh every 10 seconds
+    refetchInterval: 10000,
   });
 
   const { data: unreadCount } = useQuery({
@@ -30,184 +42,174 @@ export default function Messages() {
     refetchInterval: 10000,
   });
 
-  // Setup WebSocket for real-time unread count updates
   useEffect(() => {
     if (!user) return;
-
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ 
-        type: 'auth', 
-        userId: user.id,
-        userRole: user.role 
-      }));
-    };
-
+    ws.onopen = () => ws.send(JSON.stringify({ type: 'auth', userId: user.id, userRole: user.role }));
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      
       if (data.type === 'unread_count' || data.type === 'message') {
-        // Refetch conversations to update counts
         queryClient.invalidateQueries({ queryKey: ['/api/messages/conversations'] });
         queryClient.invalidateQueries({ queryKey: ['/api/messages/unread-count'] });
       }
     };
-
     return () => ws.close();
   }, [user]);
 
   const filteredConversations = conversations?.filter((conv: any) => {
-    const matchesSearch = conv.otherUser?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch =
+      conv.otherUser?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       conv.jobTitle?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesFilter = 
-      filterType === 'all' || 
+    const matchesFilter =
+      filterType === 'all' ||
       (filterType === 'unread' && conv.unreadCount > 0) ||
       (filterType === 'admin' && conv.messageType === 'admin_message');
-    
     return matchesSearch && matchesFilter;
   });
 
   const unreadConversations = conversations?.filter((c: any) => c.unreadCount > 0).length || 0;
-  const adminConversations = conversations?.filter((c: any) => c.messageType === 'admin_message').length || 0;
+  const adminConversations  = conversations?.filter((c: any) => c.messageType === 'admin_message').length || 0;
+
+  const tabs: { key: 'all' | 'unread' | 'admin'; label: string; count: number }[] = [
+    { key: 'all',    label: 'All',    count: conversations?.length || 0 },
+    { key: 'unread', label: 'Unread', count: unreadConversations },
+    { key: 'admin',  label: 'Admin',  count: adminConversations },
+  ];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl pb-24 md:pb-8">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2 flex items-center gap-2 flex-wrap">
-          Messages
-          {unreadCount?.count > 0 && (
-            <Badge variant="destructive" className="text-base md:text-lg">
-              {unreadCount.count} new
-            </Badge>
-          )}
-        </h1>
-        <p className="text-sm md:text-base text-muted-foreground">Your conversations</p>
-      </div>
+    <div className="flex flex-col min-h-full">
 
-      {/* Filters */}
-      <Card className="mb-6">
-        <CardContent className="p-4 md:p-6">
-          <Tabs value={filterType} onValueChange={(v) => setFilterType(v as any)} className="mb-4">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 h-auto">
-              <TabsTrigger value="all" className="text-xs md:text-sm">
-                All ({conversations?.length || 0})
-              </TabsTrigger>
-              <TabsTrigger value="unread" className="text-xs md:text-sm">
-                Unread ({unreadConversations})
-              </TabsTrigger>
-              <TabsTrigger value="admin" className="col-span-2 md:col-span-1 text-xs md:text-sm">
-                <Shield className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                Admin ({adminConversations})
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+      {/* ── Sticky header ── */}
+      <div className="sticky top-14 md:top-20 z-10 bg-background/95 backdrop-blur-md border-b border-border/50 px-4 pt-4 pb-3">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-xl font-bold tracking-tight">
+              Messages
+              {unreadCount?.count > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-bold">
+                  {unreadCount.count}
+                </span>
+              )}
+            </h1>
+          </div>
+
+          {/* Search */}
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Search conversations..."
-              className="pl-10 text-sm"
+              placeholder="Search conversations…"
+              className="pl-9 h-9 text-sm rounded-full bg-muted/60 border-0 focus-visible:ring-1"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              data-testid="input-search-messages"
             />
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Conversations List */}
-      <div className="space-y-3">
+          {/* Filter tabs */}
+          <div className="flex gap-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setFilterType(tab.key)}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  filterType === tab.key
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                {tab.key === 'admin' && <Shield className="h-3 w-3" />}
+                {tab.label}
+                {tab.count > 0 && (
+                  <span className={`text-[10px] ${filterType === tab.key ? 'opacity-80' : 'opacity-60'}`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Conversation list ── */}
+      <div className="max-w-2xl mx-auto w-full">
         {isLoading ? (
-          [1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-3 md:p-4">
-                <div className="flex items-center gap-3 md:gap-4">
-                  <Skeleton className="h-10 w-10 md:h-12 md:w-12 rounded-full flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <Skeleton className="h-4 w-32 mb-2" />
-                    <Skeleton className="h-3 w-48" />
-                  </div>
-                  <Skeleton className="h-4 w-12 flex-shrink-0" />
+          <div>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border/40">
+                <Skeleton className="h-12 w-12 rounded-full flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <Skeleton className="h-4 w-32 mb-2" />
+                  <Skeleton className="h-3 w-48" />
                 </div>
-              </CardContent>
-            </Card>
-          ))
+                <Skeleton className="h-3 w-8 flex-shrink-0" />
+              </div>
+            ))}
+          </div>
         ) : filteredConversations && filteredConversations.length > 0 ? (
           filteredConversations.map((conv: any) => (
-            <Link 
-              key={conv.jobId} 
+            <Link
+              key={conv.jobId}
               href={conv.jobId === 'admin-messages' ? '/messages/admin-chat' : `/messages/${conv.jobId}`}
             >
-              <a>
-                <Card className={`hover-elevate active-elevate-2 transition-all ${
-                  conv.unreadCount > 0 ? 'border-2 border-primary/50 bg-primary/5' : ''
-                }`}>
-                  <CardContent className="p-3 md:p-4">
-                    <div className="flex items-center gap-3 md:gap-4">
-                      <div className="relative flex-shrink-0">
-                        <Avatar className="h-10 w-10 md:h-12 md:w-12">
-                          <AvatarImage src={conv.otherUser?.profilePhotoUrl} />
-                          <AvatarFallback>{conv.otherUser?.name?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        {conv.unreadCount > 0 && (
-                          <div className="absolute -top-1 -right-1 h-5 w-5 bg-destructive text-destructive-foreground text-xs flex items-center justify-center rounded-full animate-pulse">
-                            {conv.unreadCount}
-                          </div>
-                        )}
-                        {conv.messageType === 'admin_message' && (
-                          <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-warning text-warning-foreground flex items-center justify-center rounded-full">
-                            <Shield className="h-3 w-3" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <h3 className={`font-semibold truncate text-sm md:text-base ${
-                            conv.unreadCount > 0 ? 'text-primary' : ''
-                          }`}>
-                            {conv.otherUser?.name}
-                          </h3>
-                          {conv.messageType === 'admin_message' && (
-                            <Badge variant="warning" className="text-xs">
-                              <Shield className="h-3 w-3 mr-1" />
-                              Admin
-                            </Badge>
-                          )}
-                        </div>
-                        <p className={`text-xs md:text-sm truncate ${
-                          conv.unreadCount > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'
-                        }`}>
-                          {conv.lastMessage}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 truncate">{conv.jobTitle}</p>
-                      </div>
-                      <span className="text-xs text-muted-foreground flex-shrink-0">
-                        {new Date(conv.lastMessageTime).toLocaleDateString()}
+              <a className={`flex items-center gap-3 px-4 py-3.5 border-b border-border/30 transition-colors active:bg-muted/60 hover:bg-muted/30 ${
+                conv.unreadCount > 0 ? 'bg-primary/[0.03]' : ''
+              }`}>
+                {/* Avatar + online/unread dot */}
+                <div className="relative flex-shrink-0">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={conv.otherUser?.profilePhotoUrl} />
+                    <AvatarFallback className="text-sm font-semibold">
+                      {conv.otherUser?.name?.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {conv.messageType === 'admin_message' && (
+                    <span className="absolute -bottom-0.5 -right-0.5 h-5 w-5 bg-amber-500 flex items-center justify-center rounded-full ring-2 ring-background">
+                      <Shield className="h-2.5 w-2.5 text-white" />
+                    </span>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline justify-between gap-2 mb-0.5">
+                    <span className={`text-sm leading-snug truncate ${conv.unreadCount > 0 ? 'font-bold text-foreground' : 'font-semibold text-foreground/90'}`}>
+                      {conv.otherUser?.name}
+                    </span>
+                    <span className={`text-[11px] flex-shrink-0 ${conv.unreadCount > 0 ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
+                      {timeAgo(conv.lastMessageTime)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`text-[13px] truncate leading-snug ${
+                      conv.unreadCount > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'
+                    }`}>
+                      {conv.lastMessage}
+                    </p>
+                    {conv.unreadCount > 0 ? (
+                      <span className="flex-shrink-0 h-5 min-w-[1.25rem] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                        {conv.unreadCount}
                       </span>
-                    </div>
-                  </CardContent>
-                </Card>
+                    ) : null}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/60 truncate mt-0.5">{conv.jobTitle}</p>
+                </div>
               </a>
             </Link>
           ))
         ) : (
-          <Card>
-            <CardContent className="p-8 md:p-12 text-center">
-              <MessageSquare className="h-10 w-10 md:h-12 md:w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-base md:text-lg font-semibold mb-2">No conversations yet</h3>
-              <p className="text-sm md:text-base text-muted-foreground">
-                {filterType === 'unread' 
-                  ? 'You have no unread messages'
-                  : filterType === 'admin'
-                  ? 'No admin messages'
-                  : 'Start a conversation by accepting a job or posting a request'
-                }
-              </p>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
+            <div className="h-16 w-16 rounded-full bg-muted/60 flex items-center justify-center mb-4">
+              <MessageSquare className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="font-semibold mb-1">No conversations</h3>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {filterType === 'unread'
+                ? 'No unread messages right now'
+                : filterType === 'admin'
+                ? 'No admin messages'
+                : 'Conversations appear here once you connect on a job'}
+            </p>
+          </div>
         )}
       </div>
     </div>

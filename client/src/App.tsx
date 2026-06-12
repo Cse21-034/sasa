@@ -157,7 +157,7 @@ function Router() {
     <div className="flex flex-col min-h-screen">
       {!hideHeader && <Header />}
       {!hideHeader && <AppInstallPrompt />}
-      <main className={isDashboardRoute ? 'flex-1' : 'flex-1 pb-16 md:pb-0'}>
+      <main className={isDashboardRoute ? 'flex-1' : 'flex-1 pb-nav md:pb-0'}>
         <Switch>
           {/* 🔥 FIXED: Use SmartRedirect for root route */}
           <Route path="/">

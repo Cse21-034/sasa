@@ -1,8 +1,7 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import { Clock, CheckCircle2, XCircle, ArrowRight, Briefcase, MapPin, Calendar } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, ArrowRight, Briefcase, MapPin, Calendar, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +39,116 @@ interface JobApplication {
   };
 }
 
+function StatusBadge({ status }: { status: string }) {
+  if (status === 'pending')
+    return (
+      <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[11px] gap-1">
+        <Clock className="h-3 w-3" /> Pending
+      </Badge>
+    );
+  if (status === 'selected')
+    return (
+      <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20 text-[11px] gap-1">
+        <CheckCircle2 className="h-3 w-3" /> Selected
+      </Badge>
+    );
+  return (
+    <Badge variant="secondary" className="bg-muted text-muted-foreground text-[11px] gap-1">
+      <XCircle className="h-3 w-3" /> Not Selected
+    </Badge>
+  );
+}
+
+function ApplicationRow({
+  application,
+  onView,
+  onWithdraw,
+  withdrawing,
+}: {
+  application: JobApplication;
+  onView: () => void;
+  onWithdraw?: () => void;
+  withdrawing?: boolean;
+}) {
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-3.5 border-b border-border/40 hover:bg-muted/30 active:bg-muted/50 transition-colors cursor-pointer"
+      onClick={onView}
+      data-testid={`card-application-${application.id}`}
+    >
+      {/* Status indicator bar */}
+      <div
+        className={`w-1 self-stretch rounded-full flex-shrink-0 ${
+          application.status === 'selected'
+            ? 'bg-green-500'
+            : application.status === 'pending'
+            ? 'bg-amber-400'
+            : 'bg-muted-foreground/30'
+        }`}
+      />
+
+      {/* Main content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <p className="font-semibold text-sm leading-tight truncate">{application.job.title}</p>
+          <StatusBadge status={application.status} />
+        </div>
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <MapPin className="h-3 w-3" />
+            {application.job.address || application.job.city}
+          </span>
+          <span className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            {new Date(application.createdAt).toLocaleDateString([], { day: 'numeric', month: 'short' })}
+          </span>
+          {application.job.urgency === 'emergency' && (
+            <Badge variant="destructive" className="text-[10px] py-0 h-4">Emergency</Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex-shrink-0 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+        {application.status === 'pending' && onWithdraw && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive h-7 text-xs px-2"
+                disabled={withdrawing}
+                data-testid={`button-withdraw-${application.id}`}
+              >
+                Withdraw
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Withdraw Application?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to withdraw your application for "{application.job.title}"?
+                  You can apply again if the job is still open.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={onWithdraw}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Withdraw
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+        <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+      </div>
+    </div>
+  );
+}
+
 export default function ProviderApplications() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
@@ -57,272 +166,137 @@ export default function ProviderApplications() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/provider/applications'] });
-      toast({
-        title: 'Application withdrawn',
-        description: 'Your application has been withdrawn successfully.',
-      });
+      toast({ title: 'Application withdrawn', description: 'Your application has been withdrawn.' });
     },
     onError: (error: any) => {
-      toast({
-        title: 'Failed to withdraw',
-        description: error.message || 'Could not withdraw the application.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Failed to withdraw', description: error.message, variant: 'destructive' });
     },
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return (
-          <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
-            <Clock className="h-3 w-3 mr-1" />
-            Waiting for Selection
-          </Badge>
-        );
-      case 'selected':
-        return (
-          <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">
-            <CheckCircle2 className="h-3 w-3 mr-1" />
-            Selected
-          </Badge>
-        );
-      case 'rejected':
-        return (
-          <Badge variant="secondary" className="bg-red-500/10 text-red-600 border-red-500/20">
-            <XCircle className="h-3 w-3 mr-1" />
-            Not Selected
-          </Badge>
-        );
-      default:
-        return null;
-    }
-  };
-
   if (!user || user.role !== 'provider') {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Card>
-          <CardContent className="p-12 text-center">
-            <p className="text-muted-foreground">Only providers can view applications.</p>
-          </CardContent>
-        </Card>
+      <div className="container mx-auto px-4 py-8 max-w-2xl text-center">
+        <p className="text-muted-foreground">Only providers can view applications.</p>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <h1 className="text-2xl font-bold mb-6">My Job Applications</h1>
-        <div className="space-y-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="px-4 py-5 border-b border-border/40">
+          <Skeleton className="h-7 w-48 mb-1" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="grid grid-cols-3 divide-x border-b border-border/40">
           {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <Skeleton className="h-6 w-3/4 mb-3" />
-                <Skeleton className="h-4 w-1/2 mb-2" />
-                <Skeleton className="h-4 w-1/4" />
-              </CardContent>
-            </Card>
+            <div key={i} className="px-4 py-4 text-center">
+              <Skeleton className="h-7 w-8 mx-auto mb-1" />
+              <Skeleton className="h-3 w-16 mx-auto" />
+            </div>
           ))}
         </div>
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex items-center gap-3 px-4 py-3.5 border-b border-border/40">
+            <Skeleton className="w-1 h-12 rounded-full" />
+            <div className="flex-1">
+              <Skeleton className="h-4 w-3/4 mb-2" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+            <Skeleton className="h-5 w-16" />
+          </div>
+        ))}
       </div>
     );
   }
 
-  const pendingApplications = applications?.filter(a => a.status === 'pending') || [];
-  const selectedApplications = applications?.filter(a => a.status === 'selected') || [];
-  const rejectedApplications = applications?.filter(a => a.status === 'rejected') || [];
+  const pending  = applications?.filter(a => a.status === 'pending')  || [];
+  const selected = applications?.filter(a => a.status === 'selected') || [];
+  const rejected = applications?.filter(a => a.status === 'rejected') || [];
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Briefcase className="h-6 w-6" />
-            My Job Applications
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Track your pending applications and their status
-          </p>
+  if (!applications || applications.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
+        <div className="h-16 w-16 rounded-full bg-muted/60 flex items-center justify-center mb-4">
+          <Briefcase className="h-8 w-8 text-muted-foreground" />
         </div>
-        <Button onClick={() => setLocation('/jobs')} variant="outline" data-testid="button-browse-jobs">
-          Browse Jobs
+        <h3 className="font-semibold mb-2">No applications yet</h3>
+        <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+          Browse available jobs and submit your application to get started.
+        </p>
+        <Button onClick={() => setLocation('/jobs')} data-testid="button-browse-available-jobs">
+          Browse Available Jobs
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
       </div>
+    );
+  }
 
-      {(!applications || applications.length === 0) ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Applications Yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Start applying to jobs to see them here. Browse available jobs and submit your application.
-            </p>
-            <Button onClick={() => setLocation('/jobs')} data-testid="button-browse-available-jobs">
-              Browse Available Jobs
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-8">
-          {pendingApplications.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Clock className="h-5 w-5 text-yellow-500" />
-                Pending Applications ({pendingApplications.length})
-              </h2>
-              <div className="space-y-4">
-                {pendingApplications.map((application) => (
-                  <Card key={application.id} className="border-2 border-yellow-500/20" data-testid={`card-application-${application.id}`}>
-                    <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            {getStatusBadge(application.status)}
-                            {application.job.urgency === 'emergency' && (
-                              <Badge variant="destructive">Emergency</Badge>
-                            )}
-                          </div>
-                          <h3 className="text-lg font-semibold mb-2">{application.job.title}</h3>
-                          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4" />
-                              <span>{application.job.address || application.job.city}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4" />
-                              <span>Applied {new Date(application.createdAt).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                          <p className="text-sm mt-3 p-3 bg-muted/50 rounded-md">
-                            The requester is reviewing applications. You will be notified when they make a decision.
-                          </p>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setLocation(`/jobs/${application.jobId}`)}
-                            data-testid={`button-view-job-${application.id}`}
-                          >
-                            View Job
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" className="text-destructive" data-testid={`button-withdraw-${application.id}`}>
-                                Withdraw
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Withdraw Application?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to withdraw your application for "{application.job.title}"? 
-                                  You can apply again if the job is still open.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => withdrawMutation.mutate(application.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Withdraw
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
+  const sections = [
+    { status: 'pending',  list: pending,  label: 'Pending',      icon: Clock,         iconClass: 'text-amber-500' },
+    { status: 'selected', list: selected, label: 'Selected',     icon: CheckCircle2,  iconClass: 'text-green-500' },
+    { status: 'rejected', list: rejected, label: 'Not Selected', icon: XCircle,       iconClass: 'text-muted-foreground' },
+  ] as const;
 
-          {selectedApplications.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                Selected ({selectedApplications.length})
-              </h2>
-              <div className="space-y-4">
-                {selectedApplications.map((application) => (
-                  <Card key={application.id} className="border-2 border-green-500/20" data-testid={`card-selected-${application.id}`}>
-                    <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            {getStatusBadge(application.status)}
-                          </div>
-                          <h3 className="text-lg font-semibold mb-2">{application.job.title}</h3>
-                          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4" />
-                              <span>{application.job.address || application.job.city}</span>
-                            </div>
-                          </div>
-                          <p className="text-sm mt-3 p-3 bg-green-500/10 rounded-md text-green-700 dark:text-green-400">
-                            Congratulations! You have been selected for this job.
-                          </p>
-                        </div>
-                        <Button 
-                          onClick={() => setLocation(`/jobs/${application.jobId}`)}
-                          data-testid={`button-go-to-job-${application.id}`}
-                        >
-                          Go to Job
-                          <ArrowRight className="h-4 w-4 ml-2" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
+  return (
+    <div className="max-w-2xl mx-auto">
 
-          {rejectedApplications.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-red-500" />
-                Not Selected ({rejectedApplications.length})
-              </h2>
-              <div className="space-y-4">
-                {rejectedApplications.map((application) => (
-                  <Card key={application.id} className="border-2 border-muted opacity-75" data-testid={`card-rejected-${application.id}`}>
-                    <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            {getStatusBadge(application.status)}
-                          </div>
-                          <h3 className="text-lg font-semibold mb-2">{application.job.title}</h3>
-                          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4" />
-                              <span>{application.job.address || application.job.city}</span>
-                            </div>
-                          </div>
-                          <p className="text-sm mt-3 text-muted-foreground">
-                            The requester selected another provider for this job.
-                          </p>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setLocation('/jobs')}
-                        >
-                          Find More Jobs
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Page header */}
+      <div className="flex items-center justify-between px-4 py-5 border-b border-border/40">
+        <div>
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <Briefcase className="h-5 w-5" />
+            My Applications
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Track your job applications</p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setLocation('/jobs')}
+          data-testid="button-browse-jobs"
+          className="text-xs"
+        >
+          Browse Jobs
+          <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+        </Button>
+      </div>
+
+      {/* Stats bar */}
+      <div className="grid grid-cols-3 divide-x border-b border-border/40 bg-muted/20">
+        {[
+          { count: pending.length,  label: 'Pending',  colorClass: 'text-amber-500' },
+          { count: selected.length, label: 'Selected', colorClass: 'text-green-500' },
+          { count: rejected.length, label: 'Not Selected', colorClass: 'text-muted-foreground' },
+        ].map((s) => (
+          <div key={s.label} className="px-3 py-3.5 text-center">
+            <p className={`text-2xl font-bold ${s.colorClass}`}>{s.count}</p>
+            <p className="text-[11px] text-muted-foreground leading-tight">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Sections */}
+      {sections.map(({ status, list, label, icon: Icon, iconClass }) =>
+        list.length > 0 ? (
+          <div key={status}>
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-muted/30 border-b border-border/30">
+              <Icon className={`h-4 w-4 ${iconClass}`} />
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {label} · {list.length}
+              </span>
+            </div>
+            {list.map((app) => (
+              <ApplicationRow
+                key={app.id}
+                application={app}
+                onView={() => setLocation(`/jobs/${app.jobId}`)}
+                onWithdraw={status === 'pending' ? () => withdrawMutation.mutate(app.id) : undefined}
+                withdrawing={withdrawMutation.isPending}
+              />
+            ))}
+          </div>
+        ) : null
       )}
     </div>
   );
